@@ -1,0 +1,8 @@
+/target/
+Users/
+/Users/
+target/
+.DS_Store
+.classpath
+.project
+.settings/
