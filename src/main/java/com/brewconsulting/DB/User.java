@@ -18,7 +18,7 @@ import java.util.Map;
 
 import javax.ws.rs.NotAuthorizedException;
 
-import org.apache.catalina.tribes.util.Arrays;
+
 
 public class User {
 	public int clientId; // -1 means no client
