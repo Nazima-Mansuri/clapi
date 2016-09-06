@@ -87,13 +87,15 @@
 			<version>0.6.0</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.tomcat/servlet-api -->
- 		<dependency>
+  		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>3.0.1</version>
 			<scope>provided</scope>
 		</dependency>
- 		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+
+ 
+  		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
