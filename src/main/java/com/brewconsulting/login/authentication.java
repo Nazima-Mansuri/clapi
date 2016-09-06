@@ -5,10 +5,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.*;
 
 import javax.servlet.ServletContext;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.jsonwebtoken.JwtBuilder;
@@ -27,21 +29,21 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class authentication {
 
 	@POST
-	@Produces("application/json")
-	public Response login(InputStream input, @Context ServletContext context)
+    @Consumes(MediaType.APPLICATION_JSON)
+	public Response login(Credentials credentials, @Context ServletContext context)
 			throws SQLException, ClassNotFoundException, IOException {
-
-		ObjectMapper mapper = new ObjectMapper();
 		Response resp = null;
-		String username = null;
-		String password = null;
-
 		try {
+<<<<<<< HEAD
 
 			JsonNode req = mapper.readTree(input);
 			
 			username = req.path("username").asText();
 			password = req.path("password").asText();
+=======
+			String username  = credentials.getUsername();
+			String password = credentials.getPassword();
+>>>>>>> 72685cca3018e759d9c5d0ed01e8050bb44633bd
 
 			if (username.equals(null) || username.equals("")) {
 				resp = Response.status(Response.Status.BAD_REQUEST).entity("Username not specified").build();
@@ -59,7 +61,7 @@ public class authentication {
 				throw new Exception("User authentication failed.");
 
 			}
-
+			ObjectMapper mapper = new ObjectMapper();
 			ObjectNode node = mapper.createObjectNode();
 
 			if (context == null) {

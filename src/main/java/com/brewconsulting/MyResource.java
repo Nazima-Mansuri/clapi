@@ -1,17 +1,11 @@
 package com.brewconsulting;
 
-import javax.annotation.Resource;
-import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.crypto.MacProvider;
-import java.security.Key;
 
 /**
  * Root resource (exposed at "myresource" path)
