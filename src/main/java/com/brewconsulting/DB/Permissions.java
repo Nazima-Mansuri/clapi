@@ -1,12 +1,14 @@
 package com.brewconsulting.DB;
 
 public class Permissions {
-	public static final int USER_PROFILE = 0x01; //access to others profile not self.
+	public static final int USER_PROFILE = 0x01; //access to others profile.
 	
 	public static final int NONE = 0x01;
 	public static final int READ_ONLY = 0x3;
 	public static final int READ_WRITE = 0x7;
 	
+	//ensure that these values are teh same as that in the DB. 
+	//Later we will get this data from DB directly.
 	public static final int ROLE_ROOT = 0;
 	public static final int ROLE_MR = 1;
 	public static final int ROLE_MKT = 2;

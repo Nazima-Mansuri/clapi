@@ -1,7 +1,12 @@
 package com.brewconsulting.users;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.SQLException;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -12,6 +17,7 @@ import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.User;
 import com.brewconsulting.DB.UserProfile;
+import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +53,40 @@ public class Users {
 			e.printStackTrace();
 		}
 
+		return resp;
+
+	}
+
+	@POST
+	@Produces("application/json")
+	@Secured
+	public Response user(InputStream input, @Context ContainerRequestContext crc) {
+
+		ObjectMapper mapper = new ObjectMapper();
+		Response resp = null;
+		try {
+			JsonNode node = mapper.readTree(input);
+			int userid = UserProfile.createUser(node, (JsonNode) crc.getProperty("user"));
+			resp = Response.ok("{\"id\":"+userid+"}").build();
+		} catch (IOException e) {
+			if (resp == null)
+				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
+						.build();
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			if (resp == null)
+				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
+						.build();
+			e.printStackTrace();
+		} catch (SQLException e) {
+			if (resp == null)
+				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
+						.build();
+			e.printStackTrace();
+		} catch (RequiredDataMissing e) {
+			resp = Response.serverError().entity(e.getJsonString()).build();
+			e.printStackTrace();
+		}
 		return resp;
 
 	}

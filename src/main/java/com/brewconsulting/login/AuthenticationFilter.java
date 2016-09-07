@@ -14,6 +14,7 @@ import javax.ws.rs.ext.Provider;
 
 import org.elasticsearch.search.rescore.RescoreBuilder;
 
+import com.brewconsulting.DB.masters.LoggedInUser;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,6 +52,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = mapper.readTree((String) clms.getBody().get("user"));
 				context.setProperty("user", validate(node));
+				context.setProperty("userObject", mapper.treeToValue(node, LoggedInUser.class));
 			} catch (Exception ex) {
 				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
 				servletContext.log("Invalid token", ex);

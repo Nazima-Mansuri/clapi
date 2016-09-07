@@ -1,29 +1,71 @@
 package com.brewconsulting.DB;
 
+import java.sql.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.Date;
-import java.util.List;
+import java.util.Iterator;
+
+import com.brewconsulting.DB.common.DBConnectionProvider;
+import com.brewconsulting.exceptions.RequiredDataMissing;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class UserProfile extends User {
-	
+
+	@JsonProperty("addLine1")
 	public String addLine1;
+
+	@JsonProperty("addLine2")
 	public String addLine2;
+
+	@JsonProperty("addLine3")
 	public String addLine3;
+
+	@JsonProperty("city")
 	public String city;
+
+	@JsonProperty("state")
 	public String state;
-	public List<String> contactNumbers;
+
+	@JsonProperty("designation")
 	public String designation;
+
+	@JsonProperty("divId")
 	public int divId;
-	public String divname;
+
+	@JsonProperty("divName")
+	public String divName;
+
+	@JsonProperty("empNum")
 	public String empNum;
+
+	@JsonProperty("phones")
+	public String[] phones;
+
+	@JsonProperty("createDate")
 	public Date createDate;
+
+	@JsonProperty("createBy")
 	public int createBy;
-	public Date modifiedDate;
-	public int modifiedBy;
-	
-	UserProfile(){
-		
+
+	@JsonProperty("updateDate")
+	public Date updateDate;
+
+	@JsonProperty("updateBy")
+	public int updateBy;
+
+	UserProfile() {
+
 	}
-	UserProfile(User u){
+
+	UserProfile(User u) throws Exception {
+		if (u == null)
+			throw new Exception("User is null");
 		super.id = u.id;
 		super.clientId = u.clientId;
 		super.roles = u.roles;
@@ -31,5 +73,90 @@ public class UserProfile extends User {
 		super.firstName = u.firstName;
 		super.lastName = u.lastName;
 		super.username = u.username;
+	}
+
+	UserProfile(int id) {
+		super.id = id;
+	}
+
+	public static int createUser(JsonNode node, JsonNode loggedInUser) throws ClassNotFoundException, SQLException, RequiredDataMissing {
+
+		// TODO: check if the user has rights to perform this action.
+
+		Connection con = DBConnectionProvider.getConn();
+		try {
+			con.setAutoCommit(false);
+			PreparedStatement stmt = con.prepareStatement("insert into master.users (firstname, lastname, "
+					+ "clientId, username, password) values (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+			stmt.setString(1, node.get("firstName").asText());
+			stmt.setString(2, node.get("lastName").asText());
+			stmt.setInt(3, node.get("clientId").asInt());
+			stmt.setString(4, node.get("username").asText());
+			stmt.setString(5, node.get("password").asText());
+
+			int affectedRows = stmt.executeUpdate();
+			if (affectedRows == 0)
+				throw new SQLException("Create user failed.");
+
+			ResultSet generatedKeys = stmt.getGeneratedKeys();
+			int userid;
+			if (generatedKeys.next())
+				userid = generatedKeys.getInt(1);
+			else
+				throw new SQLException("Create user failed. No ID obtained");
+
+			// TODO: set up the phones string array
+			String[] arr = { "90909 98989", "78787 78786" };
+			Array pharr = con.createArrayOf("text", arr);
+
+			stmt = con
+					.prepareStatement("insert into " + loggedInUser.get("schemaName").asText() + ".userProfile(userId,"
+							+ "address, designation, divId, empNumber, createBy, updateDate, updateBy) values (?, "
+							+ "ROW(?,?,?,?,?,?), ?, ?, ?, ?,?,?)");
+			stmt.setInt(1, userid);
+			stmt.setString(2, node.get("addLine1").asText());
+			stmt.setString(3, node.get("addLine2").asText());
+			stmt.setString(4, node.get("addLine3").asText());
+			stmt.setString(5, node.get("city").asText());
+			stmt.setString(6, node.get("state").asText());
+			stmt.setArray(7, pharr);
+			stmt.setString(8, node.get("designation").asText());
+			stmt.setInt(9, node.get("divId").asInt());
+			stmt.setString(10, node.get("empNumber").asText());
+			stmt.setInt(11, node.get("createBy").asInt());
+			stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
+			stmt.setInt(13, node.get("updateBy").asInt());
+
+			stmt.executeUpdate();
+
+			if (node.has("roles")) {
+				JsonNode rolesNode = node.get("roles");
+				Iterator<JsonNode> it = rolesNode.elements();
+
+				while (it.hasNext()) {
+					JsonNode role = it.next();
+					stmt = con.prepareStatement(
+							"insert into master.userRoleMap (userId, roleId, effectDate,createBy) values"
+									+ "(?,?,?,?)");
+					stmt.setInt(1, userid);
+					stmt.setInt(2, role.get("roleid").asInt());
+					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+					stmt.setInt(4, 1);
+					stmt.executeUpdate();
+				}
+			}else
+				throw new RequiredDataMissing("Role is required");
+			con.commit();
+			return userid;
+		} catch (Exception ex) {
+			if (con != null)
+				con.rollback();
+			throw ex;
+		} finally {
+			con.setAutoCommit(false);
+			if (con != null)
+				con.close();
+		}
+
 	}
 }
