@@ -34,16 +34,16 @@ public class authentication {
 			throws SQLException, ClassNotFoundException, IOException {
 		Response resp = null;
 		try {
-<<<<<<< HEAD
 
-			JsonNode req = mapper.readTree(input);
+
+			//JsonNode req = mapper.readTree(input);
 			
-			username = req.path("username").asText();
-			password = req.path("password").asText();
-=======
+			//username = req.path("username").asText();
+			//password = req.path("password").asText();
+
 			String username  = credentials.getUsername();
 			String password = credentials.getPassword();
->>>>>>> 72685cca3018e759d9c5d0ed01e8050bb44633bd
+
 
 			if (username.equals(null) || username.equals("")) {
 				resp = Response.status(Response.Status.BAD_REQUEST).entity("Username not specified").build();
