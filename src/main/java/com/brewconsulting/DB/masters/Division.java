@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -49,7 +50,8 @@ public class Division {
 
 	}
 
-	public static List<Division> getAllDivisions(LoggedInUser loggedInUser) throws Exception {
+	public static List<Division> getAllDivisions(LoggedInUser loggedInUser)
+			throws Exception {
 		// TODO: check authorization of the user to see this data
 		String schemaName = loggedInUser.schemaName;
 
@@ -60,8 +62,9 @@ public class Division {
 
 		try {
 			if (con != null) {
-				stmt = con.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
-						+ " updateBy from " + schemaName + ".divisions");
+				stmt = con
+						.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
+								+ " updateBy from " + schemaName + ".divisions");
 				result = stmt.executeQuery();
 				while (result.next()) {
 					Division div = new Division();
@@ -92,7 +95,8 @@ public class Division {
 		return divisions;
 	}
 
-	public static Division getDivisionById(int id, LoggedInUser loggedInUser) throws Exception {
+	public static Division getDivisionById(int id, LoggedInUser loggedInUser)
+			throws Exception {
 		Division division = null;
 		// TODO check authorization
 		String schemaName = loggedInUser.schemaName;
@@ -102,8 +106,11 @@ public class Division {
 
 		try {
 			if (con != null) {
-				stmt = con.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
-						+ " updateBy from " + schemaName + ".divisions where id = ?");
+				stmt = con
+						.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
+								+ " updateBy from "
+								+ schemaName
+								+ ".divisions where id = ?");
 				stmt.setInt(1, id);
 				result = stmt.executeQuery();
 				if (result.next()) {
@@ -132,60 +139,78 @@ public class Division {
 		}
 		return division;
 	}
-	
-	public static int addDivision(JsonNode node, JsonNode loggedInUser) throws Exception
-	{
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result;
-		
-		try 
-		{
-			if (con != null) 
-			{
-				stmt = con.prepareStatement("INSERT INTO client1.divisions(name,description,createDate,createBy) values (?,?,?,?)");
-				stmt.setString(1, node.get("name").asText());
-				stmt.setString(2, node.get("description").asText());
-				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-				stmt.setInt(4, loggedInUser.get("id").asInt());
-				
-				result = stmt.executeUpdate();
-			} 
-			else
-				throw new Exception("DB connection is null");
 
-		} finally {
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
-		}
-		return result;
-	}
-	
-	public static int updateDivision(JsonNode node, JsonNode loggedInUser) throws Exception
-	{
+	public static int addDivision(JsonNode node, LoggedInUser loggedInUser)
+			throws Exception {
+		// TODO: check authorization of the user to Insert this data
+		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
 		int result;
-		
-		try 
-		{
-			if (con != null) 
-			{
-				stmt = con.prepareStatement("UPDATE client1.divisions SET name = ?,description = ?,updateDate = ?,"
-						+ "updateBy = ? WHERE id = ?");
+
+		try {
+			con.setAutoCommit(false);
+
+			stmt = con
+					.prepareStatement(
+							"INSERT INTO "
+									+ schemaName
+									+ ".divisions(name,description,createDate,createBy) values (?,?,?,?)",
+							Statement.RETURN_GENERATED_KEYS);
+			stmt.setString(1, node.get("name").asText());
+			stmt.setString(2, node.get("description").asText());
+			stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+			stmt.setInt(4, loggedInUser.id);
+			result = stmt.executeUpdate();
+
+			if (result == 0)
+				throw new SQLException("Add Division Failed.");
+
+			ResultSet generatedKeys = stmt.getGeneratedKeys();
+			int divisionId;
+			if (generatedKeys.next())
+				divisionId = generatedKeys.getInt(1);
+			else
+				throw new SQLException("No ID obtained");
+
+			con.commit();
+			return divisionId;
+
+		} catch (Exception ex) {
+			if (con != null)
+				con.rollback();
+			throw ex;
+		} finally {
+			con.setAutoCommit(false);
+			if (con != null)
+				con.close();
+		}
+	}
+
+	public static int updateDivision(JsonNode node, LoggedInUser loggedInUser)
+			throws Exception {
+		// TODO: check authorization of the user to Update this data
+		String schemaName = loggedInUser.schemaName;
+		Connection con = DBConnectionProvider.getConn();
+		PreparedStatement stmt = null;
+		int result;
+
+		try {
+			// It checks if connection is not null then perform update operation.
+			if (con != null) { 
+				stmt = con
+						.prepareStatement("UPDATE "
+								+ schemaName
+								+ ".divisions SET name = ?,description = ?,updateDate = ?,"
+								+ "updateBy = ? WHERE id = ?");
 				stmt.setString(1, node.get("name").asText());
 				stmt.setString(2, node.get("description").asText());
 				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-				stmt.setInt(4, loggedInUser.get("id").asInt());
+				stmt.setInt(4, loggedInUser.id);
 				stmt.setInt(5, node.get("divisionId").asInt());
-								
+
 				result = stmt.executeUpdate();
-			} 
-			else
+			} else
 				throw new Exception("DB connection is null");
 
 		} finally {
@@ -198,24 +223,23 @@ public class Division {
 		}
 		return result;
 	}
-	
-	public static void deleteDivision(int id) throws Exception 
-	{
+
+	public static void deleteDivision(int id , LoggedInUser loggedInUser) throws Exception {
+		// TODO: check authorization of the user to Delete this data
+		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
 		int result;
-		
-		try 
-		{
-			if (con != null) 
-			{
-				stmt = con.prepareStatement("DELETE FROM client1.divisions WHERE id = ?");
-			
+
+		try {
+			// If connection is not null then perform delete operation.
+			if (con != null) {
+				stmt = con
+						.prepareStatement("DELETE FROM "+ schemaName + ".divisions WHERE id = ?");
+
 				stmt.setInt(1, id);
-								
 				result = stmt.executeUpdate();
-			} 
-			else
+			} else
 				throw new Exception("DB connection is null");
 
 		} finally {

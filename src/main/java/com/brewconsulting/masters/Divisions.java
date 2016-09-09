@@ -78,7 +78,6 @@ public class Divisions
 	 * @return
 	 */
 	@POST
-	@Path("/api/adddivision")
 	@Produces("application/json")
 	@Secured
 	@Consumes("application/json")
@@ -88,15 +87,15 @@ public class Divisions
 		try 
 		{
 			JsonNode node = mapper.readTree(input);
-			int result  =Division.addDivision(node, (JsonNode) crc.getProperty("user"));			
-			resp = Response.status(201).build();
+			int divisionId  = Division.addDivision(node, (LoggedInUser) crc.getProperty("userObject"));			
+			resp = Response.ok("{Status : Success} ," + "{\"id\":"+divisionId+"}").build();
 		} 
 		catch (IOException e) 
 		{
 			if (resp == null)
 			{
 				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+						.entity(new NoDataFound("Status : Error").getJsonString()).build();
 				e.printStackTrace();
 			}
 		} 
@@ -118,7 +117,6 @@ public class Divisions
 	 */
 	
 	@PUT
-	@Path("/api/updatedivision")
 	@Produces("application/json")
 	@Secured
 	@Consumes("application/json")
@@ -127,15 +125,14 @@ public class Divisions
 		try 
 		{
 			JsonNode node = mapper.readTree(input);
-			Division.updateDivision(node, (JsonNode) crc.getProperty("user"));			
-			resp = Response.ok().build();
-			
+			Division.updateDivision(node, (LoggedInUser) crc.getProperty("userObject"));			
+			resp = Response.ok("{Status : Success}").build();
 		} 
 		catch (IOException e) 
 		{
 			if (resp == null)
 				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+						.entity(new NoDataFound("Status : Error").getJsonString()).build();
 			e.printStackTrace();
 		} 
 		catch (Exception e) 
@@ -149,19 +146,18 @@ public class Divisions
 	@DELETE
 	@Produces("application/json")
 	@Secured
-	@Path("/api/deletedivision/{id}")
+	@Path("{id}")
 	public Response deleteDiv(@PathParam("id") Integer id,  @Context ContainerRequestContext crc){
 		Response resp = null;
 		try 
 		{
-			Division.deleteDivision(id);
-			resp = Response.ok().build();
+			Division.deleteDivision(id, (LoggedInUser) crc.getProperty("userObject"));
+			resp = Response.ok("{Status : Success}").build();
 		}
 		catch (Exception e) 
 		{
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = Response.status(409).entity(new NoDataFound("Status : Error ,"+ "This id is already in Use in another table as foreign key").getJsonString()).build();
 			e.printStackTrace();
 		}
 		return resp;
