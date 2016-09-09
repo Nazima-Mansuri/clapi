@@ -143,6 +143,13 @@ public class Divisions
 		return resp;
 	}
 	
+	/***
+	 * delete a division.
+	 * 
+	 * @param id
+	 * @param crc
+	 * @return
+	 */
 	@DELETE
 	@Produces("application/json")
 	@Secured

@@ -140,9 +140,17 @@ public class Division {
 		return division;
 	}
 
+	/***
+	 * Method allows user to insert Division in Database.
+	 * 
+	 * @param loggedInUser
+	 * @param node
+	 * @return
+	 * @throws Exception
+	 */
 	public static int addDivision(JsonNode node, LoggedInUser loggedInUser)
 			throws Exception {
-		// TODO: check authorization of the user to Insert this data
+		// TODO: check authorization of the user to Insert data
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
@@ -158,7 +166,13 @@ public class Division {
 									+ ".divisions(name,description,createDate,createBy) values (?,?,?,?)",
 							Statement.RETURN_GENERATED_KEYS);
 			stmt.setString(1, node.get("name").asText());
-			stmt.setString(2, node.get("description").asText());
+
+			// It checks if Description is given or not
+			if (node.has("description"))
+				stmt.setString(2, node.get("description").asText());
+			else
+				stmt.setString(2, null);
+
 			stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
 			stmt.setInt(4, loggedInUser.id);
 			result = stmt.executeUpdate();
@@ -169,6 +183,7 @@ public class Division {
 			ResultSet generatedKeys = stmt.getGeneratedKeys();
 			int divisionId;
 			if (generatedKeys.next())
+				// It gives last inserted Id in divisionId
 				divisionId = generatedKeys.getInt(1);
 			else
 				throw new SQLException("No ID obtained");
@@ -187,24 +202,38 @@ public class Division {
 		}
 	}
 
+	/***
+	 * Method allows user to Update Division in Database.
+	 * 
+	 * @param loggedInUser
+	 * @param node
+	 * @return
+	 * @throws Exception
+	 */
 	public static int updateDivision(JsonNode node, LoggedInUser loggedInUser)
 			throws Exception {
-		// TODO: check authorization of the user to Update this data
+		// TODO: check authorization of the user to Update data
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
 		int result;
 
 		try {
-			// It checks if connection is not null then perform update operation.
-			if (con != null) { 
+			// It checks if connection is not null then perform update
+			// operation.
+			if (con != null) {
 				stmt = con
 						.prepareStatement("UPDATE "
 								+ schemaName
 								+ ".divisions SET name = ?,description = ?,updateDate = ?,"
 								+ "updateBy = ? WHERE id = ?");
 				stmt.setString(1, node.get("name").asText());
-				stmt.setString(2, node.get("description").asText());
+
+				// It checks if Description is given or not
+				if (node.has("description"))
+					stmt.setString(2, node.get("description").asText());
+				else
+					stmt.setString(2, null);
 				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
 				stmt.setInt(4, loggedInUser.id);
 				stmt.setInt(5, node.get("divisionId").asInt());
@@ -224,8 +253,17 @@ public class Division {
 		return result;
 	}
 
-	public static void deleteDivision(int id , LoggedInUser loggedInUser) throws Exception {
-		// TODO: check authorization of the user to Delete this data
+	/***
+	 * Method allows user to Delete Division from Database.
+	 * 
+	 * @param loggedInUser
+	 * @param id
+	 * @throws Exception
+	 */
+
+	public static void deleteDivision(int id, LoggedInUser loggedInUser)
+			throws Exception {
+		// TODO: check authorization of the user to Delete data
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
@@ -234,8 +272,8 @@ public class Division {
 		try {
 			// If connection is not null then perform delete operation.
 			if (con != null) {
-				stmt = con
-						.prepareStatement("DELETE FROM "+ schemaName + ".divisions WHERE id = ?");
+				stmt = con.prepareStatement("DELETE FROM " + schemaName
+						+ ".divisions WHERE id = ?");
 
 				stmt.setInt(1, id);
 				result = stmt.executeUpdate();
