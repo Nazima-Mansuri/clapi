@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.postgresql.util.PSQLException;
+
 import com.brewconsulting.DB.utils;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.brewconsulting.exceptions.RequiredDataMissing;
@@ -261,13 +263,13 @@ public class Division {
 	 * @throws Exception
 	 */
 
-	public static void deleteDivision(int id, LoggedInUser loggedInUser)
+	public static int deleteDivision(int id, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Delete data
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
-		int result;
+		int result = 0;
 
 		try {
 			// If connection is not null then perform delete operation.
@@ -279,8 +281,9 @@ public class Division {
 				result = stmt.executeUpdate();
 			} else
 				throw new Exception("DB connection is null");
-
-		} finally {
+		}
+			finally {
+		
 			if (stmt != null)
 				if (!stmt.isClosed())
 					stmt.close();
@@ -288,5 +291,6 @@ public class Division {
 				if (!con.isClosed())
 					con.close();
 		}
+		return result;
 	}
 }

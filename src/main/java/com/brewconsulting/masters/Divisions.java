@@ -2,6 +2,7 @@ package com.brewconsulting.masters;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -14,6 +15,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.postgresql.util.PSQLException;
 
 import com.brewconsulting.DB.masters.Division;
 import com.brewconsulting.DB.masters.LoggedInUser;
@@ -158,14 +161,21 @@ public class Divisions
 		Response resp = null;
 		try 
 		{
-			Division.deleteDivision(id, (LoggedInUser) crc.getProperty("userObject"));
-			resp = Response.ok("{Status : Success}").build();
+			int result =Division.deleteDivision(id, (LoggedInUser) crc.getProperty("userObject"));
+			if(result > 0)
+				resp = Response.ok("{Status : Success}").build();
+		}
+		catch(PSQLException ex)
+		{
+			resp = Response.status(409).entity(new NoDataFound("Status : Error ,"+ "This id is already Use in another table as foreign key").getJsonString()).build();
+			ex.printStackTrace();
 		}
 		catch (Exception e) 
 		{
 			if (resp == null)
-				resp = Response.status(409).entity(new NoDataFound("Status : Error ,"+ "This id is already in Use in another table as foreign key").getJsonString()).build();
-			e.printStackTrace();
+				resp = Response.serverError().entity(e.getMessage()).build();
+				e.printStackTrace();
+			
 		}
 		return resp;
 	}
