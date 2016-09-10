@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import javax.naming.NamingException;
 import javax.ws.rs.NotAuthorizedException;
 
 public class User {
@@ -44,7 +45,7 @@ public class User {
 
 	}
 
-	public static User authenticate(String username, String password) throws ClassNotFoundException, SQLException {
+	public static User authenticate(String username, String password) throws ClassNotFoundException, SQLException, NamingException {
 		User user = null;
 		Connection con = DBConnectionProvider.getConn();
 		try {
@@ -97,8 +98,9 @@ public class User {
 	 * @return
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
+	 * @throws NamingException 
 	 */
-	public static User find(Integer id) throws ClassNotFoundException, SQLException {
+	public static User find(Integer id) throws ClassNotFoundException, SQLException, NamingException {
 		Connection con = DBConnectionProvider.getConn();
 		User user = null;
 		try {
@@ -202,7 +204,7 @@ public class User {
 		return user;
 	}
 
-	private static void fillProfileInfo(UserProfile user) throws ClassNotFoundException, SQLException {
+	private static void fillProfileInfo(UserProfile user) throws ClassNotFoundException, SQLException, NamingException {
 		Connection con = DBConnectionProvider.getConn();
 		System.out.println("Schema"+user.schemaName);
 		try {

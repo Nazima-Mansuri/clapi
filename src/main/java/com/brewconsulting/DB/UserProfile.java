@@ -10,6 +10,8 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Iterator;
 
+import javax.naming.NamingException;
+
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -79,7 +81,7 @@ public class UserProfile extends User {
 		super.id = id;
 	}
 
-	public static int createUser(JsonNode node, JsonNode loggedInUser) throws ClassNotFoundException, SQLException, RequiredDataMissing {
+	public static int createUser(JsonNode node, JsonNode loggedInUser) throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
 
 		// TODO: check if the user has rights to perform this action.
 

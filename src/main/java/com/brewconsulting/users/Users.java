@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 
+import javax.naming.NamingException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
@@ -17,6 +18,7 @@ import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.User;
 import com.brewconsulting.DB.UserProfile;
+import com.brewconsulting.DB.utils;
 import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -70,21 +72,21 @@ public class Users {
 			resp = Response.ok("{\"id\":"+userid+"}").build();
 		} catch (IOException e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = utils.getErrorResponse(e);
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = utils.getErrorResponse(e);
 			e.printStackTrace();
 		} catch (SQLException e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = utils.getErrorResponse(e);
 			e.printStackTrace();
 		} catch (RequiredDataMissing e) {
-			resp = Response.serverError().entity(e.getJsonString()).build();
+			resp = utils.getErrorResponse(e);
+			e.printStackTrace();
+		} catch (NamingException e) {
+			resp = utils.getErrorResponse(e);
 			e.printStackTrace();
 		}
 		return resp;

@@ -11,7 +11,7 @@
 			<param-name>jersey.config.server.provider.packages</param-name>
 			<param-value>com.brewconsulting</param-value>
 		</init-param>
-		
+
 		<load-on-startup>1</load-on-startup>
 	</servlet>
 	<servlet-mapping>
@@ -22,5 +22,100 @@
 		<param-name>salt</param-name>
 		<param-value>HqcwO0G7sYEa997zePSGAYKGQnY\=</param-value>
 	</context-param>
-	
+	<env-entry>
+		<env-entry-name>DB_URL</env-entry-name>
+		<env-entry-type>java.lang.String</env-entry-type>
+		<env-entry-value>jdbc:postgresql://rollapg.chuxpgoly7kv.us-east-1.rds.amazonaws.com/Rolla</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_DRIVER</env-entry-name>
+		<env-entry-type>java.lang.String</env-entry-type>
+		<env-entry-value>org.postgresql.Driver</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_USERNAME</env-entry-name>
+		<env-entry-type>java.lang.String</env-entry-type>
+		<env-entry-value>root</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_PASSWORD</env-entry-name>
+		<env-entry-type>java.lang.String</env-entry-type>
+		<env-entry-value>Rolla!2#4</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_JMX</env-entry-name>
+		<env-entry-type>java.lang.Boolean</env-entry-type>
+		<env-entry-value>false</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_TESTIDLE</env-entry-name>
+		<env-entry-type>java.lang.Boolean</env-entry-type>
+		<env-entry-value>false</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_TESTBORROW</env-entry-name>
+		<env-entry-type>java.lang.Boolean</env-entry-type>
+		<env-entry-value>true</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_VALQUERY</env-entry-name>
+		<env-entry-type>java.lang.String</env-entry-type>
+		<env-entry-value>Select 1</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_TESTRETURN</env-entry-name>
+		<env-entry-type>java.lang.Boolean</env-entry-type>
+		<env-entry-value>false</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_VALINTERVAL</env-entry-name>
+		<env-entry-type>java.lang.Long</env-entry-type>
+		<env-entry-value>30000</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_EVRUNINTERVAL</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>30000</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_MAXACTIVE</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>100</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_INITIALSIZE</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>10</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_MAXWAIT</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>10000</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_REMOVEABANTIMEOUT</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>10000</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_MINEVIDLETIME</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>30000</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_MINIDLE</env-entry-name>
+		<env-entry-type>java.lang.Integer</env-entry-type>
+		<env-entry-value>10</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_SETLOGABAN</env-entry-name>
+		<env-entry-type>java.lang.Boolean</env-entry-type>
+		<env-entry-value>true</env-entry-value>
+	</env-entry>
+	<env-entry>
+		<env-entry-name>DB_SETREMABAN</env-entry-name>
+		<env-entry-type>java.lang.Boolean</env-entry-type>
+		<env-entry-value>true</env-entry-value>
+	</env-entry>
+
 </web-app>
