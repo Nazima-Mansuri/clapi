@@ -91,14 +91,13 @@ public class Divisions
 		{
 			JsonNode node = mapper.readTree(input);
 			int divisionId  = Division.addDivision(node, (LoggedInUser) crc.getProperty("userObject"));			
-			resp = Response.ok("{Status : Success} ," + "{\"id\":"+divisionId+"}").build();
+			resp = Response.ok("{\"id\":"+divisionId+"}").build();
 		} 
 		catch (IOException e) 
 		{
 			if (resp == null)
 			{
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.entity(new NoDataFound("Status : Error").getJsonString()).build();
+				resp = Response.serverError().entity(e.getMessage()).build();
 				e.printStackTrace();
 			}
 		} 
@@ -129,14 +128,13 @@ public class Divisions
 		{
 			JsonNode node = mapper.readTree(input);
 			Division.updateDivision(node, (LoggedInUser) crc.getProperty("userObject"));			
-			resp = Response.ok("{Status : Success}").build();
+			resp = Response.ok().build();
 		} 
 		catch (IOException e) 
 		{
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.entity(new NoDataFound("Status : Error").getJsonString()).build();
-			e.printStackTrace();
+				resp = Response.serverError().entity(e.getMessage()).build();
+				e.printStackTrace();
 		} 
 		catch (Exception e) 
 		{
@@ -161,13 +159,18 @@ public class Divisions
 		Response resp = null;
 		try 
 		{
-			int result =Division.deleteDivision(id, (LoggedInUser) crc.getProperty("userObject"));
-			if(result > 0)
-				resp = Response.ok("{Status : Success}").build();
+			// affectedRow given how many rows deleted from database.
+			int affectedRow =Division.deleteDivision(id, (LoggedInUser) crc.getProperty("userObject"));
+			if(affectedRow > 0)
+				resp = Response.ok().build();
+			else
+				// If no rows affected in database. It gives server status 204(NO_CONTENT).
+				resp = Response.status(204).build();
+				
 		}
 		catch(PSQLException ex)
 		{
-			resp = Response.status(409).entity(new NoDataFound("Status : Error ,"+ "This id is already Use in another table as foreign key").getJsonString()).build();
+			resp = Response.status(409).entity("This id is already Use in another table as foreign key").type(MediaType.TEXT_PLAIN).build();
 			ex.printStackTrace();
 		}
 		catch (Exception e) 
@@ -175,7 +178,7 @@ public class Divisions
 			if (resp == null)
 				resp = Response.serverError().entity(e.getMessage()).build();
 				e.printStackTrace();
-			
+				
 		}
 		return resp;
 	}
