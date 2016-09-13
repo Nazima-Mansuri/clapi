@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
-public class Territorie {
+public class Territory {
 	@JsonProperty("id")
 	public int id;
 
@@ -54,7 +54,7 @@ public class Territorie {
 	public int divId;
 
 	// make the default constructor visible to package only.
-	public Territorie() {
+	public Territory() {
 
 	}
 
@@ -65,13 +65,13 @@ public class Territorie {
 	 * @return
 	 * @throws Exception
 	 */
-	public static List<Territorie> getAllTerritories(LoggedInUser loggedInUser)
+	public static List<Territory> getAllTerritories(LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to see this data
 		String schemaName = loggedInUser.schemaName;
 
 		Connection con = DBConnectionProvider.getConn();
-		ArrayList<Territorie> territories = new ArrayList<Territorie>();
+		ArrayList<Territory> territories = new ArrayList<Territory>();
 		PreparedStatement stmt = null;
 		ResultSet result = null;
 		try {
@@ -79,7 +79,7 @@ public class Territorie {
 				stmt = con.prepareStatement("");
 				result = stmt.executeQuery();
 				while (result.next()) {
-					Territorie terr = new Territorie();
+					Territory terr = new Territory();
 					terr.id = result.getInt(1);
 					terr.name = result.getString(2);
 					/*
@@ -116,10 +116,10 @@ public class Territorie {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Territorie getTerritorieById(int id, LoggedInUser loggedInUser)
+	public static Territory getTerritorieById(int id, LoggedInUser loggedInUser)
 			throws Exception {
 
-		Territorie territorie = null;
+		Territory territorie = null;
 		// TODO check authorization
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
@@ -136,7 +136,7 @@ public class Territorie {
 				stmt.setInt(1, id);
 				result = stmt.executeQuery();
 				if (result.next()) {
-					territorie = new Territorie();
+					territorie = new Territory();
 					territorie.id = result.getInt(1);
 					territorie.name = result.getString(2);
 					/*

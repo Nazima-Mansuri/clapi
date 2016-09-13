@@ -17,7 +17,7 @@ import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.masters.Division;
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.masters.Territorie;
+import com.brewconsulting.DB.masters.Territory;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +49,7 @@ public class Territories {
 	}
 
 	/***
-	 * get a particular territorie
+	 * get a particular territory
 	 * 
 	 * @param id
 	 * @param crc
@@ -85,7 +85,7 @@ public class Territories {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int territorieId  = Territorie.addTerritorie(node, (LoggedInUser) crc.getProperty("userObject"));			
+			int territorieId  = Territory.addTerritorie(node, (LoggedInUser) crc.getProperty("userObject"));			
 			resp = Response.ok("{\"id\":"+territorieId+"}").build();
 
 		} 
@@ -119,7 +119,7 @@ public class Territories {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int affectedRow = 	Territorie.updateTerritorie(node,  (LoggedInUser) crc.getProperty("userObject"));
+			int affectedRow = 	Territory.updateTerritorie(node,  (LoggedInUser) crc.getProperty("userObject"));
 			if(affectedRow >0)
 				resp = Response.ok().build();
 			else
