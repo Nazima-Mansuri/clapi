@@ -8,16 +8,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 import com.brewconsulting.DB.common.DBConnectionProvider;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 public class Territory {
 	@JsonProperty("id")
@@ -53,6 +50,17 @@ public class Territory {
 	@JsonProperty("divId")
 	public int divId;
 
+	@JsonProperty("effectDate")
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+	public Date effectDate;
+
+	@JsonProperty("createDate")
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+	public Date createDate;
+
+	@JsonProperty("createBy")
+	public int createBy;
+
 	// make the default constructor visible to package only.
 	public Territory() {
 
@@ -76,19 +84,29 @@ public class Territory {
 		ResultSet result = null;
 		try {
 			if (con != null) {
-				stmt = con.prepareStatement("");
+				stmt = con
+						.prepareStatement("select id, name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+								+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
+								+ "(address).phone phones,parentId,divId from "
+								+ schemaName + ".territories");
 				result = stmt.executeQuery();
 				while (result.next()) {
 					Territory terr = new Territory();
 					terr.id = result.getInt(1);
 					terr.name = result.getString(2);
-					/*
-					 * terr.description = result.getString(3); terr.createDate =
-					 * result.getTimestamp(4); terr.createBy = result.getInt(5);
-					 * terr.updateDate = result.getTime(6); terr.updateBy =
-					 * result.getInt(7);
-					 */
-					// System.out.println(div.createDate.);
+					terr.addLine1 = result.getString(3);
+					terr.addLine2 = result.getString(4);
+					terr.addLine3 = result.getString(5);
+					terr.city = result.getString(6);
+					terr.state = result.getString(7);
+					// If phone number is null then it gives null pointer
+					// exception here.
+					// So it check that the phone number is null or not
+					if (result.getArray(8) != null)
+						terr.phones = (String[]) result.getArray(8).getArray();
+					terr.parentId = result.getInt(9);
+					terr.divId = result.getInt(10);
+
 					territories.add(terr);
 				}
 			} else
@@ -119,7 +137,7 @@ public class Territory {
 	public static Territory getTerritorieById(int id, LoggedInUser loggedInUser)
 			throws Exception {
 
-		Territory territorie = null;
+		Territory territory = null;
 		// TODO check authorization
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
@@ -129,23 +147,30 @@ public class Territory {
 		try {
 			if (con != null) {
 				stmt = con
-						.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
-								+ " updateBy from "
+						.prepareStatement("select id, name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+								+ "(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones,"
+								+ "parentId,divId from "
 								+ schemaName
-								+ ".divisions where id = ?");
+								+ ".territories where id = ?");
 				stmt.setInt(1, id);
 				result = stmt.executeQuery();
 				if (result.next()) {
-					territorie = new Territory();
-					territorie.id = result.getInt(1);
-					territorie.name = result.getString(2);
-					/*
-					 * territorie.description = result.getString(3);
-					 * territorie.createDate = result.getTimestamp(4);
-					 * territorie.createBy = result.getInt(5);
-					 * territorie.updateDate = result.getTime(6);
-					 * territorie.updateBy = result.getInt(7);
-					 */
+					territory = new Territory();
+					territory.id = result.getInt(1);
+					territory.name = result.getString(2);
+					territory.addLine1 = result.getString(3);
+					territory.addLine2 = result.getString(4);
+					territory.addLine3 = result.getString(5);
+					territory.city = result.getString(6);
+					territory.state = result.getString(7);
+					// If phone number is null then it gives null pointer
+					// exception here.
+					// So it check that the phone number is null or not
+					if (result.getArray(8) != null)
+						territory.phones = (String[]) result.getArray(8)
+								.getArray();
+					territory.parentId = result.getInt(9);
+					territory.divId = result.getInt(10);
 				}
 			} else
 				throw new Exception("DB connection is null");
@@ -162,7 +187,7 @@ public class Territory {
 					con.close();
 		}
 
-		return territorie;
+		return territory;
 	}
 
 	/***
@@ -173,7 +198,7 @@ public class Territory {
 	 * @return
 	 * @throws Exception
 	 */
-	public static int addTerritorie(JsonNode node, LoggedInUser loggedInUser)
+	public static int addTerritory(JsonNode node, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Insert data
 		String schemaName = loggedInUser.schemaName;
@@ -240,15 +265,46 @@ public class Territory {
 				throw new SQLException("Add Territorie Failed.");
 
 			ResultSet generatedKeys = stmt.getGeneratedKeys();
-			int territorieId;
+			int territoryId;
 			if (generatedKeys.next())
 				// It gives last inserted Id from territory
-				territorieId = generatedKeys.getInt(1);
+				territoryId = generatedKeys.getInt(1);
 			else
 				throw new SQLException("No ID obtained");
+			
+			if (node.get("personId") != null) {
+				System.out.println("Schema Name : " + schemaName);
+				stmt = con
+						.prepareStatement("INSERT INTO "
+								+ schemaName
+								+ ".userterritorymap"
+								+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
+				stmt.setInt(1, node.get("personId").asInt());
+				stmt.setInt(2, territoryId);
+				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+				stmt.setInt(4, loggedInUser.id);
+				stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+
+				stmt.executeUpdate();
+
+				stmt = con
+						.prepareStatement("INSERT INTO "
+								+ schemaName
+								+ ".userterritorymaphistory"
+								+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+
+				stmt.setInt(1, node.get("personId").asInt());
+				stmt.setInt(2, territoryId);
+				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+				stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+				stmt.setInt(5, loggedInUser.id);
+				stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+
+				stmt.executeUpdate();
+			}
 
 			con.commit();
-			return territorieId;
+			return territoryId;
 
 		} catch (Exception ex) {
 			if (con != null)
@@ -263,19 +319,21 @@ public class Territory {
 
 	/***
 	 * Method allows user to Update Territorie in Database.
+	 * Then insert data in userTerritoryMap and userTerritoryMapHistory
 	 * 
 	 * @param loggedInUser
 	 * @param node
 	 * @return
 	 * @throws Exception
 	 */
-	public static int updateTerritorie(JsonNode node, LoggedInUser loggedInUser)
+	@SuppressWarnings("resource")
+	public static int updateTerritory(JsonNode node, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Update data
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
-		int result;
+		int affectedRow;
 
 		try {
 			// It checks if connection is not null then perform update
@@ -303,7 +361,39 @@ public class Territory {
 				stmt.setArray(7, pharr);
 				stmt.setInt(8, node.get("id").asInt());
 
-				result = stmt.executeUpdate();
+				affectedRow = stmt.executeUpdate();
+	
+				// It Insert data in userTerritoryMap with new userId
+					stmt = con
+							.prepareStatement("INSERT INTO "
+									+ schemaName
+									+ ".userterritorymap"
+									+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
+					
+					stmt.setInt(1, node.get("personId").asInt());
+					stmt.setInt(2, node.get("id").asInt());
+					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+					stmt.setInt(4, loggedInUser.id);
+					stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+					
+					stmt.executeUpdate();
+						
+					// It Insert data in userTerritoryMapHistory with new userId
+					stmt = con
+							.prepareStatement("INSERT INTO "
+									+ schemaName
+									+ ".userterritorymaphistory"
+									+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+
+					stmt.setInt(1, node.get("personId").asInt());
+					stmt.setInt(2, node.get("id").asInt());
+					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+					stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+					stmt.setInt(5, loggedInUser.id);
+					stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+
+					stmt.executeUpdate();
+
 			} else
 				throw new Exception("DB connection is null");
 
@@ -315,7 +405,7 @@ public class Territory {
 				if (!con.isClosed())
 					con.close();
 		}
-		return result;
+		return affectedRow;
 	}
 
 	/***
@@ -327,7 +417,7 @@ public class Territory {
 	 * @Return
 	 */
 
-	public static int deleteTerritorie(int id, LoggedInUser loggedInUser)
+	public static int deleteTerritory(int id, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Delete data
 		String schemaName = loggedInUser.schemaName;
@@ -355,6 +445,72 @@ public class Territory {
 					con.close();
 		}
 		return result;
+	}
+
+	/***
+	 * Method allows user to Delete person from userMapTerritorie and 
+	 * update endDate in userTerritoryMapHistory Tables from Database.
+	 * 
+	 * @param loggedInUser
+	 * @param node
+	 * @throws Exception
+	 * @Return
+	 */
+	@SuppressWarnings("resource")
+	public static int deassociateUser(JsonNode node, LoggedInUser loggedInUser) throws Exception {
+		// TODO: check authorization 
+		String schemaName = loggedInUser.schemaName;
+		Connection con = DBConnectionProvider.getConn();
+		PreparedStatement stmt = null;
+		ResultSet result;
+		int userId = 0;
+		int affectedRow;
+		
+		try
+		{
+			if(con != null)
+			{
+				//It gets userId from userterritorymap table 
+				stmt = con.prepareStatement("SELECT userId from " + schemaName
+						+ ".userterritorymap " + "where terrId = ?");
+				stmt.setInt(1, node.get("id").asInt());
+				result = stmt.executeQuery();
+				if (result.next())
+					userId = result.getInt(1);
+				System.out.println("UserId : " + userId);
+				
+				// It delete entry of deassociate person from userTerritoryMap table .
+				stmt = con.prepareStatement("DELETE from "+ schemaName +".userterritorymap "
+						+ "where userId = ? AND terrId = ?");
+				stmt.setInt(1, userId);
+				stmt.setInt(2,node.get("id").asInt());
+				affectedRow = stmt.executeUpdate();
+				System.out.println("affectedRow : " + affectedRow);
+				
+				// It update endDate of deassociate person in userTerritoryMapHistory table  .
+				stmt = con
+						.prepareStatement("UPDATE "
+								+ schemaName
+								+ ".userterritorymaphistory SET endDate = ? WHERE userId = ? AND terrId = ?");
+			    stmt.setTimestamp(1, new Timestamp((new Date()).getTime()));
+			    stmt.setInt(2, userId);
+			    stmt.setInt(3, node.get("id").asInt());
+			    stmt.executeUpdate();
+				
+			}
+			else
+				throw new Exception("DB connection is null");
+		}
+		finally {
+
+			if (stmt != null)
+				if (!stmt.isClosed())
+					stmt.close();
+			if (con != null)
+				if (!con.isClosed())
+					con.close();
+		}
+		return affectedRow;
 	}
 
 }

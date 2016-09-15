@@ -13,11 +13,14 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import com.brewconsulting.DB.masters.Division;
+import org.postgresql.util.PSQLException;
+
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.DB.masters.Territory;
+//import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,16 +43,16 @@ public class Territories {
 		Response resp = null;
 
 		try {
-
+			resp = Response.ok(mapper.writeValueAsString(Territory.getAllTerritories((LoggedInUser)crc.getProperty("userObject"))) ).build();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
 		}
 		return resp;
 	}
 
 	/***
-	 * get a particular territory
+	 * get a particular territorie
 	 * 
 	 * @param id
 	 * @param crc
@@ -62,9 +65,13 @@ public class Territories {
 	public Response territories(@PathParam("id") Integer id,@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
-
+			Territory terr = Territory.getTerritorieById(id, (LoggedInUser)crc.getProperty("userObject"));
+			if (terr == null){
+//				resp = Response.noContent().entity(new NoDataFound("This Territorie does not exist").getJsonString()).build();
+			}
+			else resp = Response.ok(mapper.writeValueAsString(terr)).build();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -85,8 +92,8 @@ public class Territories {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int territorieId  = Territory.addTerritorie(node, (LoggedInUser) crc.getProperty("userObject"));			
-			resp = Response.ok("{\"id\":"+territorieId+"}").build();
+			int territoryId  = Territory.addTerritory(node, (LoggedInUser) crc.getProperty("userObject"));			
+			resp = Response.ok("{\"id\":"+territoryId+"}").build();
 
 		} 
 		catch (IOException e) 
@@ -119,7 +126,7 @@ public class Territories {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int affectedRow = 	Territory.updateTerritorie(node,  (LoggedInUser) crc.getProperty("userObject"));
+			int affectedRow = 	Territory.updateTerritory(node,  (LoggedInUser) crc.getProperty("userObject"));
 			if(affectedRow >0)
 				resp = Response.ok().build();
 			else
@@ -151,7 +158,64 @@ public class Territories {
 	public Response deleteTerri(@PathParam("id") Integer id,@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
+			int affectedRow = Territory.deleteTerritory(id, (LoggedInUser) crc.getProperty("userObject"));
+			if(affectedRow > 0)
+				resp = Response.ok().build();
+			else
+				// If no rows affected in database. It gives server status 204(NO_CONTENT).
+				resp = Response.status(204).build();
 
+		}
+		catch(PSQLException ex)
+		{
+			resp = Response.status(409).entity("This id is already Use in another table as foreign key").type(MediaType.TEXT_PLAIN).build();
+			ex.printStackTrace();
+		}
+		catch (Exception e) {
+			if (resp == null)
+				resp = Response.serverError().entity(e.getMessage()).build();
+				e.printStackTrace();
+		}
+		return resp;
+	}
+	
+	/***
+	 * delete from userTerritoryMap.
+	 * Update endDate in userTerritoryMapHistory
+	 * 
+	 * @param id
+	 * @param crc
+	 * @return
+	 */
+	
+	@POST
+	@Path("/deassociate")
+	@Produces("application/json")
+	@Secured
+	@Consumes("application/json")
+	public Response deassociateUser(InputStream input,@Context ContainerRequestContext crc) {
+		Response resp = null;
+		try {
+			JsonNode node = mapper.readTree(input);
+			int affectedRow  = Territory.deassociateUser(node, (LoggedInUser) crc.getProperty("userObject"));
+			if(affectedRow > 0)
+				resp = Response.ok().build();
+			else
+				// If no rows affected in database. It gives server status 204(NO_CONTENT).
+				resp = Response.status(204).build();
+		} 
+		catch(PSQLException ex)
+		{
+			resp = Response.status(409).entity("This id is already Use in another table as foreign key").type(MediaType.TEXT_PLAIN).build();
+			ex.printStackTrace();
+		}
+		catch (IOException e) 
+		{
+			if (resp == null)
+			{
+				resp = Response.serverError().entity(e.getMessage()).build();
+				e.printStackTrace();
+			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
