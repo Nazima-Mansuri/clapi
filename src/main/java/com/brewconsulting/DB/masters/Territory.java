@@ -11,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.jws.soap.SOAPBinding.Use;
+
+import com.brewconsulting.DB.User;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -60,7 +63,7 @@ public class Territory {
 
 	@JsonProperty("createBy")
 	public int createBy;
-
+	
 	// make the default constructor visible to package only.
 	public Territory() {
 
@@ -84,14 +87,95 @@ public class Territory {
 		ResultSet result = null;
 		try {
 			if (con != null) {
-				stmt = con
-						.prepareStatement("select id, name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+
+				// In this query e1 type field gives Parent field data and 
+				//e2 type field gives Child field data. 
+/*				stmt = con.prepareStatement("select "
+						+ "e1.id,e1.name,(e1.address).addLine1 addLine1,"
+						+ "(e1.address).addLine2 addLine2,"
+						+ "(e1.address).addLine3 addLine3,(e1.address).city city,(e1.address).state state,"
+						+ "(e1.address).phone phones,"
+						+ "e1.parentid,e1.divid, e2.id,e2.name"
+						+ " from client1.territories e1"
+						+ " inner join client1.territories e2 on e2.parentid = e1.id");*/
+			
+				
+				// This query return all data of table
+				/*stmt = con
+						.prepareStatement("select id,name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
 								+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
 								+ "(address).phone phones,parentId,divId from "
-								+ schemaName + ".territories");
+								+ schemaName + ".territories ORDER BY id DESC");*/
+				
+				// This query return data in json format in one row
+				/*stmt = con.prepareStatement("select row_to_json(row)"
+						+ "from (select u.id,u.name,(u.address).addLine1 addLine1,"
+						+ "urd AS children from client1.territories u "
+						+ " inner join client1.territories urd (id,name)"
+						+ " on urd.parentid = u.id) row");*/
+				
+				// We Need Data in This Type of Format When parent has child
+				/** {
+				 *  	{ text:'Root',
+                                TID:1,
+                                data:{ TID:1,
+                                          personId:1,
+                                          personName:'Test1',
+                                          ParentID:0,
+                                          name:'Root',
+                                          addLine1 :'address1 of Root',
+                                          addLine2 :'address2 of Root',
+                                          addLine3 :'address3 of Root',
+                                          city        :'Surat',
+                                          state    :'Gujarat',
+                                          contactnumber : ['8878785875','8787874875','7777777777','5748789887','8787878589'] ,                                      },
+                                   children:[{ 
+                                               text:'Root1_Parent1',
+                                               data:{
+                                                     TID:4,
+                                                     apersonID:2,
+                                                     personName:'Associate1',
+                                                     ParentID:0,
+                                                     name:'Root1_Parent1',
+                                                     addLine1 :'address1 of Root',
+                                                     addLine2 :'address2 of Root',
+                                                     addLine3 :'address3 of Root',
+                                                     city        :'Surat',
+                                                     state    :'Gujarat',
+                                                     contactnumber : ['8878785875','8787874875','7777777777','5748789887','8787878589'],
+                                                    },
+                                                    
+                                                    N number of child possible here.
+                                            }]
+                             }
+                         }
+				 */
+				
+				// If Parent has No child Then data 
+			/**
+			 * {
+				   	{ text:'Root',
+                                TID:1,
+                                data:{ TID:1,
+                                          personId:1,
+                                          personName:'Test1',
+                                          ParentID:0,
+                                          name:'Root',
+                                          addLine1 :'address1 of Root',
+                                          addLine2 :'address2 of Root',
+                                          addLine3 :'address3 of Root',
+                                          city        :'Surat',
+                                          state    :'Gujarat',
+                                          contactnumber : ['8878785875','8787874875','7777777777','5748789887','8787878589'] ,                                      },
+                     }
+                 }                 
+			 */
 				result = stmt.executeQuery();
+
 				while (result.next()) {
+
 					Territory terr = new Territory();
+					
 					terr.id = result.getInt(1);
 					terr.name = result.getString(2);
 					terr.addLine1 = result.getString(3);
@@ -99,14 +183,15 @@ public class Territory {
 					terr.addLine3 = result.getString(5);
 					terr.city = result.getString(6);
 					terr.state = result.getString(7);
-					// If phone number is null then it gives null pointer
-					// exception here.
+					// If phone number is null then it gives null pointer exception here.
 					// So it check that the phone number is null or not
 					if (result.getArray(8) != null)
-						terr.phones = (String[]) result.getArray(8).getArray();
-					terr.parentId = result.getInt(9);
-					terr.divId = result.getInt(10);
-
+					terr.phones = (String[]) result.getArray(8).getArray();
+					
+					terr.parentId = result.getInt(3);
+					terr.addLine1 = result.getString(4);
+//					terr.divId = result.getInt(10);
+					
 					territories.add(terr);
 				}
 			} else
@@ -146,13 +231,17 @@ public class Territory {
 
 		try {
 			if (con != null) {
+
 				stmt = con
 						.prepareStatement("select id, name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
-								+ "(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones,"
+								+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
+								+ "(address).phone phones,"
 								+ "parentId,divId from "
 								+ schemaName
 								+ ".territories where id = ?");
+
 				stmt.setInt(1, id);
+
 				result = stmt.executeQuery();
 				if (result.next()) {
 					territory = new Territory();
@@ -163,8 +252,7 @@ public class Territory {
 					territory.addLine3 = result.getString(5);
 					territory.city = result.getString(6);
 					territory.state = result.getString(7);
-					// If phone number is null then it gives null pointer
-					// exception here.
+					// If phone number is null then it gives null pointer exception here.
 					// So it check that the phone number is null or not
 					if (result.getArray(8) != null)
 						territory.phones = (String[]) result.getArray(8)
@@ -204,7 +292,8 @@ public class Territory {
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
-		int result;
+		int affectedRow;
+		ResultSet result = null;
 		try {
 			con.setAutoCommit(false);
 
@@ -225,7 +314,10 @@ public class Territory {
 									+ ".territories(name,parentid,address,divid) values (?,?,ROW(?,?,?,?,?,?),?)",
 							Statement.RETURN_GENERATED_KEYS);
 			stmt.setString(1, node.get("name").asText());
-			stmt.setInt(2, node.get("parentId").asInt());
+			if(node.has("parentId"))
+				stmt.setInt(2, node.get("parentId").asInt());
+			else
+				stmt.setInt(2, 0);
 
 			// It checks that the address1 has value or not
 			if (node.has("addLine1"))
@@ -259,9 +351,9 @@ public class Territory {
 
 			stmt.setInt(9, node.get("divId").asInt());
 
-			result = stmt.executeUpdate();
+			affectedRow = stmt.executeUpdate();
 
-			if (result == 0)
+			if (affectedRow == 0)
 				throw new SQLException("Add Territorie Failed.");
 
 			ResultSet generatedKeys = stmt.getGeneratedKeys();
@@ -271,36 +363,46 @@ public class Territory {
 				territoryId = generatedKeys.getInt(1);
 			else
 				throw new SQLException("No ID obtained");
-			
+
 			if (node.get("personId") != null) {
-				System.out.println("Schema Name : " + schemaName);
-				stmt = con
-						.prepareStatement("INSERT INTO "
-								+ schemaName
-								+ ".userterritorymap"
-								+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
-				stmt.setInt(1, node.get("personId").asInt());
-				stmt.setInt(2, territoryId);
-				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-				stmt.setInt(4, loggedInUser.id);
-				stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
-
-				stmt.executeUpdate();
-
-				stmt = con
-						.prepareStatement("INSERT INTO "
-								+ schemaName
-								+ ".userterritorymaphistory"
-								+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+				stmt = con.prepareStatement("SELECT userId from " + schemaName
+						+ ".userterritorymap WHERE userId = ?");
 
 				stmt.setInt(1, node.get("personId").asInt());
-				stmt.setInt(2, territoryId);
-				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-				stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-				stmt.setInt(5, loggedInUser.id);
-				stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+				result = stmt.executeQuery();
 
-				stmt.executeUpdate();
+				if (!result.next()) {
+					System.out.println("In If Method..");
+					stmt = con
+							.prepareStatement("INSERT INTO "
+									+ schemaName
+									+ ".userterritorymap"
+									+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
+					stmt.setInt(1, node.get("personId").asInt());
+					stmt.setInt(2, territoryId);
+					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+					stmt.setInt(4, loggedInUser.id);
+					stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+
+					stmt.executeUpdate();
+
+					stmt = con
+							.prepareStatement("INSERT INTO "
+									+ schemaName
+									+ ".userterritorymaphistory"
+									+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+
+					stmt.setInt(1, node.get("personId").asInt());
+					stmt.setInt(2, territoryId);
+					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+					stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+					stmt.setInt(5, loggedInUser.id);
+					stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+
+					stmt.executeUpdate();
+				} else {
+					System.out.println("In Else Method..");
+				}
 			}
 
 			con.commit();
@@ -318,8 +420,8 @@ public class Territory {
 	}
 
 	/***
-	 * Method allows user to Update Territorie in Database.
-	 * Then insert data in userTerritoryMap and userTerritoryMapHistory
+	 * Method allows user to Update Territorie in Database. Then insert data in
+	 * userTerritoryMap and userTerritoryMapHistory
 	 * 
 	 * @param loggedInUser
 	 * @param node
@@ -334,8 +436,10 @@ public class Territory {
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
 		int affectedRow;
+		ResultSet result;
 
 		try {
+			con.setAutoCommit(false);
 			// It checks if connection is not null then perform update
 			// operation.
 			String[] phoneArr = new String[node.withArray("phones").size()];
@@ -347,65 +451,72 @@ public class Territory {
 
 			Array pharr = con.createArrayOf("text", phoneArr);
 
-			if (con != null) {
-				stmt = con
-						.prepareStatement("UPDATE "
-								+ schemaName
-								+ ".territories SET name = ?,address =ROW(?,?,?,?,?,?) WHERE id = ?");
-				stmt.setString(1, node.get("name").asText());
-				stmt.setString(2, node.get("addLine1").asText());
-				stmt.setString(3, node.get("addLine2").asText());
-				stmt.setString(4, node.get("addLine3").asText());
-				stmt.setString(5, node.get("city").asText());
-				stmt.setString(6, node.get("state").asText());
-				stmt.setArray(7, pharr);
-				stmt.setInt(8, node.get("id").asInt());
+			stmt = con
+					.prepareStatement("UPDATE "
+							+ schemaName
+							+ ".territories SET name = ?,address =ROW(?,?,?,?,?,?) WHERE id = ?");
+			stmt.setString(1, node.get("name").asText());
+			stmt.setString(2, node.get("addLine1").asText());
+			stmt.setString(3, node.get("addLine2").asText());
+			stmt.setString(4, node.get("addLine3").asText());
+			stmt.setString(5, node.get("city").asText());
+			stmt.setString(6, node.get("state").asText());
+			stmt.setArray(7, pharr);
+			stmt.setInt(8, node.get("id").asInt());
 
-				affectedRow = stmt.executeUpdate();
-	
+			affectedRow = stmt.executeUpdate();
+
+			stmt = con.prepareStatement("SELECT count(*) as Resultcount from "
+					+ schemaName + ".userterritorymap WHERE userId = ?");
+			stmt.setInt(1, node.get("personId").asInt());
+			result = stmt.executeQuery();
+
+			if (!result.next()) {
+				System.out.println("If Method ");
 				// It Insert data in userTerritoryMap with new userId
-					stmt = con
-							.prepareStatement("INSERT INTO "
-									+ schemaName
-									+ ".userterritorymap"
-									+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
-					
-					stmt.setInt(1, node.get("personId").asInt());
-					stmt.setInt(2, node.get("id").asInt());
-					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-					stmt.setInt(4, loggedInUser.id);
-					stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
-					
-					stmt.executeUpdate();
-						
-					// It Insert data in userTerritoryMapHistory with new userId
-					stmt = con
-							.prepareStatement("INSERT INTO "
-									+ schemaName
-									+ ".userterritorymaphistory"
-									+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+				stmt = con
+						.prepareStatement("INSERT INTO "
+								+ schemaName
+								+ ".userterritorymap"
+								+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
 
-					stmt.setInt(1, node.get("personId").asInt());
-					stmt.setInt(2, node.get("id").asInt());
-					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-					stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-					stmt.setInt(5, loggedInUser.id);
-					stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+				stmt.setInt(1, node.get("personId").asInt());
+				stmt.setInt(2, node.get("id").asInt());
+				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+				stmt.setInt(4, loggedInUser.id);
+				stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
 
-					stmt.executeUpdate();
+				stmt.executeUpdate();
 
-			} else
-				throw new Exception("DB connection is null");
+				// It Insert data in userTerritoryMapHistory with new userId
+				stmt = con
+						.prepareStatement("INSERT INTO "
+								+ schemaName
+								+ ".userterritorymaphistory"
+								+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
 
-		} finally {
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
+				stmt.setInt(1, node.get("personId").asInt());
+				stmt.setInt(2, node.get("id").asInt());
+				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+				stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+				stmt.setInt(5, loggedInUser.id);
+				stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+
+				stmt.executeUpdate();
+			}
+
+			con.commit();
+			return affectedRow;
+		} catch (Exception ex) {
 			if (con != null)
-				if (!con.isClosed())
-					con.close();
+				con.rollback();
+			throw ex;
+		} finally {
+			con.setAutoCommit(false);
+			if (con != null)
+				con.close();
 		}
-		return affectedRow;
+
 	}
 
 	/***
@@ -448,8 +559,8 @@ public class Territory {
 	}
 
 	/***
-	 * Method allows user to Delete person from userMapTerritorie and 
-	 * update endDate in userTerritoryMapHistory Tables from Database.
+	 * Method allows user to Delete person from userMapTerritorie and update
+	 * endDate in userTerritoryMapHistory Tables from Database.
 	 * 
 	 * @param loggedInUser
 	 * @param node
@@ -457,20 +568,19 @@ public class Territory {
 	 * @Return
 	 */
 	@SuppressWarnings("resource")
-	public static int deassociateUser(JsonNode node, LoggedInUser loggedInUser) throws Exception {
-		// TODO: check authorization 
+	public static int deassociateUser(JsonNode node, LoggedInUser loggedInUser)
+			throws Exception {
+		// TODO: check authorization
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
 		ResultSet result;
 		int userId = 0;
 		int affectedRow;
-		
-		try
-		{
-			if(con != null)
-			{
-				//It gets userId from userterritorymap table 
+
+		try {
+			if (con != null) {
+				// It gets userId from userterritorymap table
 				stmt = con.prepareStatement("SELECT userId from " + schemaName
 						+ ".userterritorymap " + "where terrId = ?");
 				stmt.setInt(1, node.get("id").asInt());
@@ -478,30 +588,31 @@ public class Territory {
 				if (result.next())
 					userId = result.getInt(1);
 				System.out.println("UserId : " + userId);
-				
-				// It delete entry of deassociate person from userTerritoryMap table .
-				stmt = con.prepareStatement("DELETE from "+ schemaName +".userterritorymap "
+
+				// It delete entry of deassociate person from userTerritoryMap
+				// table .
+				stmt = con.prepareStatement("DELETE from " + schemaName
+						+ ".userterritorymap "
 						+ "where userId = ? AND terrId = ?");
 				stmt.setInt(1, userId);
-				stmt.setInt(2,node.get("id").asInt());
+				stmt.setInt(2, node.get("id").asInt());
 				affectedRow = stmt.executeUpdate();
 				System.out.println("affectedRow : " + affectedRow);
-				
-				// It update endDate of deassociate person in userTerritoryMapHistory table  .
+
+				// It update endDate of deassociate person in
+				// userTerritoryMapHistory table .
 				stmt = con
 						.prepareStatement("UPDATE "
 								+ schemaName
 								+ ".userterritorymaphistory SET endDate = ? WHERE userId = ? AND terrId = ?");
-			    stmt.setTimestamp(1, new Timestamp((new Date()).getTime()));
-			    stmt.setInt(2, userId);
-			    stmt.setInt(3, node.get("id").asInt());
-			    stmt.executeUpdate();
-				
-			}
-			else
+				stmt.setTimestamp(1, new Timestamp((new Date()).getTime()));
+				stmt.setInt(2, userId);
+				stmt.setInt(3, node.get("id").asInt());
+				stmt.executeUpdate();
+
+			} else
 				throw new Exception("DB connection is null");
-		}
-		finally {
+		} finally {
 
 			if (stmt != null)
 				if (!stmt.isClosed())
@@ -512,5 +623,6 @@ public class Territory {
 		}
 		return affectedRow;
 	}
+
 
 }

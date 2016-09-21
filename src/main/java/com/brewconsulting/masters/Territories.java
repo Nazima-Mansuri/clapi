@@ -18,8 +18,11 @@ import javax.ws.rs.core.Response;
 
 import org.postgresql.util.PSQLException;
 
+import com.brewconsulting.DB.masters.DeAssociateUser;
+import com.brewconsulting.DB.masters.History;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.DB.masters.Territory;
+import com.brewconsulting.exceptions.NoDataFound;
 //import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -67,7 +70,7 @@ public class Territories {
 		try {
 			Territory terr = Territory.getTerritorieById(id, (LoggedInUser)crc.getProperty("userObject"));
 			if (terr == null){
-//				resp = Response.noContent().entity(new NoDataFound("This Territorie does not exist").getJsonString()).build();
+				resp = Response.noContent().entity(new NoDataFound("This Territory does not exist").getJsonString()).build();
 			}
 			else resp = Response.ok(mapper.writeValueAsString(terr)).build();
 		} catch (Exception e) {
@@ -92,9 +95,11 @@ public class Territories {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int territoryId  = Territory.addTerritory(node, (LoggedInUser) crc.getProperty("userObject"));			
-			resp = Response.ok("{\"id\":"+territoryId+"}").build();
-
+			int territoryId  = Territory.addTerritory(node, (LoggedInUser) crc.getProperty("userObject"));	
+			if(territoryId != 0)
+				resp = Response.ok("{\"id\":"+territoryId+"}").build();
+			else
+				resp = Response.noContent().entity(new NoDataFound("Unable to Insert Territory").getJsonString()).build();
 		} 
 		catch (IOException e) 
 		{
@@ -130,7 +135,7 @@ public class Territories {
 			if(affectedRow >0)
 				resp = Response.ok().build();
 			else
-				resp = Response.status(204).build();
+				resp = Response.noContent().entity(new NoDataFound("Unable to update Territory").getJsonString()).build();
 		}
 		catch (IOException e) 
 		{
@@ -163,7 +168,7 @@ public class Territories {
 				resp = Response.ok().build();
 			else
 				// If no rows affected in database. It gives server status 204(NO_CONTENT).
-				resp = Response.status(204).build();
+				resp = Response.noContent().entity(new NoDataFound("This Territory Id does not exist").getJsonString()).build();
 
 		}
 		catch(PSQLException ex)
@@ -202,13 +207,8 @@ public class Territories {
 				resp = Response.ok().build();
 			else
 				// If no rows affected in database. It gives server status 204(NO_CONTENT).
-				resp = Response.status(204).build();
+				resp = Response.noContent().entity(new NoDataFound("This Territory Id does not exist").getJsonString()).build();
 		} 
-		catch(PSQLException ex)
-		{
-			resp = Response.status(409).entity("This id is already Use in another table as foreign key").type(MediaType.TEXT_PLAIN).build();
-			ex.printStackTrace();
-		}
 		catch (IOException e) 
 		{
 			if (resp == null)
@@ -218,6 +218,52 @@ public class Territories {
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return resp;
+	}
+	
+	/***
+	 * Produces a History of Territory
+	 * 
+	 * @param crc
+	 * @return
+	 */
+
+	@GET
+	@Produces("application/json")
+	@Secured
+	@Path("history")
+	public Response histories(@Context ContainerRequestContext crc) {
+		Response resp = null;
+
+		try {
+			resp = Response.ok(mapper.writeValueAsString(History.getAllHistory((LoggedInUser)crc.getProperty("userObject"))) ).build();
+		} catch (Exception e) {
+			resp = Response.serverError().entity(e.getMessage()).build();
+			e.printStackTrace();
+		}
+		return resp;
+	}
+	
+	/***
+	 * Produces a List of Users which are not associate to any Territory.
+	 * 
+	 * @param crc
+	 * @return
+	 */
+
+	@GET
+	@Produces("application/json")
+	@Secured
+	@Path("deassociateuser")
+	public Response daassUser(@Context ContainerRequestContext crc) {
+		Response resp = null;
+
+		try {
+			resp = Response.ok(mapper.writeValueAsString(DeAssociateUser.getDeassociateUser((LoggedInUser)crc.getProperty("userObject"))) ).build();
+		} catch (Exception e) {
+			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
 		}
 		return resp;
