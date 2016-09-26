@@ -7,18 +7,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
-import javax.naming.NamingException;
-
+import com.amazonaws.services.dynamodbv2.xspec.NULL;
 import com.brewconsulting.DB.common.DBConnectionProvider;
+import com.brewconsulting.DB.masters.DeAssociateUser;
+import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.exceptions.RequiredDataMissing;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class UserProfile extends User {
 
+public class UserProfile extends User {
+	
 	@JsonProperty("addLine1")
 	public String addLine1;
 
@@ -78,18 +86,23 @@ public class UserProfile extends User {
 	}
 
 	UserProfile(int id) {
+
 		super.id = id;
 	}
 
-	public static int createUser(JsonNode node, JsonNode loggedInUser) throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
+	public static int createUser(JsonNode node, JsonNode loggedInUser)
+			throws ClassNotFoundException, SQLException, RequiredDataMissing {
 
 		// TODO: check if the user has rights to perform this action.
 
 		Connection con = DBConnectionProvider.getConn();
 		try {
 			con.setAutoCommit(false);
-			PreparedStatement stmt = con.prepareStatement("insert into master.users (firstname, lastname, "
-					+ "clientId, username, password) values (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement stmt = con
+					.prepareStatement(
+							"insert into master.users (firstname, lastname, "
+									+ "clientId, username, password) values (?,?,?,?,?)",
+							Statement.RETURN_GENERATED_KEYS);
 			stmt.setString(1, node.get("firstName").asText());
 			stmt.setString(2, node.get("lastName").asText());
 			stmt.setInt(3, node.get("clientId").asInt());
@@ -112,7 +125,9 @@ public class UserProfile extends User {
 			Array pharr = con.createArrayOf("text", arr);
 
 			stmt = con
-					.prepareStatement("insert into " + loggedInUser.get("schemaName").asText() + ".userProfile(userId,"
+					.prepareStatement("insert into "
+							+ loggedInUser.get("schemaName").asText()
+							+ ".userProfile(userId,"
 							+ "address, designation, divId, empNumber, createBy, updateDate, updateBy) values (?, "
 							+ "ROW(?,?,?,?,?,?), ?, ?, ?, ?,?,?)");
 			stmt.setInt(1, userid);
@@ -137,8 +152,8 @@ public class UserProfile extends User {
 
 				while (it.hasNext()) {
 					JsonNode role = it.next();
-					stmt = con.prepareStatement(
-							"insert into master.userRoleMap (userId, roleId, effectDate,createBy) values"
+					stmt = con
+							.prepareStatement("insert into master.userRoleMap (userId, roleId, effectDate,createBy) values"
 									+ "(?,?,?,?)");
 					stmt.setInt(1, userid);
 					stmt.setInt(2, role.get("roleid").asInt());
@@ -146,7 +161,7 @@ public class UserProfile extends User {
 					stmt.setInt(4, 1);
 					stmt.executeUpdate();
 				}
-			}else
+			} else
 				throw new RequiredDataMissing("Role is required");
 			con.commit();
 			return userid;
@@ -160,5 +175,53 @@ public class UserProfile extends User {
 				con.close();
 		}
 
+	}
+
+	/***
+	 * Method allows user to get list of username which are not associate to any
+	 * Territory.
+	 * 
+	 * @param loggedInUser
+	 * @throws Exception
+	 * @Return
+	 */
+
+	public static List<UserProfile> getDeassociateUser(LoggedInUser loggedInUser)
+			throws Exception {
+		// TODO: check authorization of the user to see this data
+		String schemaName = loggedInUser.schemaName;
+		Connection con = DBConnectionProvider.getConn();
+		PreparedStatement stmt = null;
+		ResultSet result = null;
+		ArrayList<UserProfile> userList = new ArrayList<UserProfile>();
+
+		try {
+
+			stmt = con.prepareStatement("select u.id,u.username,"
+					+ "(up.address).city city from master.users u "
+					+ "join client1.userprofile up on up.userid=u.id "
+					+ "WHERE u.id not in(select userid from " + schemaName
+					+ ".userterritorymap)");
+
+			result = stmt.executeQuery();
+			while (result.next()) {
+				UserProfile user = new UserProfile();
+				user.id = result.getInt(1);
+				user.username = result.getString(2);
+				user.city = result.getString(3);
+				userList.add(user);
+			}
+		} finally {
+			if (result != null)
+				if (!result.isClosed())
+					result.close();
+			if (stmt != null)
+				if (!stmt.isClosed())
+					stmt.close();
+			if (con != null)
+				if (!con.isClosed())
+					con.close();
+		}
+		return userList;
 	}
 }

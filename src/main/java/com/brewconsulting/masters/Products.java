@@ -16,6 +16,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.postgresql.util.PSQLException;
 
 import com.brewconsulting.DB.masters.Division;
@@ -29,29 +31,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Path("products")
 public class Products {
 	ObjectMapper mapper = new ObjectMapper();
+
 	/***
 	 * Produces a list of all products
+	 * 
+	 * @param crc
 	 * @return
 	 */
-	
+
 	@GET
 	@Produces("application/json")
 	@Secured
-	public Response products( @Context ContainerRequestContext crc){
+	public Response products(@Context ContainerRequestContext crc) {
 		Response resp = null;
-		
+
 		try {
-			resp = Response.ok(mapper.writeValueAsString(Product.getAllProducts((LoggedInUser)crc.getProperty("userObject"))) ).build();
+			resp = Response.ok(
+					mapper.writeValueAsString(Product
+							.getAllProducts((LoggedInUser) crc
+									.getProperty("userObject")))).build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
-		} 
-		
+		}
+
 		return resp;
 	}
-	
+
 	/***
 	 * get a particular product
+	 * 
 	 * @param id
 	 * @param crc
 	 * @return
@@ -60,95 +69,146 @@ public class Products {
 	@Produces("application/json")
 	@Secured
 	@Path("{id}")
-	public Response products(@PathParam("id") Integer id,  @Context ContainerRequestContext crc){
+	public Response products(@PathParam("id") Integer id,
+			@Context ContainerRequestContext crc) {
 		Response resp = null;
-		try{
-			Product product = Product.getProductById(id, (LoggedInUser)crc.getProperty("userObject"));
-			if (product == null){
-				resp = Response.noContent().entity(new NoDataFound("This product does not exist").getJsonString()).build();
-			}
-			else resp = Response.ok(mapper.writeValueAsString(product)).build();
-		}catch (Exception e) {
+		try {
+			Product product = Product.getProductById(id,
+					(LoggedInUser) crc.getProperty("userObject"));
+			if (product == null) {
+				resp = Response
+						.noContent()
+						.entity(new NoDataFound("This product does not exist")
+								.getJsonString()).build();
+			} else
+				resp = Response.ok(mapper.writeValueAsString(product)).build();
+		} catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
-		} 
+		}
 		return resp;
 	}
-	
-	/*** add a new product
+
+	/***
+	 * Add new Product
 	 * 
-	 * @param input
+	 * @param fileInputStream
+	 * @param fileFormDataContentDisposition
+	 * @param name
+	 * @param description
+	 * @param division
+	 * @param isActive
 	 * @param crc
 	 * @return
 	 */
 	@POST
-	@Produces("application/json")
 	@Secured
-	@Consumes("application/json")
-	public Response createPro(InputStream input,  @Context ContainerRequestContext crc)
-	{
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	public Response createPro(
+			@FormDataParam("uploadFile") InputStream fileInputStream,
+			@FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
+			@FormDataParam("name") String name,
+			@FormDataParam("description") String description,
+			@FormDataParam("division") int division,
+			@FormDataParam("isActive") Boolean isActive,
+			@Context ContainerRequestContext crc) {
+
 		Response resp = null;
-		try 
-		{
-			JsonNode node = mapper.readTree(input);
-			int productId  = Product.addProduct(node, (LoggedInUser) crc.getProperty("userObject"));			
-			resp = Response.ok("{\"id\":"+productId+"}").build();
-		}
-		catch (IOException e) 
-		{
-			if (resp == null)
-			{
+		// local variables
+		String fileName = null;
+		String uploadFilePath = null;
+		ObjectMapper mapper = new ObjectMapper();
+
+		try {
+
+			if (fileFormDataContentDisposition != null) {
+				fileName = System.currentTimeMillis()+"_"+fileFormDataContentDisposition.getFileName();
+				// This method is used to store image in AWS bucket.
+				uploadFilePath = Product.writeToFile(fileInputStream, fileName);
+			} else {
+				uploadFilePath = null;
+			}
+
+			int productId = Product.addProduct(name, uploadFilePath,
+					description, division, isActive,
+					(LoggedInUser) crc.getProperty("userObject"));
+			
+			if(productId != 0)
+				resp = Response.ok("{\"id\":"+productId+"}").build();
+			else
+				resp = Response.noContent().entity(new NoDataFound("Unable to Insert Product").getJsonString()).build();
+
+		} catch (IOException e) {
+			if (resp == null) {
 				resp = Response.serverError().entity(e.getMessage()).build();
 				e.printStackTrace();
 			}
-		}
-		catch (Exception e) 
-		{
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return resp;
 	}
-	
+
 	/***
-	 * updates a product. the id of the product is passed in input json
+	 * Updates a Product. Id of product is passedin input.
 	 * 
-	 * @param input
+	 * @param fileInputStream
+	 * @param fileFormDataContentDisposition
+	 * @param name
+	 * @param description
+	 * @param division
+	 * @param isActive
+	 * @param id
 	 * @param crc
 	 * @return
 	 */
-	
+
 	@PUT
-	@Produces("application/json")
 	@Secured
-	@Consumes("application/json")
-	public Response updatePro(InputStream input,  @Context ContainerRequestContext crc){
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	public Response updatePro(
+			@FormDataParam("uploadFile") InputStream fileInputStream,
+			@FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
+			@FormDataParam("name") String name,
+			@FormDataParam("description") String description,
+			@FormDataParam("division") int division,
+			@FormDataParam("isActive") Boolean isActive,
+			@FormDataParam("id") int id, @Context ContainerRequestContext crc) {
+		
 		Response resp = null;
-		try 
-		{
-			JsonNode node = mapper.readTree(input);
-			int affectedRow = 	Product.updateProduct(node,  (LoggedInUser) crc.getProperty("userObject"));
-			if(affectedRow >0)
+		String fileName = null;
+		String uploadFilePath = null;
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+
+			if (fileFormDataContentDisposition != null) {
+				fileName = System.currentTimeMillis()+"_"+fileFormDataContentDisposition.getFileName();
+				// This method is used to store image in AWS bucket.
+				uploadFilePath = Product.writeToFile(fileInputStream, fileName);
+			} else {
+				uploadFilePath = null;
+			}
+			
+			int affectedRow = Product.updateProduct(name, uploadFilePath,
+					description, division, isActive, id,(LoggedInUser) crc.getProperty("userObject"));
+			if (affectedRow > 0)
 				resp = Response.ok().build();
 			else
 				resp = Response.status(204).build();
-		}
-		catch (IOException e) 
-		{
+		} catch (IOException e) {
 			if (resp == null)
 				resp = Response.serverError().entity(e.getMessage()).build();
-				e.printStackTrace();
-		}
-		catch (Exception e) 
-		{
+			e.printStackTrace();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return resp;
 	}
-	
+
 	/***
-	 * delete a product.
+	 * Delete a Product
 	 * 
 	 * @param id
 	 * @param crc
@@ -158,27 +218,28 @@ public class Products {
 	@Produces("application/json")
 	@Secured
 	@Path("{id}")
-	public Response deletePro(@PathParam("id") Integer id,  @Context ContainerRequestContext crc){
+	public Response deletePro(@PathParam("id") Integer id,
+			@Context ContainerRequestContext crc) {
 		Response resp = null;
-		try 
-		{
-			int affectedRow = Product.deleteProduct(id, (LoggedInUser) crc.getProperty("userObject"));
-			if(affectedRow > 0)
+		try {
+			int affectedRow = Product.deleteProduct(id,
+					(LoggedInUser) crc.getProperty("userObject"));
+			if (affectedRow > 0)
 				resp = Response.ok().build();
 			else
-				// If no rows affected in database. It gives server status 204(NO_CONTENT).
+				// If no rows affected in database. It gives server status
+				// 204(NO_CONTENT).
 				resp = Response.status(204).build();
 
-		}
-		catch(PSQLException ex)
-		{
-			resp = Response.status(409).entity("This id is already Use in another table as foreign key").type(MediaType.TEXT_PLAIN).build();
+		} catch (PSQLException ex) {
+			resp = Response
+					.status(409)
+					.entity("This id is already Use in another table as foreign key")
+					.type(MediaType.TEXT_PLAIN).build();
 			ex.printStackTrace();
-		}
-		catch (Exception e) 
-		{
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
-		    e.printStackTrace();	
+			e.printStackTrace();
 		}
 		return resp;
 	}

@@ -1,5 +1,8 @@
 package com.brewconsulting.DB.masters;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,6 +13,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.glassfish.jersey.media.multipart.FormDataParam;
+
+import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -128,8 +139,7 @@ public class Product {
 				stmt = con
 						.prepareStatement("select id, name,image,description,division,isActive, createDate,"
 								+ "createBy, updateDate,updateBy from "
-								+ schemaName
-								+ ".products where id = ?");
+								+ schemaName + ".products where id = ?");
 				stmt.setInt(1, id);
 				result = stmt.executeQuery();
 				if (result.next()) {
@@ -166,12 +176,17 @@ public class Product {
 	/***
 	 * Method allows user to insert Product in Database.
 	 * 
+	 * @param name
+	 * @param image
+	 * @param description
+	 * @param division
+	 * @param isActive
 	 * @param loggedInUser
-	 * @param node
 	 * @return
 	 * @throws Exception
 	 */
-	public static int addProduct(JsonNode node, LoggedInUser loggedInUser)
+	public static int addProduct(String name, String image, String description,
+			int division, Boolean isActive, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Insert data
 		String schemaName = loggedInUser.schemaName;
@@ -190,34 +205,31 @@ public class Product {
 									+ "createBy,updateDate,updateBy) values (?,?,?,?,?,?,?,?,?)",
 							Statement.RETURN_GENERATED_KEYS);
 
-			stmt.setString(1, node.get("name").asText());
-			
-			if(node.has("image"))
-				stmt.setString(2, node.get("image").asText());
-			else
-				stmt.setString(2, null);
-			
+			stmt.setString(1, name);
+
+			stmt.setString(2, image);
+
 			// It checks that description is empty or not
-			if (node.has("description"))
-				stmt.setString(3, node.get("description").asText());
+			if (description != null)
+				stmt.setString(3, description);
 			else
 				stmt.setString(3, null);
 
-			stmt.setInt(4, node.get("division").asInt());
+			stmt.setInt(4, division);
 
 			// Checks isActive empty or not
-			if (node.has("isActive"))
-				stmt.setBoolean(5, node.get("isActive").asBoolean());
+			if (isActive != null)
+				stmt.setBoolean(5, isActive);
 			else
 				// If isActive empty it set default TRUE
 				stmt.setBoolean(5, true);
-			
+
 			stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-			stmt.setInt(7,loggedInUser.id);
+			stmt.setInt(7, loggedInUser.id);
 			stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
-			stmt.setInt(9,loggedInUser.id);
+			stmt.setInt(9, loggedInUser.id);
 			result = stmt.executeUpdate();
-			
+
 			if (result == 0)
 				throw new SQLException("Add Product Failed.");
 
@@ -246,13 +258,19 @@ public class Product {
 	/***
 	 * Method allows user to Update Product in Database.
 	 * 
+	 * @param name
+	 * @param image
+	 * @param description
+	 * @param division
+	 * @param isActive
+	 * @param id
 	 * @param loggedInUser
-	 * @param node
 	 * @return
 	 * @throws Exception
 	 */
-	public static int updateProduct(JsonNode node, LoggedInUser loggedInUser)
-			throws Exception {
+	public static int updateProduct(String name, String image,
+			String description, int division, Boolean isActive, int id,
+			LoggedInUser loggedInUser) throws Exception {
 		// TODO: check authorization of the user to Update data
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
@@ -265,18 +283,27 @@ public class Product {
 								+ schemaName
 								+ ".products SET name = ?,image = ?,description = ?,division = ?,isActive = ?"
 								+ ",updateDate = ?, updateBy = ? WHERE id = ?");
-				stmt.setString(1, node.get("name").asText());
-				if(node.has("image"))
-					stmt.setString(2, node.get("image").asText());
+				stmt.setString(1, name);
+
+				stmt.setString(2, image);
+
+				// It checks that description is empty or not
+				if (description != null)
+					stmt.setString(3, description);
 				else
-					stmt.setString(2, null);
-				stmt.setString(3, node.get("description").asText());
-				stmt.setInt(4, node.get("division").asInt());
-				stmt.setBoolean(5, node.get("isActive").asBoolean());
+					stmt.setString(3, null);
+
+				stmt.setInt(4, division);
+				// Checks isActive empty or not
+				if (isActive != null)
+					stmt.setBoolean(5, isActive);
+				else
+					// If isActive empty it set default TRUE
+					stmt.setBoolean(5, true);
 				stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-				stmt.setInt(7,loggedInUser.id);
-				stmt.setInt(8, node.get("id").asInt());
-				
+				stmt.setInt(7, loggedInUser.id);
+				stmt.setInt(8, id);
+
 				result = stmt.executeUpdate();
 			} else
 				throw new Exception("DB connection is null");
@@ -330,6 +357,45 @@ public class Product {
 					con.close();
 		}
 		return result;
+	}
+
+	/**
+	 * Method allows to store image in AWS bucket.
+	 * 
+	 * @param inputStream
+	 * @param fileName
+	 * @return
+	 * @throws IOException
+	 */
+
+	// save uploaded file to new location
+	public static String writeToFile(InputStream inputStream, String fileName)
+			throws IOException {
+
+		String existingBucketName = "com.brewconsulting.client1";
+		String finalUrl = null;
+		String amazonFileUploadLocationOriginal = existingBucketName
+				+ "/Product";
+
+		try {
+			AmazonS3 s3Client = new AmazonS3Client(new PropertiesCredentials(
+					Product.class
+							.getResourceAsStream("AwsCredentials.properties")));
+
+			ObjectMetadata objectMetadata = new ObjectMetadata();
+			PutObjectRequest putObjectRequest = new PutObjectRequest(
+					amazonFileUploadLocationOriginal, fileName, inputStream,
+					objectMetadata);
+			PutObjectResult result = s3Client.putObject(putObjectRequest);
+			System.out.println("Etag:" + result.getETag() + "-->" + result);
+
+			finalUrl = "https://s3.amazonaws.com/"
+					+ amazonFileUploadLocationOriginal + "/" + fileName;
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+
+		return finalUrl;
 	}
 
 }
