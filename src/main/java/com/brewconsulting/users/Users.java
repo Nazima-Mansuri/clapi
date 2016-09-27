@@ -17,44 +17,15 @@ import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.User;
 import com.brewconsulting.DB.UserProfile;
-import com.brewconsulting.DB.masters.DeAssociateUser;
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.masters.Territory;
 import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.brewconsulting.login.Secured;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Path("users")
 @Secured
 public class Users {
-	
-	
-	/***
-	 * Produces a list of all Users
-	 * 
-	 * @param crc
-	 * @return
-	 */
-
-	@GET
-	@Produces("application/json")
-	@Secured
-	public Response territories(@Context ContainerRequestContext crc) {
-		Response resp = null;
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			resp = Response.ok(mapper.writeValueAsString(DeAssociateUser.getAllUsers((LoggedInUser)crc.getProperty("userObject"))) ).build();
-		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
-			e.printStackTrace();
-		}
-		return resp;
-	}
 
 	/***
 	 * Get the details of the user. User profile, and roles he is in.
@@ -87,29 +58,6 @@ public class Users {
 
 	}
 
-	/***
-	 * Produces a List of Users which are not associate to any Territory.
-	 * 
-	 * @param crc
-	 * @return
-	 */
-
-	@GET
-	@Produces("application/json")
-	@Secured
-	@Path("deassociateuser")
-	public Response daassUser(@Context ContainerRequestContext crc) {
-		Response resp = null;
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			resp = Response.ok(mapper.writeValueAsString(UserProfile.getDeassociateUser((LoggedInUser)crc.getProperty("userObject"))) ).build();
-		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
-			e.printStackTrace();
-		}
-		return resp;
-	}
-	
 	@POST
 	@Produces("application/json")
 	@Secured
@@ -142,5 +90,51 @@ public class Users {
 		}
 		return resp;
 
+	}
+	
+	/***
+	 * Produces a List of Users which are not associate to any Territory.
+	 * 
+	 * @param crc
+	 * @return
+	 */
+
+	@GET
+	@Produces("application/json")
+	@Secured
+	@Path("deassociateuser")
+	public Response daassUser(@Context ContainerRequestContext crc) {
+		Response resp = null;
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			resp = Response.ok(mapper.writeValueAsString(UserProfile.getDeassociateUser((LoggedInUser)crc.getProperty("userObject"))) ).build();
+		} catch (Exception e) {
+			resp = Response.serverError().entity(e.getMessage()).build();
+			e.printStackTrace();
+		}
+		return resp;
+	}
+	
+	/***
+	 * Produces a List of All Users.
+	 * 
+	 * @param crc
+	 * @return
+	 */
+
+	@GET
+	@Produces("application/json")
+	@Secured
+	@Path("allUser")
+	public Response getAllUsers(@Context ContainerRequestContext crc) {
+		Response resp = null;
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			resp = Response.ok(mapper.writeValueAsString(UserProfile.getAllUsers((LoggedInUser)crc.getProperty("userObject"))) ).build();
+		} catch (Exception e) {
+			resp = Response.serverError().entity(e.getMessage()).build();
+			e.printStackTrace();
+		}
+		return resp;
 	}
 }

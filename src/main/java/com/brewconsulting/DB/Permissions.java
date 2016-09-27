@@ -2,6 +2,9 @@ package com.brewconsulting.DB;
 
 public class Permissions {
 	public static final int USER_PROFILE = 0x01; //access to others profile.
+	public static final int DIVISION = 0x02; //access to others profile.
+	public static final int TERRITORY = 0x03; //access to others profile.
+	public static final int PRODUCT = 0x04; //access to others profile.
 	
 	public static final int NONE = 0x01;
 	public static final int READ_ONLY = 0x3;

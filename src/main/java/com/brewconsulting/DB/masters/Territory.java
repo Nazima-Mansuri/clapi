@@ -101,11 +101,11 @@ public class Territory {
 			
 				
 				// This query return all data of table
-				/*stmt = con
+				stmt = con
 						.prepareStatement("select id,name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
 								+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
 								+ "(address).phone phones,parentId,divId from "
-								+ schemaName + ".territories ORDER BY id DESC");*/
+								+ schemaName + ".territories ORDER BY id DESC");
 				
 				// This query return data in json format in one row
 				/*stmt = con.prepareStatement("select row_to_json(row)"
@@ -188,9 +188,9 @@ public class Territory {
 					if (result.getArray(8) != null)
 					terr.phones = (String[]) result.getArray(8).getArray();
 					
-					terr.parentId = result.getInt(3);
-					terr.addLine1 = result.getString(4);
-//					terr.divId = result.getInt(10);
+					terr.parentId = result.getInt(9);
+//					terr.addLine1 = result.getString(4);
+					terr.divId = result.getInt(10);
 					
 					territories.add(terr);
 				}
@@ -276,6 +276,65 @@ public class Territory {
 		}
 
 		return territory;
+	}
+	
+	public static List<Territory> getTerritorieByDivisionId(int id, LoggedInUser loggedInUser)
+			throws Exception {
+
+		Territory territory = null;
+		// TODO check authorization
+		String schemaName = loggedInUser.schemaName;
+		ArrayList<Territory> territories = new ArrayList<Territory>();
+		Connection con = DBConnectionProvider.getConn();
+		PreparedStatement stmt = null;
+		ResultSet result = null;
+
+		try {
+			if (con != null) {
+
+				stmt = con
+						.prepareStatement("select id,name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+								+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
+								+ "(address).phone phones,parentId,divId from "
+								+ schemaName + ".territories WHERE divid = ?");
+				stmt.setInt(1,id);
+
+				result = stmt.executeQuery();
+				while (result.next()) {
+					territory = new Territory();
+					territory.id = result.getInt(1);
+					territory.name = result.getString(2);
+					territory.addLine1 = result.getString(3);
+					territory.addLine2 = result.getString(4);
+					territory.addLine3 = result.getString(5);
+					territory.city = result.getString(6);
+					territory.state = result.getString(7);
+					// If phone number is null then it gives null pointer exception here.
+					// So it check that the phone number is null or not
+					if (result.getArray(8) != null)
+						territory.phones = (String[]) result.getArray(8)
+								.getArray();
+					territory.parentId = result.getInt(9);
+					territory.divId = result.getInt(10);
+					
+					territories.add(territory);
+				}
+			} else
+				throw new Exception("DB connection is null");
+
+		} finally {
+			if (result != null)
+				if (!result.isClosed())
+					result.close();
+			if (stmt != null)
+				if (!stmt.isClosed())
+					stmt.close();
+			if (con != null)
+				if (!con.isClosed())
+					con.close();
+		}
+
+		return territories;
 	}
 
 	/***

@@ -18,12 +18,10 @@ import javax.ws.rs.core.Response;
 
 import org.postgresql.util.PSQLException;
 
-import com.brewconsulting.DB.masters.DeAssociateUser;
 import com.brewconsulting.DB.masters.History;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.DB.masters.Territory;
 import com.brewconsulting.exceptions.NoDataFound;
-//import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,6 +71,29 @@ public class Territories {
 				resp = Response.noContent().entity(new NoDataFound("This Territory does not exist").getJsonString()).build();
 			}
 			else resp = Response.ok(mapper.writeValueAsString(terr)).build();
+		} catch (Exception e) {
+			resp = Response.serverError().entity(e.getMessage()).build();
+			e.printStackTrace();
+		}
+		return resp;
+	}
+	
+	/***
+	 * Produces a list of all territories of Particular division.
+	 * 
+	 * @param crc
+	 * @return
+	 */
+
+	@GET
+	@Produces("application/json")
+	@Secured
+	@Path("divisionbyid/{id}")
+	public Response divisionByterritories(@PathParam("id") Integer id,@Context ContainerRequestContext crc) {
+		Response resp = null;
+
+		try {
+			resp = Response.ok(mapper.writeValueAsString(Territory.getTerritorieByDivisionId(id,((LoggedInUser)crc.getProperty("userObject"))))).build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
@@ -239,29 +260,6 @@ public class Territories {
 
 		try {
 			resp = Response.ok(mapper.writeValueAsString(History.getAllHistory((LoggedInUser)crc.getProperty("userObject"))) ).build();
-		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
-			e.printStackTrace();
-		}
-		return resp;
-	}
-	
-	/***
-	 * Produces a List of Users which are not associate to any Territory.
-	 * 
-	 * @param crc
-	 * @return
-	 */
-
-	@GET
-	@Produces("application/json")
-	@Secured
-	@Path("deassociateuser")
-	public Response daassUser(@Context ContainerRequestContext crc) {
-		Response resp = null;
-
-		try {
-			resp = Response.ok(mapper.writeValueAsString(DeAssociateUser.getDeassociateUser((LoggedInUser)crc.getProperty("userObject"))) ).build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
