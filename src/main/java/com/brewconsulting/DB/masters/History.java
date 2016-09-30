@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.ws.rs.NotAuthorizedException;
+
+import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -61,6 +64,8 @@ public class History {
 	public static List<History> getAllHistory(LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to see this data
+		
+		
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;
@@ -119,7 +124,6 @@ public class History {
 					con.close();
 		}
 		return histories;
-	}
-
+		}
 	
 }

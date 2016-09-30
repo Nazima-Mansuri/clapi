@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 
+import javax.naming.NamingException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
@@ -14,6 +15,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.postgresql.util.PSQLException;
 
 import com.brewconsulting.DB.User;
 import com.brewconsulting.DB.UserProfile;
@@ -37,20 +40,25 @@ public class Users {
 	@Produces("application/json")
 	@Path("{id}")
 	@Secured
-	public Response user(@PathParam("id") Integer id, @Context ContainerRequestContext crc) {
+	public Response user(@PathParam("id") Integer id,
+			@Context ContainerRequestContext crc) {
 		Response resp = null;
 		ObjectMapper mapper = new ObjectMapper();
 
 		try {
-			resp = Response.ok(mapper.writeValueAsString(User.getProfile((JsonNode) crc.getProperty("user"), id)))
-					.build();
+			resp = Response.ok(
+					mapper.writeValueAsString(User.getProfile(
+							(JsonNode) crc.getProperty("user"), id))).build();
 		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED).header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to view other's profile").build();
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to view other's profile")
+					.build();
 		} catch (Exception e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = Response.serverError()
+						.header("content-type", MediaType.TEXT_PLAIN)
+						.entity(e.getStackTrace()).build();
 			e.printStackTrace();
 		}
 
@@ -67,31 +75,52 @@ public class Users {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int userid = UserProfile.createUser(node, (JsonNode) crc.getProperty("user"));
-			resp = Response.ok("{\"id\":"+userid+"}").build();
+			int userid = UserProfile.createUser(node,
+					(JsonNode) crc.getProperty("user"));
+			resp = Response.ok("{\"id\":" + userid + "}").build();
+		 
 		} catch (IOException e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = Response.serverError()
+						.header("content-type", MediaType.TEXT_PLAIN)
+						.entity(e.getStackTrace()).build();
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = Response.serverError()
+						.header("content-type", MediaType.TEXT_PLAIN)
+						.entity(e.getStackTrace()).build();
 			e.printStackTrace();
+
+		} catch (PSQLException e) {
+
+			resp = Response.status(409).entity(e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+			e.printStackTrace();
+
 		} catch (SQLException e) {
 			if (resp == null)
-				resp = Response.serverError().header("content-type", MediaType.TEXT_PLAIN).entity(e.getStackTrace())
-						.build();
+				resp = Response.serverError()
+						.header("content-type", MediaType.TEXT_PLAIN)
+						.entity(e.getStackTrace()).build();
 			e.printStackTrace();
+
 		} catch (RequiredDataMissing e) {
 			resp = Response.serverError().entity(e.getJsonString()).build();
 			e.printStackTrace();
+
+		} catch (NamingException e) {
+			if (resp == null)
+				resp = Response.serverError()
+						.header("content-type", MediaType.TEXT_PLAIN)
+						.entity(e.getStackTrace()).build();
+			e.printStackTrace();
 		}
+
 		return resp;
 
 	}
-	
+
 	/***
 	 * Produces a List of Users which are not associate to any Territory.
 	 * 
@@ -107,14 +136,24 @@ public class Users {
 		Response resp = null;
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-			resp = Response.ok(mapper.writeValueAsString(UserProfile.getDeassociateUser((LoggedInUser)crc.getProperty("userObject"))) ).build();
-		} catch (Exception e) {
+			resp = Response.ok(
+					mapper.writeValueAsString(UserProfile
+							.getDeassociateUser((LoggedInUser) crc
+									.getProperty("userObject")))).build();
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to get Deassociate User")
+					.build();
+		}
+
+		catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
 		}
 		return resp;
 	}
-	
+
 	/***
 	 * Produces a List of All Users.
 	 * 
@@ -130,7 +169,14 @@ public class Users {
 		Response resp = null;
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-			resp = Response.ok(mapper.writeValueAsString(UserProfile.getAllUsers((LoggedInUser)crc.getProperty("userObject"))) ).build();
+			resp = Response.ok(
+					mapper.writeValueAsString(UserProfile
+							.getAllUsers((LoggedInUser) crc
+									.getProperty("userObject")))).build();
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to get Users").build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();

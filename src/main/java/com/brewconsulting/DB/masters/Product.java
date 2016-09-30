@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.ws.rs.NotAuthorizedException;
+
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.amazonaws.auth.PropertiesCredentials;
@@ -21,6 +23,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -64,6 +67,11 @@ public class Product {
 
 	}
 
+	public static java.util.Date toDate(java.sql.Timestamp timestamp) {
+		long millisec = timestamp.getTime() + (timestamp.getNanos() / 1000000);
+		return new Date(millisec);
+	}
+
 	/***
 	 * Method allows user to get All Details of Products.
 	 * 
@@ -74,47 +82,62 @@ public class Product {
 	public static List<Product> getAllProducts(LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to see this data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		ArrayList<Product> products = new ArrayList<Product>();
-		PreparedStatement stmt = null;
-		ResultSet result = null;
 
-		try {
-			if (con != null) {
-				stmt = con
-						.prepareStatement("select id, name,image, description,division,isActive, createDate,"
-								+ "createBy, updateDate,updateBy from "
-								+ schemaName + ".products");
-				result = stmt.executeQuery();
-				while (result.next()) {
-					Product product = new Product();
-					product.id = result.getInt(1);
-					product.name = result.getString(2);
-					product.image = result.getString(3);
-					product.description = result.getString(4);
-					product.division = result.getInt(5);
-					product.isActive = result.getBoolean(6);
-					product.createDate = result.getTimestamp(7);
-					product.createBy = result.getInt(8);
-					product.updateDate = result.getTime(9);
-					product.updateBy = result.getInt(10);
-					products.add(product);
+		int userRole = loggedInUser.roles.get(0).roleId;
+
+		if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
+				Permissions.getAccessLevel(userRole))) {
+
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			ArrayList<Product> products = new ArrayList<Product>();
+			PreparedStatement stmt = null;
+			ResultSet result = null;
+
+			try {
+				if (con != null) {
+					stmt = con
+							.prepareStatement("select id, name,image, description,division,isActive, createDate,"
+									+ "createBy, updateDate,updateBy from "
+									+ schemaName + ".products");
+					result = stmt.executeQuery();
+					while (result.next()) {
+						Product product = new Product();
+						product.id = result.getInt(1);
+						product.name = result.getString(2);
+						if (!result.getString(3).contains("null")) {
+							product.image = result.getString(3);
+						} else {
+							product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+						}
+						product.description = result.getString(4);
+						product.division = result.getInt(5);
+						product.isActive = result.getBoolean(6);
+						product.createDate = result.getTimestamp(7);
+						product.createBy = result.getInt(8);
+						product.updateDate = result.getTimestamp(9);
+						product.updateBy = result.getInt(10);
+						products.add(product);
+					}
 				}
+			} finally {
+				if (result != null)
+					if (!result.isClosed())
+						result.close();
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
 			}
-		} finally {
-			if (result != null)
-				if (!result.isClosed())
-					result.close();
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
-		}
 
-		return products;
+			return products;
+		} else {
+
+			throw new NotAuthorizedException("");
+
+		}
 	}
 
 	/***
@@ -127,50 +150,62 @@ public class Product {
 	 */
 	public static Product getProductById(int id, LoggedInUser loggedInUser)
 			throws Exception {
-		Product product = null;
-		// TODO check authorization
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		ResultSet result = null;
 
-		try {
-			if (con != null) {
-				stmt = con
-						.prepareStatement("select id, name,image,description,division,isActive, createDate,"
-								+ "createBy, updateDate,updateBy from "
-								+ schemaName + ".products where id = ?");
-				stmt.setInt(1, id);
-				result = stmt.executeQuery();
-				if (result.next()) {
-					product = new Product();
-					product.id = result.getInt(1);
-					product.name = result.getString(2);
-					product.image = result.getString(3);
-					product.description = result.getString(4);
-					product.division = result.getInt(5);
-					product.isActive = result.getBoolean(6);
-					product.createDate = result.getTimestamp(7);
-					product.createBy = result.getInt(8);
-					product.updateDate = result.getTime(9);
-					product.updateBy = result.getInt(10);
-				}
-			} else
-				throw new Exception("DB connection is null");
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-		} finally {
-			if (result != null)
-				if (!result.isClosed())
-					result.close();
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
+		if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
+				Permissions.getAccessLevel(userRole))) {
+
+			Product product = null;
+			// TODO check authorization
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			ResultSet result = null;
+
+			try {
+				if (con != null) {
+					stmt = con
+							.prepareStatement("select id, name,image,description,division,isActive, createDate,"
+									+ "createBy, updateDate,updateBy from "
+									+ schemaName + ".products where id = ?");
+					stmt.setInt(1, id);
+					result = stmt.executeQuery();
+					if (result.next()) {
+						product = new Product();
+						product.id = result.getInt(1);
+						product.name = result.getString(2);
+						if (!result.getString(3).contains("null")) {
+							product.image = result.getString(3);
+						} else {
+							product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+						}
+						product.description = result.getString(4);
+						product.division = result.getInt(5);
+						product.isActive = result.getBoolean(6);
+						product.createDate = result.getTimestamp(7);
+						product.createBy = result.getInt(8);
+						product.updateDate = result.getTimestamp(9);
+						product.updateBy = result.getInt(10);
+					}
+				} else
+					throw new Exception("DB connection is null");
+
+			} finally {
+				if (result != null)
+					if (!result.isClosed())
+						result.close();
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return product;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-		return product;
-
 	}
 
 	/***
@@ -189,68 +224,77 @@ public class Product {
 			int division, Boolean isActive, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Insert data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result = 0;
 
-		try {
-			con.setAutoCommit(false);
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-			stmt = con
-					.prepareStatement(
-							"INSERT INTO "
-									+ schemaName
-									+ ".products(name,image,description,division,isActive,createDate,"
-									+ "createBy,updateDate,updateBy) values (?,?,?,?,?,?,?,?,?)",
-							Statement.RETURN_GENERATED_KEYS);
+		if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
+				Permissions.getAccessLevel(userRole))) {
 
-			stmt.setString(1, name);
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			int result = 0;
 
-			stmt.setString(2, image);
+			try {
+				con.setAutoCommit(false);
 
-			// It checks that description is empty or not
-			if (description != null)
-				stmt.setString(3, description);
-			else
-				stmt.setString(3, null);
+				stmt = con
+						.prepareStatement(
+								"INSERT INTO "
+										+ schemaName
+										+ ".products(name,image,description,division,isActive,createDate,"
+										+ "createBy,updateDate,updateBy) values (?,?,?,?,?,?,?,?,?)",
+								Statement.RETURN_GENERATED_KEYS);
 
-			stmt.setInt(4, division);
+				stmt.setString(1, name);
 
-			// Checks isActive empty or not
-			if (isActive != null)
-				stmt.setBoolean(5, isActive);
-			else
-				// If isActive empty it set default TRUE
-				stmt.setBoolean(5, true);
+				stmt.setString(2, image);
 
-			stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-			stmt.setInt(7, loggedInUser.id);
-			stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
-			stmt.setInt(9, loggedInUser.id);
-			result = stmt.executeUpdate();
+				// It checks that description is empty or not
+				if (description != null)
+					stmt.setString(3, description);
+				else
+					stmt.setString(3, null);
 
-			if (result == 0)
-				throw new SQLException("Add Product Failed.");
+				stmt.setInt(4, division);
 
-			ResultSet generatedKeys = stmt.getGeneratedKeys();
-			int productId;
-			if (generatedKeys.next())
-				// It gives last inserted Id in divisionId
-				productId = generatedKeys.getInt(1);
-			else
-				throw new SQLException("No ID obtained");
+				// Checks isActive empty or not
+				if (isActive != null)
+					stmt.setBoolean(5, isActive);
+				else
+					// If isActive empty it set default TRUE
+					stmt.setBoolean(5, true);
 
-			con.commit();
-			return productId;
-		} catch (Exception ex) {
-			if (con != null)
-				con.rollback();
-			throw ex;
-		} finally {
-			con.setAutoCommit(false);
-			if (con != null)
-				con.close();
+				stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+				stmt.setInt(7, loggedInUser.id);
+				stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+				stmt.setInt(9, loggedInUser.id);
+				result = stmt.executeUpdate();
+
+				if (result == 0)
+					throw new SQLException("Add Product Failed.");
+
+				ResultSet generatedKeys = stmt.getGeneratedKeys();
+				int productId;
+				if (generatedKeys.next())
+					// It gives last inserted Id in divisionId
+					productId = generatedKeys.getInt(1);
+				else
+					throw new SQLException("No ID obtained");
+
+				con.commit();
+				return productId;
+			} catch (Exception ex) {
+				if (con != null)
+					con.rollback();
+				throw ex;
+			} finally {
+				con.setAutoCommit(false);
+				if (con != null)
+					con.close();
+			}
+		} else {
+			throw new NotAuthorizedException("");
 		}
 
 	}
@@ -272,51 +316,60 @@ public class Product {
 			String description, int division, Boolean isActive, int id,
 			LoggedInUser loggedInUser) throws Exception {
 		// TODO: check authorization of the user to Update data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result = 0;
-		try {
-			if (con != null) {
-				stmt = con
-						.prepareStatement("UPDATE "
-								+ schemaName
-								+ ".products SET name = ?,image = ?,description = ?,division = ?,isActive = ?"
-								+ ",updateDate = ?, updateBy = ? WHERE id = ?");
-				stmt.setString(1, name);
 
-				stmt.setString(2, image);
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-				// It checks that description is empty or not
-				if (description != null)
-					stmt.setString(3, description);
-				else
-					stmt.setString(3, null);
+		if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
+				Permissions.getAccessLevel(userRole))) {
 
-				stmt.setInt(4, division);
-				// Checks isActive empty or not
-				if (isActive != null)
-					stmt.setBoolean(5, isActive);
-				else
-					// If isActive empty it set default TRUE
-					stmt.setBoolean(5, true);
-				stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-				stmt.setInt(7, loggedInUser.id);
-				stmt.setInt(8, id);
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			int result = 0;
+			try {
+				if (con != null) {
+					stmt = con
+							.prepareStatement("UPDATE "
+									+ schemaName
+									+ ".products SET name = ?,image = ?,description = ?,division = ?,isActive = ?"
+									+ ",updateDate = ?, updateBy = ? WHERE id = ?");
+					stmt.setString(1, name);
 
-				result = stmt.executeUpdate();
-			} else
-				throw new Exception("DB connection is null");
+					stmt.setString(2, image);
 
-		} finally {
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
+					// It checks that description is empty or not
+					if (description != null)
+						stmt.setString(3, description);
+					else
+						stmt.setString(3, null);
+
+					stmt.setInt(4, division);
+					// Checks isActive empty or not
+					if (isActive != null)
+						stmt.setBoolean(5, isActive);
+					else
+						// If isActive empty it set default TRUE
+						stmt.setBoolean(5, true);
+					stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+					stmt.setInt(7, loggedInUser.id);
+					stmt.setInt(8, id);
+
+					result = stmt.executeUpdate();
+				} else
+					throw new Exception("DB connection is null");
+
+			} finally {
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return result;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-		return result;
 	}
 
 	/***
@@ -331,32 +384,41 @@ public class Product {
 	public static int deleteProduct(int id, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Delete data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result = 0;
 
-		try {
-			if (con != null) {
-				stmt = con.prepareStatement("DELETE FROM " + schemaName
-						+ ".products WHERE id = ?");
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-				stmt.setInt(1, id);
-				result = stmt.executeUpdate();
-			} else
-				throw new Exception("DB connection is null");
+		if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
+				Permissions.getAccessLevel(userRole))) {
+
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			int result = 0;
+
+			try {
+				if (con != null) {
+					stmt = con.prepareStatement("DELETE FROM " + schemaName
+							+ ".products WHERE id = ?");
+
+					stmt.setInt(1, id);
+					result = stmt.executeUpdate();
+				} else
+					throw new Exception("DB connection is null");
+			}
+
+			finally {
+
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return result;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-
-		finally {
-
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
-		}
-		return result;
 	}
 
 	/**
@@ -391,6 +453,8 @@ public class Product {
 
 			finalUrl = "https://s3.amazonaws.com/"
 					+ amazonFileUploadLocationOriginal + "/" + fileName;
+			System.out.println(finalUrl);
+
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 		}

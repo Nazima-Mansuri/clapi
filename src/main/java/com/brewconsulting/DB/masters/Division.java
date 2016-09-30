@@ -1,15 +1,22 @@
 package com.brewconsulting.DB.masters;
 
+import java.nio.file.AccessDeniedException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.ws.rs.NotAuthorizedException;
+
+import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -42,101 +49,137 @@ public class Division {
 
 	@JsonProperty("username")
 	public String username;
+
 	// make the default constructor visible to package only.
 	Division() {
 
 	}
 
+	public final static String dateFormat = "dd-MM-YYYY hh:mm:ss";
+	public static DateFormat df;
+
+	public static Date stringToDate(String dateAsString) {
+		try {
+			 df = new SimpleDateFormat(dateFormat);
+			return df.parse(dateAsString);
+		} catch (ParseException e) {
+			return null;
+		} catch (NullPointerException e) {
+			return null;
+		}
+	}
+
 	public static List<Division> getAllDivisions(LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to see this data
-		String schemaName = loggedInUser.schemaName;
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-		Connection con = DBConnectionProvider.getConn();
-		ArrayList<Division> divisions = new ArrayList<Division>();
-		PreparedStatement stmt = null;
-		ResultSet result = null;
+		if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+				Permissions.getAccessLevel(userRole))) {
 
-		try {
-			if (con != null) {
-				stmt = con
-						.prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, "
-								+ "d.updateDate,d.updateBy,u.username "
-								+ "  from " + schemaName + ".divisions d left join master.users u "
-								+ " on d.updateBy = u.id ORDER BY d.id DESC");
-				result = stmt.executeQuery();
-				while (result.next()) {
-					Division div = new Division();
-					div.id = result.getInt(1);
-					div.name = result.getString(2);
-					div.description = result.getString(3);
-					div.createDate = result.getTimestamp(4);
-					div.createBy = result.getInt(5);
-					div.updateDate = result.getTimestamp(6);
-					div.updateBy = result.getInt(7);
-					div.username = result.getString(8);
-					divisions.add(div);
-				}
-			} else
-				throw new Exception("DB connection is null");
+			String schemaName = loggedInUser.schemaName;
 
-		} finally {
-			if (result != null)
-				if (!result.isClosed())
-					result.close();
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
+			Connection con = DBConnectionProvider.getConn();
+			ArrayList<Division> divisions = new ArrayList<Division>();
+			PreparedStatement stmt = null;
+			ResultSet result = null;
+		
+
+			try {
+				if (con != null) {
+					stmt = con
+							.prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, "
+									+ "d.updateDate,d.updateBy,u.username "
+									+ "  from "
+									+ schemaName
+									+ ".divisions d left join master.users u "
+									+ " on d.updateBy = u.id ORDER BY d.id DESC");
+					result = stmt.executeQuery();
+					while (result.next()) {
+						Division div = new Division();
+						div.id = result.getInt(1);
+						div.name = result.getString(2);
+						div.description = result.getString(3);
+						div.createDate = result.getTimestamp(4);
+						div.createBy = result.getInt(5);
+						div.updateDate = result.getTimestamp(6);
+						div.updateBy = result.getInt(7);
+						div.username = result.getString(8);
+						divisions.add(div);
+					}
+				} else
+					throw new Exception("DB connection is null");
+
+			} finally {
+				if (result != null)
+					if (!result.isClosed())
+						result.close();
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return divisions;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-		return divisions;
+
 	}
 
 	public static Division getDivisionById(int id, LoggedInUser loggedInUser)
 			throws Exception {
-		Division division = null;
-		// TODO check authorization
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		ResultSet result = null;
 
-		try {
-			if (con != null) {
-				stmt = con
-						.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
-								+ " updateBy from "
-								+ schemaName
-								+ ".divisions where id = ?");
-				stmt.setInt(1, id);
-				result = stmt.executeQuery();
-				if (result.next()) {
-					division = new Division();
-					division.id = result.getInt(1);
-					division.name = result.getString(2);
-					division.description = result.getString(3);
-					division.createDate = result.getTimestamp(4);
-					division.createBy = result.getInt(5);
-					division.updateDate = result.getTimestamp(6);
-					division.updateBy = result.getInt(7);
-				}
-			} else
-				throw new Exception("DB connection is null");
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-		} finally {
-			if (result != null)
-				if (!result.isClosed())
-					result.close();
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
+		if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+				Permissions.getAccessLevel(userRole))) {
+
+			Division division = null;
+			// TODO check authorization
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			ResultSet result = null;
+
+			try {
+				if (con != null) {
+					stmt = con
+							.prepareStatement("select id, name, description, createDate, createBy, updateDate, "
+									+ " updateBy from "
+									+ schemaName
+									+ ".divisions where id = ?");
+					stmt.setInt(1, id);
+					result = stmt.executeQuery();
+					if (result.next()) {
+						division = new Division();
+						division.id = result.getInt(1);
+						division.name = result.getString(2);
+						division.description = result.getString(3);
+						division.createDate = result.getTimestamp(4);
+						division.createBy = result.getInt(5);
+						division.updateDate = result.getTimestamp(6);
+						division.updateBy = result.getInt(7);
+					}
+				} else
+					throw new Exception("DB connection is null");
+
+			} finally {
+				if (result != null)
+					if (!result.isClosed())
+						result.close();
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return division;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-		return division;
 	}
 
 	/***
@@ -150,57 +193,66 @@ public class Division {
 	public static int addDivision(JsonNode node, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Insert data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result;
 
-		try {
-			con.setAutoCommit(false);
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-			stmt = con
-					.prepareStatement(
-							"INSERT INTO "
-									+ schemaName
-									+ ".divisions(name,description,createDate,createBy,updateDate,"
-									+ "updateBy) values (?,?,?,?,?,?)",
-							Statement.RETURN_GENERATED_KEYS);
-			stmt.setString(1, node.get("name").asText());
+		if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+				Permissions.getAccessLevel(userRole))) {
 
-			// It checks if Description is given or not
-			if (node.has("description"))
-				stmt.setString(2, node.get("description").asText());
-			else
-				stmt.setString(2, null);
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			int result;
 
-			stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-			stmt.setInt(4, loggedInUser.id);
-			stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
-			stmt.setInt(6, loggedInUser.id);
-			result = stmt.executeUpdate();
+			try {
+				con.setAutoCommit(false);
 
-			if (result == 0)
-				throw new SQLException("Add Division Failed.");
+				stmt = con
+						.prepareStatement(
+								"INSERT INTO "
+										+ schemaName
+										+ ".divisions(name,description,createDate,createBy,updateDate,"
+										+ "updateBy) values (?,?,?,?,?,?)",
+								Statement.RETURN_GENERATED_KEYS);
+				stmt.setString(1, node.get("name").asText());
 
-			ResultSet generatedKeys = stmt.getGeneratedKeys();
-			int divisionId;
-			if (generatedKeys.next())
-				// It gives last inserted Id in divisionId
-				divisionId = generatedKeys.getInt(1);
-			else
-				throw new SQLException("No ID obtained");
+				// It checks if Description is given or not
+				if (node.has("description"))
+					stmt.setString(2, node.get("description").asText());
+				else
+					stmt.setString(2, null);
 
-			con.commit();
-			return divisionId;
+				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+				stmt.setInt(4, loggedInUser.id);
+				stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+				stmt.setInt(6, loggedInUser.id);
+				result = stmt.executeUpdate();
 
-		} catch (Exception ex) {
-			if (con != null)
-				con.rollback();
-			throw ex;
-		} finally {
-			con.setAutoCommit(false);
-			if (con != null)
-				con.close();
+				if (result == 0)
+					throw new SQLException("Add Division Failed.");
+
+				ResultSet generatedKeys = stmt.getGeneratedKeys();
+				int divisionId;
+				if (generatedKeys.next())
+					// It gives last inserted Id in divisionId
+					divisionId = generatedKeys.getInt(1);
+				else
+					throw new SQLException("No ID obtained");
+
+				con.commit();
+				return divisionId;
+
+			} catch (Exception ex) {
+				if (con != null)
+					con.rollback();
+				throw ex;
+			} finally {
+				con.setAutoCommit(false);
+				if (con != null)
+					con.close();
+			}
+		} else {
+			throw new NotAuthorizedException("");
 		}
 	}
 
@@ -215,42 +267,51 @@ public class Division {
 	public static int updateDivision(JsonNode node, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Update data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result;
 
-		try {
-			// It checks if connection is not null then perform update
-			// operation.
-			if (con != null) {
-				stmt = con
-						.prepareStatement("UPDATE "
-								+ schemaName
-								+ ".divisions SET name = ?,description = ?,updateDate = ?,"
-								+ "updateBy = ? WHERE id = ?");
-				stmt.setString(1, node.get("name").asText());
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-				// It checks if Description is given or not
-				if (node.has("description"))
-					stmt.setString(2, node.get("description").asText());
-				stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-				stmt.setInt(4, loggedInUser.id);
-				stmt.setInt(5, node.get("divisionId").asInt());
+		if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+				Permissions.getAccessLevel(userRole))) {
 
-				result = stmt.executeUpdate();
-			} else
-				throw new Exception("DB connection is null");
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			int result;
 
-		} finally {
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
+			try {
+				// It checks if connection is not null then perform update
+				// operation.
+				if (con != null) {
+					stmt = con
+							.prepareStatement("UPDATE "
+									+ schemaName
+									+ ".divisions SET name = ?,description = ?,updateDate = ?,"
+									+ "updateBy = ? WHERE id = ?");
+					stmt.setString(1, node.get("name").asText());
+
+					// It checks if Description is given or not
+					if (node.has("description"))
+						stmt.setString(2, node.get("description").asText());
+					stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+					stmt.setInt(4, loggedInUser.id);
+					stmt.setInt(5, node.get("divisionId").asInt());
+
+					result = stmt.executeUpdate();
+				} else
+					throw new Exception("DB connection is null");
+
+			} finally {
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return result;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-		return result;
 	}
 
 	/***
@@ -265,31 +326,39 @@ public class Division {
 	public static int deleteDivision(int id, LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to Delete data
-		String schemaName = loggedInUser.schemaName;
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
-		int result = 0;
 
-		try {
-			// If connection is not null then perform delete operation.
-			if (con != null) {
-				stmt = con.prepareStatement("DELETE FROM " + schemaName
-						+ ".divisions WHERE id = ?");
+		int userRole = loggedInUser.roles.get(0).roleId;
 
-				stmt.setInt(1, id);
-				result = stmt.executeUpdate();
-			} else
-				throw new Exception("DB connection is null");
+		if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+				Permissions.getAccessLevel(userRole))) {
+
+			String schemaName = loggedInUser.schemaName;
+			Connection con = DBConnectionProvider.getConn();
+			PreparedStatement stmt = null;
+			int result = 0;
+
+			try {
+				// If connection is not null then perform delete operation.
+				if (con != null) {
+					stmt = con.prepareStatement("DELETE FROM " + schemaName
+							+ ".divisions WHERE id = ?");
+
+					stmt.setInt(1, id);
+					result = stmt.executeUpdate();
+				} else
+					throw new Exception("DB connection is null");
+			} finally {
+
+				if (stmt != null)
+					if (!stmt.isClosed())
+						stmt.close();
+				if (con != null)
+					if (!con.isClosed())
+						con.close();
+			}
+			return result;
+		} else {
+			throw new NotAuthorizedException("");
 		}
-			finally {
-		
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
-		}
-		return result;
 	}
 }

@@ -160,14 +160,15 @@ public class User {
 		JsonNode rolesNode = loggedInUser.get("roles");
 		Iterator<JsonNode> it = rolesNode.elements();
 		UserProfile user = null;
-
+					
 		// check if the user has permission to see others profile.
 		if (loggedInUser.get("id").asInt() != id) {
 			boolean isAllowed = false;
-
+			
 			while (it.hasNext()) {
 				if (Permissions.isAuthorised(it.next().get("roleid").asInt(), Permissions.USER_PROFILE,
 						Permissions.READ_ONLY)) {
+					
 					isAllowed = true;
 					break;
 				}
@@ -252,4 +253,3 @@ public class User {
 	}
 
 }
-

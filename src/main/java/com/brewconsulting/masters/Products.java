@@ -6,6 +6,7 @@ import java.io.InputStream;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -50,7 +51,13 @@ public class Products {
 					mapper.writeValueAsString(Product
 							.getAllProducts((LoggedInUser) crc
 									.getProperty("userObject")))).build();
-		} catch (Exception e) {
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to get products").build();
+		}
+
+		catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
 		}
@@ -82,7 +89,14 @@ public class Products {
 								.getJsonString()).build();
 			} else
 				resp = Response.ok(mapper.writeValueAsString(product)).build();
-		} catch (Exception e) {
+
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to get product").build();
+		}
+
+		catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();
 			e.printStackTrace();
 		}
@@ -122,7 +136,8 @@ public class Products {
 		try {
 
 			if (fileFormDataContentDisposition != null) {
-				fileName = System.currentTimeMillis()+"_"+fileFormDataContentDisposition.getFileName();
+				fileName = System.currentTimeMillis() + "_"
+						+ fileFormDataContentDisposition.getFileName();
 				// This method is used to store image in AWS bucket.
 				uploadFilePath = Product.writeToFile(fileInputStream, fileName);
 			} else {
@@ -132,12 +147,19 @@ public class Products {
 			int productId = Product.addProduct(name, uploadFilePath,
 					description, division, isActive,
 					(LoggedInUser) crc.getProperty("userObject"));
-			
-			if(productId != 0)
-				resp = Response.ok("{\"id\":"+productId+"}").build();
-			else
-				resp = Response.noContent().entity(new NoDataFound("Unable to Insert Product").getJsonString()).build();
 
+			if (productId != 0)
+				resp = Response.ok("{\"id\":" + productId + "}").build();
+			else
+				resp = Response
+						.noContent()
+						.entity(new NoDataFound("Unable to Insert Product")
+								.getJsonString()).build();
+
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to create product").build();
 		} catch (IOException e) {
 			if (resp == null) {
 				resp = Response.serverError().entity(e.getMessage()).build();
@@ -175,7 +197,7 @@ public class Products {
 			@FormDataParam("division") int division,
 			@FormDataParam("isActive") Boolean isActive,
 			@FormDataParam("id") int id, @Context ContainerRequestContext crc) {
-		
+
 		Response resp = null;
 		String fileName = null;
 		String uploadFilePath = null;
@@ -183,19 +205,25 @@ public class Products {
 		try {
 
 			if (fileFormDataContentDisposition != null) {
-				fileName = System.currentTimeMillis()+"_"+fileFormDataContentDisposition.getFileName();
+				fileName = System.currentTimeMillis() + "_"
+						+ fileFormDataContentDisposition.getFileName();
 				// This method is used to store image in AWS bucket.
 				uploadFilePath = Product.writeToFile(fileInputStream, fileName);
 			} else {
 				uploadFilePath = null;
 			}
-			
+
 			int affectedRow = Product.updateProduct(name, uploadFilePath,
-					description, division, isActive, id,(LoggedInUser) crc.getProperty("userObject"));
+					description, division, isActive, id,
+					(LoggedInUser) crc.getProperty("userObject"));
 			if (affectedRow > 0)
 				resp = Response.ok().build();
 			else
 				resp = Response.status(204).build();
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to update product").build();
 		} catch (IOException e) {
 			if (resp == null)
 				resp = Response.serverError().entity(e.getMessage()).build();
@@ -231,6 +259,10 @@ public class Products {
 				// 204(NO_CONTENT).
 				resp = Response.status(204).build();
 
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to delete product").build();
 		} catch (PSQLException ex) {
 			resp = Response
 					.status(409)
