@@ -83,10 +83,10 @@
 			<scope>runtime</scope>
 		</dependency>
 		<!--uncomment this to get JSON support -->
-		<dependency>
-			<groupId>org.glassfish.jersey.media</groupId>
-			<artifactId>jersey-media-moxy</artifactId>
-		</dependency>
+		<!--<dependency>-->
+			<!--<groupId>org.glassfish.jersey.media</groupId>-->
+			<!--<artifactId>jersey-media-moxy</artifactId>-->
+		<!--</dependency>-->
 
 
 		<!-- http://mvnrepository.com/artifact/org.elasticsearch/elasticsearch -->
