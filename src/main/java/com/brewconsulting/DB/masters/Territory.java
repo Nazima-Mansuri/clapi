@@ -9,7 +9,9 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jws.soap.SOAPBinding.Use;
 import javax.ws.rs.NotAuthorizedException;
@@ -66,9 +68,24 @@ public class Territory {
 	@JsonProperty("createBy")
 	public int createBy;
 
+	@JsonProperty("child")
+	public ArrayList<terrWrapper> child = new ArrayList<terrWrapper>();
+
 	// make the default constructor visible to package only.
 	public Territory() {
 
+	}
+
+	/**
+	 * 
+	 * @param loggedInUser
+	 * @return
+	 * @throws Exception
+	 * @deprecated use getAllTerritories(LoggedInUser, Division Id)
+	 */
+	@Deprecated
+	public static List<Territory> getAllTerritories(LoggedInUser loggedInUser) throws Exception {
+		throw new Exception("Please use the function with div id in it. ");
 	}
 
 	/***
@@ -78,128 +95,112 @@ public class Territory {
 	 * @return
 	 * @throws Exception
 	 */
-	public static List<Territory> getAllTerritories(LoggedInUser loggedInUser)
-			throws Exception {
+	public static List<terrWrapper> getAllTerritories(LoggedInUser loggedInUser, int divId) throws Exception {
 		// TODO: check authorization of the user to see this data
+		System.out.println("starting territories");
+		String schemaName = loggedInUser.schemaName;
 
-		int userRole = loggedInUser.roles.get(0).roleId;
+		Connection con = DBConnectionProvider.getConn();
+//		ArrayList<Territory> territories = new ArrayList<Territory>();
+		ArrayList<terrWrapper> territories = new ArrayList<terrWrapper>();
+//		Map<Integer, Territory> lookup = new HashMap<Integer, Territory>();
+		Map<Integer, terrWrapper> lookup = new HashMap<Integer, terrWrapper>();
+		PreparedStatement stmt = null;
+		ResultSet result = null;
+		try {
+			if (con != null) {
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+				stmt = con.prepareStatement(
+						"select id,name,(address).addLine1 addLine1, " + "(address).addLine2 addLine2,"
+								+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
+								+ "(address).phone phones,parentId,divId from " + schemaName
+								+ ".territories where divId = ? ORDER BY id");
 
-			String schemaName = loggedInUser.schemaName;
+				stmt.setInt(1, divId);
 
-			Connection con = DBConnectionProvider.getConn();
-			ArrayList<Territory> territories = new ArrayList<Territory>();
-			PreparedStatement stmt = null;
-			ResultSet result = null;
-			try {
-				if (con != null) {
+				// We Need Data in This Type of Format When parent has child
+				/**
+				 * { { text:'Root', TID:1, data:{ TID:1, personId:1,
+				 * personName:'Test1', ParentID:0, name:'Root', addLine1
+				 * :'address1 of Root', addLine2 :'address2 of Root', addLine3
+				 * :'address3 of Root', city :'Surat', state :'Gujarat',
+				 * contactnumber : [
+				 * '8878785875','8787874875','7777777777','5748789887','878787 8
+				 * 5 8 9 ' ] , }, children:[{ text:'Root1_Parent1', data:{
+				 * TID:4, apersonID:2, personName:'Associate1', ParentID:0,
+				 * name:'Root1_Parent1', addLine1 :'address1 of Root', addLine2
+				 * :'address2 of Root', addLine3 :'address3 of Root', city
+				 * :'Surat', state :'Gujarat', contactnumber : [
+				 * '8878785875','8787874875','7777777777','5748789887','878787 8
+				 * 5 8 9 ' ] , },
+				 * 
+				 * N number of child possible here. }] } }
+				 */
 
-					// In this query e1 type field gives Parent field data and
-					// e2 type field gives Child field data.
-					/*
-					 * stmt = con.prepareStatement("select " +
-					 * "e1.id,e1.name,(e1.address).addLine1 addLine1," +
-					 * "(e1.address).addLine2 addLine2," +
-					 * "(e1.address).addLine3 addLine3,(e1.address).city city,(e1.address).state state,"
-					 * + "(e1.address).phone phones," +
-					 * "e1.parentid,e1.divid, e2.id,e2.name" +
-					 * " from client1.territories e1" +
-					 * " inner join client1.territories e2 on e2.parentid = e1.id"
-					 * );
-					 */
+				// If Parent has No child Then data
+				/**
+				 * { { text:'Root', TID:1, data:{ TID:1, personId:1,
+				 * personName:'Test1', ParentID:0, name:'Root', addLine1
+				 * :'address1 of Root', addLine2 :'address2 of Root', addLine3
+				 * :'address3 of Root', city :'Surat', state :'Gujarat',
+				 * contactnumber : [
+				 * '8878785875','8787874875','7777777777','5748789887','878787 8
+				 * 5 8 9 ' ] , }, } }
+				 */
+				result = stmt.executeQuery();
 
-					// This query return all data of table
-					stmt = con
-							.prepareStatement("select id,name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
-									+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
-									+ "(address).phone phones,parentId,divId from "
-									+ schemaName
-									+ ".territories ORDER BY id DESC");
+				while (result.next()) {
 
-					// This query return data in json format in one row
-					/*
-					 * stmt = con.prepareStatement("select row_to_json(row)" +
-					 * "from (select u.id,u.name,(u.address).addLine1 addLine1,"
-					 * + "urd AS children from client1.territories u " +
-					 * " inner join client1.territories urd (id,name)" +
-					 * " on urd.parentid = u.id) row");
-					 */
+					Territory terr = new Territory();
+					terrWrapper tw = new terrWrapper();
 
-					// We Need Data in This Type of Format When parent has child
-					/**
-					 * { { text:'Root', TID:1, data:{ TID:1, personId:1,
-					 * personName:'Test1', ParentID:0, name:'Root', addLine1
-					 * :'address1 of Root', addLine2 :'address2 of Root',
-					 * addLine3 :'address3 of Root', city :'Surat', state
-					 * :'Gujarat', contactnumber : [
-					 * '8878785875','8787874875','7777777777','5748789887','878787
-					 * 8 5 8 9 ' ] , }, children:[{ text:'Root1_Parent1', data:{
-					 * TID:4, apersonID:2, personName:'Associate1', ParentID:0,
-					 * name:'Root1_Parent1', addLine1 :'address1 of Root',
-					 * addLine2 :'address2 of Root', addLine3 :'address3 of
-					 * Root', city :'Surat', state :'Gujarat', contactnumber : [
-					 * '8878785875','8787874875','7777777777','5748789887','878787
-					 * 8 5 8 9 ' ] , },
-					 * 
-					 * N number of child possible here. }] } }
-					 */
+					terr.id = result.getInt(1);
+					terr.name = result.getString(2);
+					terr.addLine1 = result.getString(3);
+					terr.addLine2 = result.getString(4);
+					terr.addLine3 = result.getString(5);
+					terr.city = result.getString(6);
+					terr.state = result.getString(7);
+					// If phone number is null then it gives null pointer
+					// exception here.
+					// So it check that the phone number is null or not
+					if (result.getArray(8) != null)
+						terr.phones = (String[]) result.getArray(8).getArray();
 
-					// If Parent has No child Then data
-					/**
-					 * { { text:'Root', TID:1, data:{ TID:1, personId:1,
-					 * personName:'Test1', ParentID:0, name:'Root', addLine1
-					 * :'address1 of Root', addLine2 :'address2 of Root',
-					 * addLine3 :'address3 of Root', city :'Surat', state
-					 * :'Gujarat', contactnumber : [
-					 * '8878785875','8787874875','7777777777','5748789887','878787
-					 * 8 5 8 9 ' ] , }, } }
-					 */
-					result = stmt.executeQuery();
+					terr.parentId = result.getInt(9);
+					terr.divId = result.getInt(10);
+					tw.text = terr.name;
+					tw.data = terr;
+//					lookup.put(terr.id, terr);
+					lookup.put(terr.id, tw);
+				}
+			} else
+				throw new Exception("DB connection is null");
 
-					while (result.next()) {
-
-						Territory terr = new Territory();
-
-						terr.id = result.getInt(1);
-						terr.name = result.getString(2);
-						terr.addLine1 = result.getString(3);
-						terr.addLine2 = result.getString(4);
-						terr.addLine3 = result.getString(5);
-						terr.city = result.getString(6);
-						terr.state = result.getString(7);
-						// If phone number is null then it gives null pointer
-						// exception here.
-						// So it check that the phone number is null or not
-						if (result.getArray(8) != null)
-							terr.phones = (String[]) result.getArray(8)
-									.getArray();
-
-						terr.parentId = result.getInt(9);
-						// terr.addLine1 = result.getString(4);
-						terr.divId = result.getInt(10);
-
-						territories.add(terr);
-					}
-				} else
-					throw new Exception("DB connection is null");
-
-			} finally {
-				if (result != null)
-					if (!result.isClosed())
-						result.close();
-				if (stmt != null)
-					if (!stmt.isClosed())
-						stmt.close();
-				if (con != null)
-					if (!con.isClosed())
-						con.close();
-			}
-			return territories;
-		} else {
-			throw new NotAuthorizedException("");
+		} finally {
+			if (result != null)
+				if (!result.isClosed())
+					result.close();
+			if (stmt != null)
+				if (!stmt.isClosed())
+					stmt.close();
+			if (con != null)
+				if (!con.isClosed())
+					con.close();
 		}
+
+		
+
+		for (terrWrapper territory : lookup.values()) {
+			if(territory.data.parentId == 0)
+				territories.add(territory);
+			else if(lookup.containsKey(territory.data.parentId))
+					lookup.get(territory.data.parentId).data.child.add(territory);
+		}
+		
+
+
+		return territories;
 	}
 
 	/***
@@ -210,13 +211,11 @@ public class Territory {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Territory getTerritorieById(int id, LoggedInUser loggedInUser)
-			throws Exception {
+	public static Territory getTerritorieById(int id, LoggedInUser loggedInUser) throws Exception {
 
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
 
 			Territory territory = null;
 			// TODO check authorization
@@ -228,12 +227,10 @@ public class Territory {
 			try {
 				if (con != null) {
 
-					stmt = con
-							.prepareStatement("select id, name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+					stmt = con.prepareStatement(
+							"select id, name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
 									+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
-									+ "(address).phone phones,"
-									+ "parentId,divId from "
-									+ schemaName
+									+ "(address).phone phones," + "parentId,divId from " + schemaName
 									+ ".territories where id = ?");
 
 					stmt.setInt(1, id);
@@ -252,8 +249,7 @@ public class Territory {
 						// exception here.
 						// So it check that the phone number is null or not
 						if (result.getArray(8) != null)
-							territory.phones = (String[]) result.getArray(8)
-									.getArray();
+							territory.phones = (String[]) result.getArray(8).getArray();
 						territory.parentId = result.getInt(9);
 						territory.divId = result.getInt(10);
 					}
@@ -278,13 +274,11 @@ public class Territory {
 		}
 	}
 
-	public static List<Territory> getTerritorieByDivisionId(int id,
-			LoggedInUser loggedInUser) throws Exception {
+	public static List<Territory> getTerritorieByDivisionId(int id, LoggedInUser loggedInUser) throws Exception {
 
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
 
 			Territory territory = null;
 			// TODO check authorization
@@ -300,8 +294,7 @@ public class Territory {
 					stmt = con
 							.prepareStatement("select id,name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
 									+ "(address).addLine3 addLine3,(address).city city,(address).state state,"
-									+ "(address).phone phones,parentId,divId from "
-									+ schemaName
+									+ "(address).phone phones,parentId,divId from " + schemaName
 									+ ".territories WHERE divid = ?");
 					stmt.setInt(1, id);
 
@@ -319,8 +312,7 @@ public class Territory {
 						// exception here.
 						// So it check that the phone number is null or not
 						if (result.getArray(8) != null)
-							territory.phones = (String[]) result.getArray(8)
-									.getArray();
+							territory.phones = (String[]) result.getArray(8).getArray();
 						territory.parentId = result.getInt(9);
 						territory.divId = result.getInt(10);
 
@@ -356,14 +348,12 @@ public class Territory {
 	 * @return
 	 * @throws Exception
 	 */
-	public static int addTerritory(JsonNode node, LoggedInUser loggedInUser)
-			throws Exception {
+	public static int addTerritory(JsonNode node, LoggedInUser loggedInUser) throws Exception {
 		// TODO: check authorization of the user to Insert data
 
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
 
 			String schemaName = loggedInUser.schemaName;
 			Connection con = DBConnectionProvider.getConn();
@@ -383,12 +373,10 @@ public class Territory {
 
 				Array pharr = con.createArrayOf("text", phoneArr);
 
-				stmt = con
-						.prepareStatement(
-								"INSERT INTO "
-										+ schemaName
-										+ ".territories(name,parentid,address,divid) values (?,?,ROW(?,?,?,?,?,?),?)",
-								Statement.RETURN_GENERATED_KEYS);
+				stmt = con.prepareStatement(
+						"INSERT INTO " + schemaName
+								+ ".territories(name,parentid,address,divid) values (?,?,ROW(?,?,?,?,?,?),?)",
+						Statement.RETURN_GENERATED_KEYS);
 				stmt.setString(1, node.get("name").asText());
 				if (node.has("parentId"))
 					stmt.setInt(2, node.get("parentId").asInt());
@@ -441,46 +429,33 @@ public class Territory {
 					throw new SQLException("No ID obtained");
 
 				if (node.get("personId") != null) {
-					stmt = con
-							.prepareStatement("SELECT userId from "
-									+ schemaName
-									+ ".userterritorymap WHERE userId = ?");
+					stmt = con.prepareStatement(
+							"SELECT userId from " + schemaName + ".userterritorymap WHERE userId = ?");
 
 					stmt.setInt(1, node.get("personId").asInt());
 					result = stmt.executeQuery();
 
 					if (!result.next()) {
 						System.out.println("In If Method..");
-						stmt = con
-								.prepareStatement("INSERT INTO "
-										+ schemaName
-										+ ".userterritorymap"
-										+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
+						stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymap"
+								+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
 						stmt.setInt(1, node.get("personId").asInt());
 						stmt.setInt(2, territoryId);
-						stmt.setTimestamp(3,
-								new Timestamp((new Date()).getTime()));
+						stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
 						stmt.setInt(4, loggedInUser.id);
-						stmt.setTimestamp(5,
-								new Timestamp((new Date()).getTime()));
+						stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
 
 						stmt.executeUpdate();
 
-						stmt = con
-								.prepareStatement("INSERT INTO "
-										+ schemaName
-										+ ".userterritorymaphistory"
-										+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+						stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymaphistory"
+								+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
 
 						stmt.setInt(1, node.get("personId").asInt());
 						stmt.setInt(2, territoryId);
-						stmt.setTimestamp(3,
-								new Timestamp((new Date()).getTime()));
-						stmt.setTimestamp(4,
-								new Timestamp((new Date()).getTime()));
+						stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+						stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
 						stmt.setInt(5, loggedInUser.id);
-						stmt.setTimestamp(6,
-								new Timestamp((new Date()).getTime()));
+						stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
 
 						stmt.executeUpdate();
 					} else {
@@ -515,14 +490,12 @@ public class Territory {
 	 * @throws Exception
 	 */
 	@SuppressWarnings("resource")
-	public static int updateTerritory(JsonNode node, LoggedInUser loggedInUser)
-			throws Exception {
+	public static int updateTerritory(JsonNode node, LoggedInUser loggedInUser) throws Exception {
 		// TODO: check authorization of the user to Update data
 
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
 
 			String schemaName = loggedInUser.schemaName;
 			Connection con = DBConnectionProvider.getConn();
@@ -543,10 +516,8 @@ public class Territory {
 
 				Array pharr = con.createArrayOf("text", phoneArr);
 
-				stmt = con
-						.prepareStatement("UPDATE "
-								+ schemaName
-								+ ".territories SET name = ?,address =ROW(?,?,?,?,?,?) WHERE id = ?");
+				stmt = con.prepareStatement(
+						"UPDATE " + schemaName + ".territories SET name = ?,address =ROW(?,?,?,?,?,?) WHERE id = ?");
 				stmt.setString(1, node.get("name").asText());
 				stmt.setString(2, node.get("addLine1").asText());
 				stmt.setString(3, node.get("addLine2").asText());
@@ -558,21 +529,16 @@ public class Territory {
 
 				affectedRow = stmt.executeUpdate();
 
-				stmt = con
-						.prepareStatement("SELECT count(*) as Resultcount from "
-								+ schemaName
-								+ ".userterritorymap WHERE userId = ?");
+				stmt = con.prepareStatement(
+						"SELECT count(*) as Resultcount from " + schemaName + ".userterritorymap WHERE userId = ?");
 				stmt.setInt(1, node.get("personId").asInt());
 				result = stmt.executeQuery();
 
 				if (!result.next()) {
 					System.out.println("If Method ");
 					// It Insert data in userTerritoryMap with new userId
-					stmt = con
-							.prepareStatement("INSERT INTO "
-									+ schemaName
-									+ ".userterritorymap"
-									+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
+					stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymap"
+							+ "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
 
 					stmt.setInt(1, node.get("personId").asInt());
 					stmt.setInt(2, node.get("id").asInt());
@@ -583,11 +549,8 @@ public class Territory {
 					stmt.executeUpdate();
 
 					// It Insert data in userTerritoryMapHistory with new userId
-					stmt = con
-							.prepareStatement("INSERT INTO "
-									+ schemaName
-									+ ".userterritorymaphistory"
-									+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+					stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymaphistory"
+							+ "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
 
 					stmt.setInt(1, node.get("personId").asInt());
 					stmt.setInt(2, node.get("id").asInt());
@@ -625,14 +588,12 @@ public class Territory {
 	 * @Return
 	 */
 
-	public static int deleteTerritory(int id, LoggedInUser loggedInUser)
-			throws Exception {
+	public static int deleteTerritory(int id, LoggedInUser loggedInUser) throws Exception {
 		// TODO: check authorization of the user to Delete data
 
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
 
 			String schemaName = loggedInUser.schemaName;
 			Connection con = DBConnectionProvider.getConn();
@@ -642,8 +603,7 @@ public class Territory {
 			try {
 				// If connection is not null then perform delete operation.
 				if (con != null) {
-					stmt = con.prepareStatement("DELETE FROM " + schemaName
-							+ ".territories WHERE id = ?");
+					stmt = con.prepareStatement("DELETE FROM " + schemaName + ".territories WHERE id = ?");
 
 					stmt.setInt(1, id);
 					result = stmt.executeUpdate();
@@ -675,14 +635,12 @@ public class Territory {
 	 * @Return
 	 */
 	@SuppressWarnings("resource")
-	public static int deassociateUser(JsonNode node, LoggedInUser loggedInUser)
-			throws Exception {
+	public static int deassociateUser(JsonNode node, LoggedInUser loggedInUser) throws Exception {
 		// TODO: check authorization
 
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
 
 			String schemaName = loggedInUser.schemaName;
 			Connection con = DBConnectionProvider.getConn();
@@ -694,9 +652,8 @@ public class Territory {
 			try {
 				if (con != null) {
 					// It gets userId from userterritorymap table
-					stmt = con.prepareStatement("SELECT userId from "
-							+ schemaName + ".userterritorymap "
-							+ "where terrId = ?");
+					stmt = con.prepareStatement(
+							"SELECT userId from " + schemaName + ".userterritorymap " + "where terrId = ?");
 					stmt.setInt(1, node.get("id").asInt());
 					result = stmt.executeQuery();
 					if (result.next())
@@ -706,9 +663,8 @@ public class Territory {
 					// It delete entry of deassociate person from
 					// userTerritoryMap
 					// table .
-					stmt = con.prepareStatement("DELETE from " + schemaName
-							+ ".userterritorymap "
-							+ "where userId = ? AND terrId = ?");
+					stmt = con.prepareStatement(
+							"DELETE from " + schemaName + ".userterritorymap " + "where userId = ? AND terrId = ?");
 					stmt.setInt(1, userId);
 					stmt.setInt(2, node.get("id").asInt());
 					affectedRow = stmt.executeUpdate();
@@ -716,10 +672,8 @@ public class Territory {
 
 					// It update endDate of deassociate person in
 					// userTerritoryMapHistory table .
-					stmt = con
-							.prepareStatement("UPDATE "
-									+ schemaName
-									+ ".userterritorymaphistory SET endDate = ? WHERE userId = ? AND terrId = ?");
+					stmt = con.prepareStatement("UPDATE " + schemaName
+							+ ".userterritorymaphistory SET endDate = ? WHERE userId = ? AND terrId = ?");
 					stmt.setTimestamp(1, new Timestamp((new Date()).getTime()));
 					stmt.setInt(2, userId);
 					stmt.setInt(3, node.get("id").asInt());
@@ -742,4 +696,9 @@ public class Territory {
 		}
 	}
 
+}
+
+class terrWrapper{
+	public String text;
+	public Territory data;
 }
