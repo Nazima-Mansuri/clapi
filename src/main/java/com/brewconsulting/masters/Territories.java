@@ -43,12 +43,11 @@ public class Territories {
 	@Secured
 	public Response territories(@Context ContainerRequestContext crc) {
 		Response resp = null;
-
 		try {
 			resp = Response.ok(
 					mapper.writeValueAsString(Territory
 							.getAllTerritories((LoggedInUser) crc
-									.getProperty("userObject")))).build();
+									.getProperty("userObject"),1))).build();
 		} catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
 					.header("content-type", MediaType.TEXT_PLAIN)
