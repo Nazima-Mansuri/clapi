@@ -97,7 +97,6 @@ public class Territory {
 	 */
 	public static List<terrWrapper> getAllTerritories(LoggedInUser loggedInUser, int divId) throws Exception {
 		// TODO: check authorization of the user to see this data
-		System.out.println("starting territories");
 		String schemaName = loggedInUser.schemaName;
 
 		Connection con = DBConnectionProvider.getConn();
