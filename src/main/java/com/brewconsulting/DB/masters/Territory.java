@@ -13,11 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.jws.soap.SOAPBinding.Use;
 import javax.ws.rs.NotAuthorizedException;
 
-import com.brewconsulting.DB.Permissions;
-import com.brewconsulting.DB.User;
+import com.brewconsulting.DB.masters.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;

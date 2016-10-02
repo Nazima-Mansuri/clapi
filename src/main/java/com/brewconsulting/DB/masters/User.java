@@ -1,5 +1,5 @@
 
-package com.brewconsulting.DB;
+package com.brewconsulting.DB.masters;
 
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -16,7 +16,7 @@ import java.util.List;
 
 import javax.ws.rs.NotAuthorizedException;
 
-import com.brewconsulting.DB.Permissions;
+import com.brewconsulting.DB.masters.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;

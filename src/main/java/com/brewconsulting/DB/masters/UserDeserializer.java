@@ -1,9 +1,9 @@
-package com.brewconsulting.DB;
+package com.brewconsulting.DB.masters;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import com.brewconsulting.DB.User.Irole;
+import com.brewconsulting.DB.masters.User.Irole;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;

@@ -18,8 +18,8 @@ import javax.ws.rs.core.Response;
 
 import org.postgresql.util.PSQLException;
 
-import com.brewconsulting.DB.User;
-import com.brewconsulting.DB.UserProfile;
+import com.brewconsulting.DB.masters.User;
+import com.brewconsulting.DB.masters.UserProfile;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.brewconsulting.login.Secured;

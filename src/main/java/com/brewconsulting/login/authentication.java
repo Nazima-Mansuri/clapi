@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import com.brewconsulting.DB.*;
+import com.brewconsulting.DB.masters.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -34,13 +35,6 @@ public class authentication {
 			throws SQLException, ClassNotFoundException, IOException {
 		Response resp = null;
 		try {
-
-
-			//JsonNode req = mapper.readTree(input);
-			
-			//username = req.path("username").asText();
-			//password = req.path("password").asText();
-
 			String username  = credentials.getUsername();
 			String password = credentials.getPassword();
 

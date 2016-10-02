@@ -1,4 +1,4 @@
-package com.brewconsulting.DB;
+package com.brewconsulting.DB.masters;
 
 import java.sql.Array;
 import java.sql.Connection;
