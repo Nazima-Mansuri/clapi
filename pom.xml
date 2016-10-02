@@ -11,6 +11,7 @@
 
 	<build>
 		<finalName>clapi</finalName>
+		<testSourceDirectory>src/test</testSourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -83,10 +84,10 @@
 			<scope>runtime</scope>
 		</dependency>
 		<!--uncomment this to get JSON support -->
-		<!--<dependency>-->
-			<!--<groupId>org.glassfish.jersey.media</groupId>-->
-			<!--<artifactId>jersey-media-moxy</artifactId>-->
-		<!--</dependency>-->
+		<!--<dependency> -->
+		<!--<groupId>org.glassfish.jersey.media</groupId> -->
+		<!--<artifactId>jersey-media-moxy</artifactId> -->
+		<!--</dependency> -->
 
 
 		<!-- http://mvnrepository.com/artifact/org.elasticsearch/elasticsearch -->
@@ -144,6 +145,14 @@
 			<artifactId>jersey-media-multipart</artifactId>
 			<version>2.23.2</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/junit/junit -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+		</dependency>
+
 
 
 	</dependencies>

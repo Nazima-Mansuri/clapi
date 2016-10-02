@@ -19,7 +19,7 @@ import javax.ws.rs.core.Response;
 import org.postgresql.util.PSQLException;
 
 import com.brewconsulting.DB.masters.User;
-import com.brewconsulting.DB.masters.UserProfile;
+import com.brewconsulting.DB.masters.UserViews;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.brewconsulting.login.Secured;
@@ -47,8 +47,8 @@ public class Users {
 
 		try {
 			resp = Response.ok(
-					mapper.writeValueAsString(User.getProfile(
-							(JsonNode) crc.getProperty("user"), id))).build();
+					mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User.getProfile(
+							(LoggedInUser)crc.getProperty("userObject"), id))).build();
 		} catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
 					.header("content-type", MediaType.TEXT_PLAIN)
@@ -75,8 +75,8 @@ public class Users {
 		Response resp = null;
 		try {
 			JsonNode node = mapper.readTree(input);
-			int userid = UserProfile.createUser(node,
-					(JsonNode) crc.getProperty("user"));
+			int userid = User.createUser(node,
+					(LoggedInUser) crc.getProperty("userObject"));
 			resp = Response.ok("{\"id\":" + userid + "}").build();
 		 
 		} catch (IOException e) {
@@ -137,10 +137,10 @@ public class Users {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			resp = Response.ok(
-					mapper.writeValueAsString(UserProfile
+					mapper.writerWithView(UserViews.deAssociateView.class).writeValueAsString(User
 							.getDeassociateUser((LoggedInUser) crc
 									.getProperty("userObject")))).build();
-		} catch (NotAuthorizedException na) {
+		} catch (NotAuthorizedException na) { 
 			resp = Response.status(Response.Status.UNAUTHORIZED)
 					.header("content-type", MediaType.TEXT_PLAIN)
 					.entity("You are not authorized to get Deassociate User")
@@ -170,7 +170,7 @@ public class Users {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			resp = Response.ok(
-					mapper.writeValueAsString(UserProfile
+					mapper.writerWithView(UserViews.bareView.class).writeValueAsString(User
 							.getAllUsers((LoggedInUser) crc
 									.getProperty("userObject")))).build();
 		} catch (NotAuthorizedException na) {

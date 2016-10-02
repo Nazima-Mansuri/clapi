@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.sql.*;
 import com.brewconsulting.DB.*;
 import com.brewconsulting.DB.masters.User;
+import com.brewconsulting.DB.masters.UserViews;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -77,7 +78,7 @@ public class authentication {
 			// Add users details to claims. This will prevent a DB roundtrip for
 			// each API call.
 
-			bldr.claim("user", mapper.writeValueAsString(user));
+			bldr.claim("user", mapper.writerWithView(UserViews.authView.class).writeValueAsString(user));
 
 			node.put("jwt", bldr.compact());
 
