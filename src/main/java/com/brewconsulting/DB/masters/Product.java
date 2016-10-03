@@ -63,6 +63,33 @@ public class Product {
     @JsonProperty("updateBy")
     public int updateBy;
 
+    @JsonProperty("username")
+    public String username;
+
+    @JsonProperty("Firstname")
+    public String firstname;
+
+    @JsonProperty("Lastname")
+    public String lastname;
+
+    @JsonProperty("addLine1")
+    public String addLine1;
+
+    @JsonProperty("addLine2")
+    public String addLine2;
+
+    @JsonProperty("addLine3")
+    public String addLine3;
+
+    @JsonProperty("city")
+    public String city;
+
+    @JsonProperty("state")
+    public String state;
+
+    @JsonProperty("phones")
+    public String[] phones;
+
     public Product() {
 
     }
@@ -97,9 +124,12 @@ public class Product {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("select id, name,image, description,division,isActive, createDate,"
-                                    + "createBy, updateDate,updateBy from "
-                                    + schemaName + ".products");
+                            .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
+                                    + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
+                                    + schemaName
+                                    + ".products p left join "
+                                    + schemaName
+                                    + ".userprofile u on p.updateby = u.userid");
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Product product = new Product();
@@ -117,6 +147,17 @@ public class Product {
                         product.createBy = result.getInt(8);
                         product.updateDate = result.getTimestamp(9);
                         product.updateBy = result.getInt(10);
+                        product.addLine1 = result.getString(11);
+                        product.addLine2 = result.getString(12);
+                        product.addLine3 = result.getString(13);
+                        product.city = result.getString(14);
+                        product.state = result.getString(15);
+                        if (result.getArray(16) != null)
+                            product.phones = (String[]) result.getArray(16)
+                                    .getArray();
+                        product.firstname = loggedInUser.firstName;
+                        product.lastname = loggedInUser.lastName;
+                        product.username = loggedInUser.username;
                         products.add(product);
                     }
                 }
@@ -166,9 +207,13 @@ public class Product {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("select id, name,image,description,division,isActive, createDate,"
-                                    + "createBy, updateDate,updateBy from "
-                                    + schemaName + ".products where id = ?");
+                            .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
+                                    + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
+                                    + schemaName
+                                    + ".products p left join "
+                                    + schemaName
+                                    + ".userprofile u on p.updateby = u.userid"
+                                    + " where id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -187,6 +232,17 @@ public class Product {
                         product.createBy = result.getInt(8);
                         product.updateDate = result.getTimestamp(9);
                         product.updateBy = result.getInt(10);
+                        product.addLine1 = result.getString(11);
+                        product.addLine2 = result.getString(12);
+                        product.addLine3 = result.getString(13);
+                        product.city = result.getString(14);
+                        product.state = result.getString(15);
+                        if (result.getArray(16) != null)
+                            product.phones = (String[]) result.getArray(16)
+                                    .getArray();
+                        product.firstname = loggedInUser.firstName;
+                        product.lastname = loggedInUser.lastName;
+                        product.username = loggedInUser.username;
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -418,7 +474,6 @@ public class Product {
             throw new NotAuthorizedException("");
         }
     }
-
 
     /**
      * Method allows to store image in AWS bucket.

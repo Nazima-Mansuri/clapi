@@ -23,272 +23,399 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class UserProfile extends User {
 
-	@JsonProperty("addLine1")
-	public String addLine1;
+    @JsonProperty("addLine1")
+    public String addLine1;
 
-	@JsonProperty("addLine2")
-	public String addLine2;
+    @JsonProperty("addLine2")
+    public String addLine2;
 
-	@JsonProperty("addLine3")
-	public String addLine3;
+    @JsonProperty("addLine3")
+    public String addLine3;
 
-	@JsonProperty("city")
-	public String city;
+    @JsonProperty("city")
+    public String city;
 
-	@JsonProperty("state")
-	public String state;
+    @JsonProperty("state")
+    public String state;
 
-	@JsonProperty("designation")
-	public String designation;
+    @JsonProperty("designation")
+    public String designation;
 
-	@JsonProperty("divId")
-	public int divId;
+    @JsonProperty("divId")
+    public int divId;
 
-	@JsonProperty("divName")
-	public String divName;
+    @JsonProperty("divName")
+    public String divName;
 
-	@JsonProperty("empNum")
-	public String empNum;
+    @JsonProperty("empNum")
+    public String empNum;
 
-	@JsonProperty("phones")
-	public String[] phones;
+    @JsonProperty("phones")
+    public String[] phones;
 
-	@JsonProperty("createDate")
-	public Date createDate;
+    @JsonProperty("createDate")
+    public Date createDate;
 
-	@JsonProperty("createBy")
-	public int createBy;
+    @JsonProperty("createBy")
+    public int createBy;
 
-	@JsonProperty("updateDate")
-	public Date updateDate;
+    @JsonProperty("updateDate")
+    public Date updateDate;
 
-	@JsonProperty("updateBy")
-	public int updateBy;
+    @JsonProperty("updateBy")
+    public int updateBy;
 
-	UserProfile() {
+    UserProfile() {
 
-	}
+    }
 
-	UserProfile(User u) throws Exception {
-		if (u == null)
-			throw new Exception("User is null");
-		super.id = u.id;
-		super.clientId = u.clientId;
-		super.roles = u.roles;
-		super.schemaName = u.schemaName;
-		super.firstName = u.firstName;
-		super.lastName = u.lastName;
-		super.username = u.username;
-	}
+    UserProfile(User u) throws Exception {
+        if (u == null)
+            throw new Exception("User is null");
+        super.id = u.id;
+        super.clientId = u.clientId;
+        super.roles = u.roles;
+        super.schemaName = u.schemaName;
+        super.firstName = u.firstName;
+        super.lastName = u.lastName;
+        super.username = u.username;
+    }
 
-	UserProfile(int id) {
-		super.id = id;
-	}
+    UserProfile(int id) {
+        super.id = id;
+    }
 
-	public static int createUser(JsonNode node, JsonNode loggedInUser)
-			throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
+    public static int createUser(JsonNode node, JsonNode loggedInUser)
+            throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
 
-		// TODO: check if the user has rights to perform this action.
-		JsonNode userRolesNode = loggedInUser.get("roles");
-		Iterator<JsonNode> iterator = userRolesNode.elements();
+        // TODO: check if the user has rights to perform this action.
+        JsonNode userRolesNode = loggedInUser.get("roles");
+        Iterator<JsonNode> iterator = userRolesNode.elements();
 
-		boolean isAllowed = false;
+        boolean isAllowed = false;
 
-		while (iterator.hasNext()) {
-			if (Permissions.isAuthorised(iterator.next().get("roleid").asInt(),
-					Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
+        while (iterator.hasNext()) {
+            if (Permissions.isAuthorised(iterator.next().get("roleid").asInt(),
+                    Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
 
-				isAllowed = true;
-				break;
-			}
-		}
+                isAllowed = true;
+                break;
+            }
+        }
 
-		if (!isAllowed)
-			throw new NotAuthorizedException("");
-		else {
+        if (!isAllowed)
+            throw new NotAuthorizedException("");
+        else {
 
-			Connection con = DBConnectionProvider.getConn();
-			try {
-				con.setAutoCommit(false);
-				PreparedStatement stmt = con
-						.prepareStatement(
-								"insert into master.users (firstname, lastname, "
-										+ "clientId, username, password) values (?,?,?,?,?)",
-								Statement.RETURN_GENERATED_KEYS);
-				stmt.setString(1, node.get("firstName").asText());
-				stmt.setString(2, node.get("lastName").asText());
-				stmt.setInt(3, node.get("clientId").asInt());
-				stmt.setString(4, node.get("username").asText());
-				stmt.setString(5, node.get("password").asText());
+            Connection con = DBConnectionProvider.getConn();
+            try {
+                con.setAutoCommit(false);
+                PreparedStatement stmt = con
+                        .prepareStatement(
+                                "insert into master.users (firstname, lastname, "
+                                        + "clientId, username, password) values (?,?,?,?,?)",
+                                Statement.RETURN_GENERATED_KEYS);
+                stmt.setString(1, node.get("firstName").asText());
+                stmt.setString(2, node.get("lastName").asText());
+                stmt.setInt(3, node.get("clientId").asInt());
+                stmt.setString(4, node.get("username").asText());
+                stmt.setString(5, node.get("password").asText());
 
-				int affectedRows = stmt.executeUpdate();
-				if (affectedRows == 0)
-					throw new SQLException("Create user failed.");
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0)
+                    throw new SQLException("Create user failed.");
 
-				ResultSet generatedKeys = stmt.getGeneratedKeys();
-				int userid;
-				if (generatedKeys.next())
-					userid = generatedKeys.getInt(1);
-				else
-					throw new SQLException("Create user failed. No ID obtained");
+                ResultSet generatedKeys = stmt.getGeneratedKeys();
+                int userid;
+                if (generatedKeys.next())
+                    userid = generatedKeys.getInt(1);
+                else
+                    throw new SQLException("Create user failed. No ID obtained");
 
-				// TODO: set up the phones string array
-				String[] arr = { "90909 98989", "78787 78786" };
-				Array pharr = con.createArrayOf("text", arr);
+                // TODO: set up the phones string array
+                String[] arr = {"90909 98989", "78787 78786"};
+                Array pharr = con.createArrayOf("text", arr);
 
-				stmt = con
-						.prepareStatement("insert into "
-								+ loggedInUser.get("schemaName").asText()
-								+ ".userProfile(userId,"
-								+ "address, designation, divId, empNumber, createBy, updateDate, updateBy) values (?, "
-								+ "ROW(?,?,?,?,?,?), ?, ?, ?, ?,?,?)");
-				stmt.setInt(1, userid);
-				stmt.setString(2, node.get("addLine1").asText());
-				stmt.setString(3, node.get("addLine2").asText());
-				stmt.setString(4, node.get("addLine3").asText());
-				stmt.setString(5, node.get("city").asText());
-				stmt.setString(6, node.get("state").asText());
-				stmt.setArray(7, pharr);
-				stmt.setString(8, node.get("designation").asText());
-				stmt.setInt(9, node.get("divId").asInt());
-				stmt.setString(10, node.get("empNumber").asText());
-				stmt.setInt(11, node.get("createBy").asInt());
-				stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
-				stmt.setInt(13, node.get("updateBy").asInt());
+                stmt = con
+                        .prepareStatement("insert into "
+                                + loggedInUser.get("schemaName").asText()
+                                + ".userProfile(userId,"
+                                + "address, designation, divId, empNumber, createBy, updateDate, updateBy) values (?, "
+                                + "ROW(?,?,?,?,?,?), ?, ?, ?, ?,?,?)");
+                stmt.setInt(1, userid);
+                stmt.setString(2, node.get("addLine1").asText());
+                stmt.setString(3, node.get("addLine2").asText());
+                stmt.setString(4, node.get("addLine3").asText());
+                stmt.setString(5, node.get("city").asText());
+                stmt.setString(6, node.get("state").asText());
+                stmt.setArray(7, pharr);
+                stmt.setString(8, node.get("designation").asText());
+                stmt.setInt(9, node.get("divId").asInt());
+                stmt.setString(10, node.get("empNumber").asText());
+                stmt.setInt(11, node.get("createBy").asInt());
+                stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
+                stmt.setInt(13, node.get("updateBy").asInt());
 
-				stmt.executeUpdate();
+                stmt.executeUpdate();
 
-				if (node.has("roles")) {
-					JsonNode rolesNode = node.get("roles");
-					Iterator<JsonNode> it = rolesNode.elements();
+                if (node.has("roles")) {
+                    JsonNode rolesNode = node.get("roles");
+                    Iterator<JsonNode> it = rolesNode.elements();
 
-					while (it.hasNext()) {
-						JsonNode role = it.next();
-						stmt = con
-								.prepareStatement("insert into master.userRoleMap (userId, roleId, effectDate,createBy) values"
-										+ "(?,?,?,?)");
-						stmt.setInt(1, userid);
-						stmt.setInt(2, role.get("roleid").asInt());
-						stmt.setTimestamp(3,
-								new Timestamp((new Date()).getTime()));
-						stmt.setInt(4, 1);
-						stmt.executeUpdate();
-					}
-				} else
-					throw new RequiredDataMissing("Role is required");
-				con.commit();
-				return userid;
-			} catch (Exception ex) {
-				if (con != null)
-					con.rollback();
-				throw ex;
-			} finally {
-				con.setAutoCommit(false);
-				if (con != null)
-					con.close();
-			}
-		}
-	}
+                    while (it.hasNext()) {
+                        JsonNode role = it.next();
+                        stmt = con
+                                .prepareStatement("insert into master.userRoleMap (userId, roleId, effectDate,createBy) values"
+                                        + "(?,?,?,?)");
+                        stmt.setInt(1, userid);
+                        stmt.setInt(2, role.get("roleid").asInt());
+                        stmt.setTimestamp(3,
+                                new Timestamp((new Date()).getTime()));
+                        stmt.setInt(4, 1);
+                        stmt.executeUpdate();
+                    }
+                } else
+                    throw new RequiredDataMissing("Role is required");
+                con.commit();
+                return userid;
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+        }
+    }
 
-	/***
-	 * Method allows user to get list of username which are not associate to any
-	 * Territory.
-	 * 
-	 * @param loggedInUser
-	 * @throws Exception
-	 * @Return
-	 */
-	public static List<UserProfile> getDeassociateUser(LoggedInUser loggedInUser)
-			throws Exception {
-		// TODO: check authorization of the user to see this data
-		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.USER_PROFILE,
-				Permissions.getAccessLevel(userRole))) {
+    public static void UpdateUser(JsonNode node, JsonNode loggedInUser)
+            throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
 
-			String schemaName = loggedInUser.schemaName;
-			Connection con = DBConnectionProvider.getConn();
-			PreparedStatement stmt = null;
-			ResultSet result = null;
-			ArrayList<UserProfile> userList = new ArrayList<UserProfile>();
+        // TODO: check if the user has rights to perform this action.
+        JsonNode userRolesNode = loggedInUser.get("roles");
+        Iterator<JsonNode> iterator = userRolesNode.elements();
 
-			try {
+        boolean isAllowed = false;
 
-				stmt = con.prepareStatement("select u.id,u.username,"
-						+ "(up.address).city city from master.users u "
-						+ "join client1.userprofile up on up.userid=u.id "
-						+ "WHERE u.id not in(select userid from " + schemaName
-						+ ".userterritorymap)");
+        while (iterator.hasNext()) {
+            if (Permissions.isAuthorised(iterator.next().get("roleid").asInt(),
+                    Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
 
-				result = stmt.executeQuery();
-				while (result.next()) {
-					UserProfile user = new UserProfile();
-					user.id = result.getInt(1);
-					user.username = result.getString(2);
-					user.city = result.getString(3);
-					userList.add(user);
-				}
-			} finally {
-				if (result != null)
-					if (!result.isClosed())
-						result.close();
-				if (stmt != null)
-					if (!stmt.isClosed())
-						stmt.close();
-				if (con != null)
-					if (!con.isClosed())
-						con.close();
-			}
-			return userList;
-		} else {
-			throw new NotAuthorizedException("");
-		}
-	}
+                isAllowed = true;
+                break;
+            }
+        }
 
-	/**
-	 * Method allows user to get list of all User.
-	 * 
-	 * @param loggedInUser
-	 * @return
-	 * @throws Exception
-	 */
-	public static List<UserProfile> getAllUsers(LoggedInUser loggedInUser)
-			throws Exception {
-		// TODO: check authorization of the user to see this data
-		int userRole = loggedInUser.roles.get(0).roleId;
+        if (!isAllowed)
+            throw new NotAuthorizedException("");
+        else {
 
-		if (Permissions.isAuthorised(userRole, Permissions.USER_PROFILE,
-				Permissions.getAccessLevel(userRole))) {
-			String schemaName = loggedInUser.schemaName;
-			Connection con = DBConnectionProvider.getConn();
-			PreparedStatement stmt = null;
-			ResultSet result = null;
-			ArrayList<UserProfile> userList = new ArrayList<UserProfile>();
+            Connection con = DBConnectionProvider.getConn();
+            try {
+                con.setAutoCommit(false);
+                PreparedStatement stmt = con
+                        .prepareStatement("UPDATE "
+                                + "master.users SET firstname = ?, lastName= ?,clientId = ?,"
+                                + "username = ?,password = ? WHERE id = ?");
 
-			try {
-				stmt = con
-						.prepareStatement("select id,username from master.users ");
-				result = stmt.executeQuery();
-				while (result.next()) {
-					UserProfile user = new UserProfile();
-					user.id = result.getInt(1);
-					user.username = result.getString(2);
-					userList.add(user);
-				}
-			} finally {
-				if (result != null)
-					if (!result.isClosed())
-						result.close();
-				if (stmt != null)
-					if (!stmt.isClosed())
-						stmt.close();
-				if (con != null)
-					if (!con.isClosed())
-						con.close();
-			}
-			return userList;
-		} else {
-			throw new NotAuthorizedException("");
-		}
-	}
+                stmt.setString(1, node.get("firstName").asText());
+                stmt.setString(2, node.get("lastName").asText());
+                stmt.setInt(3, node.get("clientId").asInt());
+                stmt.setString(4, node.get("username").asText());
+                stmt.setString(5, node.get("password").asText());
+
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0)
+                    throw new SQLException("Update user failed.");
+                else {
+                    stmt = con
+                            .prepareStatement("UPDATE "
+                                    + loggedInUser.get("schemaName").asText()
+                                    + ".userProfile SET address= ?,designation = ?,"
+                                    + "divId = ?,empNumber = ?,createBy= ?,updateDate= ?,updateBy= ? WHERE userId = ");
+
+                    stmt.setString(1, node.get("addLine1").asText());
+                    stmt.setString(2, node.get("addLine2").asText());
+                    stmt.setString(3, node.get("addLine3").asText());
+                    stmt.setString(4, node.get("city").asText());
+                    stmt.setString(5, node.get("state").asText());
+                    stmt.setString(6, node.get("phones").asText());
+                    stmt.setString(7, node.get("designation").asText());
+                    stmt.setInt(8, node.get("divId").asInt());
+                    stmt.setString(9, node.get("empNumber").asText());
+                    stmt.setInt(10, node.get("createBy").asInt());
+                    stmt.setTimestamp(11, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(12, node.get("updateBy").asInt());
+
+
+                    stmt.executeUpdate();
+                }
+
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+        }
+    }
+
+
+    /***
+     * Method allows user to get list of username which are not associate to any
+     * Territory.
+     *
+     * @param loggedInUser
+     * @throws Exception
+     * @Return
+     */
+    public static List<UserProfile> getDeassociateUser(LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.USER_PROFILE,
+                Permissions.getAccessLevel(userRole))) {
+
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+            ArrayList<UserProfile> userList = new ArrayList<UserProfile>();
+
+            try {
+
+                stmt = con.prepareStatement("select u.id,u.username,"
+                        + "(up.address).city city from master.users u "
+                        + "join client1.userprofile up on up.userid=u.id "
+                        + "WHERE u.id not in(select userid from " + schemaName
+                        + ".userterritorymap)");
+
+                result = stmt.executeQuery();
+                while (result.next()) {
+                    UserProfile user = new UserProfile();
+                    user.id = result.getInt(1);
+                    user.username = result.getString(2);
+                    user.city = result.getString(3);
+                    userList.add(user);
+                }
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return userList;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /**
+     * Method allows user to get list of all User.
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<UserProfile> getAllUsers(LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.USER_PROFILE,
+                Permissions.getAccessLevel(userRole))) {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+            ArrayList<UserProfile> userList = new ArrayList<UserProfile>();
+
+            try {
+                stmt = con
+                        .prepareStatement("select id,username from master.users ");
+                result = stmt.executeQuery();
+                while (result.next()) {
+                    UserProfile user = new UserProfile();
+                    user.id = result.getInt(1);
+                    user.username = result.getString(2);
+                    userList.add(user);
+                }
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return userList;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     * Method allows user to Delete Division from Database.
+     *
+     * @param loggedInUser
+     * @param id
+     * @throws Exception
+     * @Return
+     */
+
+    public static int deleteUser(int id, LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to Delete data
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+                Permissions.getAccessLevel(userRole))) {
+
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result = 0;
+
+            try {
+                // If connection is not null then perform delete operation.
+                if (con != null) {
+                    stmt = con.prepareStatement("DELETE FROM "
+                            + "master.users WHERE id = ?");
+
+                    stmt.setInt(1, id);
+                    result = stmt.executeUpdate();
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
+
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return result;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+
 }

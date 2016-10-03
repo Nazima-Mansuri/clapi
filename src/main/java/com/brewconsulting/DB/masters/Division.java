@@ -111,13 +111,13 @@ public class Division {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, "
-                                    + "d.updateDate,d.updateBy,u.username,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones"
-                                    + "from "
+                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy,u.username,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
                                     + schemaName
-                                    + ".divisions d left join master.users u "
-                                    + " on d.updateBy = u.id left join client1.userprofile p on d.updateby = p.userid  ORDER BY d.id DESC");
+                                    + ".divisions d left join master.users u on d.updateBy = u.id left join "
+                                    + schemaName
+                                    + ".userprofile p on d.updateby = p.userid ORDER BY d.id DESC");
                     result = stmt.executeQuery();
+                    System.out.print(result);
                     while (result.next()) {
                         Division div = new Division();
                         div.id = result.getInt(1);
@@ -183,7 +183,9 @@ public class Division {
                             .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, d.updateDate, "
                                     + " d.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
                                     + schemaName
-                                    + ".divisions d left join client1.userprofile p on d.updateby = p.userid where id = ?");
+                                    + ".divisions d left join "
+                                    + schemaName
+                                    + ".userprofile p on d.updateby = p.userid where id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {

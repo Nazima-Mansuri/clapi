@@ -5,17 +5,13 @@ import java.io.InputStream;
 import java.sql.SQLException;
 
 import javax.naming.NamingException;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.brewconsulting.DB.masters.Product;
 import org.postgresql.util.PSQLException;
 
 import com.brewconsulting.DB.User;
@@ -183,4 +179,48 @@ public class Users {
 		}
 		return resp;
 	}
+
+	/***
+	 * Delete a Product
+	 *
+	 * @param id
+	 * @param crc
+	 * @return
+	 */
+	@DELETE
+	@Produces("application/json")
+	@Secured
+	@Path("{id}")
+	public Response deleteUser(@PathParam("id") Integer id,
+							  @Context ContainerRequestContext crc) {
+		Response resp = null;
+		try {
+			System.out.println("In Del");
+			int affectedRow = UserProfile.deleteUser(id,
+					(LoggedInUser) crc.getProperty("userObject"));
+			System.out.println("Method called and affected rows" + affectedRow);
+			if (affectedRow > 0)
+				resp = Response.ok().build();
+			else
+				// If no rows affected in database. It gives server status
+				// 204(NO_CONTENT).
+				resp = Response.status(204).build();
+
+		} catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.header("content-type", MediaType.TEXT_PLAIN)
+					.entity("You are not authorized to delete User").build();
+		} catch (PSQLException ex) {
+			resp = Response
+					.status(409)
+					.entity("This id is already Use in another table as foreign key")
+					.type(MediaType.TEXT_PLAIN).build();
+			ex.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return resp;
+	}
+
 }
