@@ -20,7 +20,7 @@ import javax.ws.rs.core.Response;
 
 import org.postgresql.util.PSQLException;
 
-import com.brewconsulting.DB.Permissions;
+import com.brewconsulting.DB.masters.Permissions;
 import com.brewconsulting.DB.masters.Division;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.exceptions.NoDataFound;
