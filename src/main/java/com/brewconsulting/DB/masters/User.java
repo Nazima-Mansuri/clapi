@@ -479,7 +479,8 @@ public class User {
 		ArrayList<User> userList = new ArrayList<User>();
 
 		try {
-
+//TODO: we need to check the div. the div also needs to be passed as a parameter here. Territory active? 
+			
 			stmt = con.prepareStatement("select a.userid id, (a.address).city city, c.username username " + "from "
 					+ loggedInUser.schemaName + ".userProfile a left outer join " + loggedInUser.schemaName
 					+ ".userTerritoryMap b " + "on (a.userId = b.userId), master.users c "
