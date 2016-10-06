@@ -1,4 +1,4 @@
-package com.brewconsulting.DB.masters;
+package com.brewconsulting.DB;
 
 public class Permissions {
 	public static final int USER_PROFILE = 0x01; // access to others profile.

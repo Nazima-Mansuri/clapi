@@ -31,248 +31,244 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Path("products")
 public class Products {
-	ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = new ObjectMapper();
 
-	/***
-	 * Produces a list of all products
-	 * 
-	 * @param crc
-	 * @return
-	 */
+    /***
+     * Produces a list of all products
+     *
+     * @param crc
+     * @return
+     */
 
-	@GET
-	@Produces("application/json")
-	@Secured
-	public Response products(@Context ContainerRequestContext crc) {
-		Response resp = null;
+    @GET
+    @Produces("application/json")
+    @Secured
+    public Response products(@Context ContainerRequestContext crc) {
+        Response resp = null;
 
-		try {
-			resp = Response.ok(
-					mapper.writeValueAsString(Product
-							.getAllProducts((LoggedInUser) crc
-									.getProperty("userObject")))).build();
-		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get products").build();
-		}
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(Product
+                            .getAllProducts((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get products").build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        }
 
-		catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
-			e.printStackTrace();
-		}
+        return resp;
+    }
 
-		return resp;
-	}
+    /***
+     * get a particular product
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("{id}")
+    public Response products(@PathParam("id") Integer id,
+                             @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            Product product = Product.getProductById(id,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            if (product == null) {
+                resp = Response
+                        .noContent()
+                        .entity(new NoDataFound("This product does not exist")
+                                .getJsonString()).build();
+            } else
+                resp = Response.ok(mapper.writeValueAsString(product)).build();
 
-	/***
-	 * get a particular product
-	 * 
-	 * @param id
-	 * @param crc
-	 * @return
-	 */
-	@GET
-	@Produces("application/json")
-	@Secured
-	@Path("{id}")
-	public Response products(@PathParam("id") Integer id,
-			@Context ContainerRequestContext crc) {
-		Response resp = null;
-		try {
-			Product product = Product.getProductById(id,
-					(LoggedInUser) crc.getProperty("userObject"));
-			if (product == null) {
-				resp = Response
-						.noContent()
-						.entity(new NoDataFound("This product does not exist")
-								.getJsonString()).build();
-			} else
-				resp = Response.ok(mapper.writeValueAsString(product)).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get product").build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
 
-		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get product").build();
-		}
+    /***
+     * Add new Product
+     *
+     * @param fileInputStream
+     * @param fileFormDataContentDisposition
+     * @param name
+     * @param description
+     * @param division
+     * @param isActive
+     * @param crc
+     * @return
+     */
+    @POST
+    @Secured
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response createPro(
+            @FormDataParam("uploadFile") InputStream fileInputStream,
+            @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
+            @FormDataParam("name") String name,
+            @FormDataParam("description") String description,
+            @FormDataParam("division") int division,
+            @FormDataParam("isActive") Boolean isActive,
+            @Context ContainerRequestContext crc) {
 
-		catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
-			e.printStackTrace();
-		}
-		return resp;
-	}
+        Response resp = null;
+        // local variables
+        String fileName = null;
+        String uploadFilePath = null;
+        ObjectMapper mapper = new ObjectMapper();
 
-	/***
-	 * Add new Product
-	 * 
-	 * @param fileInputStream
-	 * @param fileFormDataContentDisposition
-	 * @param name
-	 * @param description
-	 * @param division
-	 * @param isActive
-	 * @param crc
-	 * @return
-	 */
-	@POST
-	@Secured
-	@Consumes(MediaType.MULTIPART_FORM_DATA)
-	public Response createPro(
-			@FormDataParam("uploadFile") InputStream fileInputStream,
-			@FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
-			@FormDataParam("name") String name,
-			@FormDataParam("description") String description,
-			@FormDataParam("division") int division,
-			@FormDataParam("isActive") Boolean isActive,
-			@Context ContainerRequestContext crc) {
+        try {
 
-		Response resp = null;
-		// local variables
-		String fileName = null;
-		String uploadFilePath = null;
-		ObjectMapper mapper = new ObjectMapper();
+            if (fileFormDataContentDisposition != null) {
+                fileName = System.currentTimeMillis() + "_"
+                        + fileFormDataContentDisposition.getFileName();
+                // This method is used to store image in AWS bucket.
+                uploadFilePath = Product.writeToFile(fileInputStream, fileName);
+            } else {
+                uploadFilePath = null;
+            }
 
-		try {
+            int productId = Product.addProduct(name, uploadFilePath,
+                    description, division, isActive,
+                    (LoggedInUser) crc.getProperty("userObject"));
 
-			if (fileFormDataContentDisposition != null) {
-				fileName = System.currentTimeMillis() + "_"
-						+ fileFormDataContentDisposition.getFileName();
-				// This method is used to store image in AWS bucket.
-				uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-			} else {
-				uploadFilePath = null;
-			}
+            if (productId != 0)
+                resp = Response.ok("{\"id\":" + productId + "}").build();
+            else
+                resp = Response
+                        .noContent()
+                        .entity(new NoDataFound("Unable to Insert Product")
+                                .getJsonString()).build();
 
-			int productId = Product.addProduct(name, uploadFilePath,
-					description, division, isActive,
-					(LoggedInUser) crc.getProperty("userObject"));
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to create product").build();
+        } catch (IOException e) {
+            if (resp == null) {
+                resp = Response.serverError().entity(e.getMessage()).build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
 
-			if (productId != 0)
-				resp = Response.ok("{\"id\":" + productId + "}").build();
-			else
-				resp = Response
-						.noContent()
-						.entity(new NoDataFound("Unable to Insert Product")
-								.getJsonString()).build();
+    /***
+     * Updates a Product. Id of product is passedin input.
+     *
+     * @param fileInputStream
+     * @param fileFormDataContentDisposition
+     * @param name
+     * @param description
+     * @param division
+     * @param isActive
+     * @param id
+     * @param crc
+     * @return
+     */
 
-		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to create product").build();
-		} catch (IOException e) {
-			if (resp == null) {
-				resp = Response.serverError().entity(e.getMessage()).build();
-				e.printStackTrace();
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return resp;
-	}
+    @PUT
+    @Secured
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response updatePro(
+            @FormDataParam("uploadFile") InputStream fileInputStream,
+            @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
+            @FormDataParam("name") String name,
+            @FormDataParam("description") String description,
+            @FormDataParam("division") int division,
+            @FormDataParam("isActive") Boolean isActive,
+            @FormDataParam("id") int id, @Context ContainerRequestContext crc) {
 
-	/***
-	 * Updates a Product. Id of product is passedin input.
-	 * 
-	 * @param fileInputStream
-	 * @param fileFormDataContentDisposition
-	 * @param name
-	 * @param description
-	 * @param division
-	 * @param isActive
-	 * @param id
-	 * @param crc
-	 * @return
-	 */
+        Response resp = null;
+        String fileName = null;
+        String uploadFilePath = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
 
-	@PUT
-	@Secured
-	@Consumes(MediaType.MULTIPART_FORM_DATA)
-	public Response updatePro(
-			@FormDataParam("uploadFile") InputStream fileInputStream,
-			@FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
-			@FormDataParam("name") String name,
-			@FormDataParam("description") String description,
-			@FormDataParam("division") int division,
-			@FormDataParam("isActive") Boolean isActive,
-			@FormDataParam("id") int id, @Context ContainerRequestContext crc) {
+            if (fileFormDataContentDisposition != null) {
+                fileName = System.currentTimeMillis() + "_"
+                        + fileFormDataContentDisposition.getFileName();
+                // This method is used to store image in AWS bucket.
+                uploadFilePath = Product.writeToFile(fileInputStream, fileName);
+            } else {
+                uploadFilePath = null;
+            }
 
-		Response resp = null;
-		String fileName = null;
-		String uploadFilePath = null;
-		ObjectMapper mapper = new ObjectMapper();
-		try {
+            int affectedRow = Product.updateProduct(name, uploadFilePath,
+                    description, division, isActive, id,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            if (affectedRow > 0)
+                resp = Response.ok().build();
+            else
+                resp = Response.status(204).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to update product").build();
+        } catch (IOException e) {
+            if (resp == null)
+                resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
 
-			if (fileFormDataContentDisposition != null) {
-				fileName = System.currentTimeMillis() + "_"
-						+ fileFormDataContentDisposition.getFileName();
-				// This method is used to store image in AWS bucket.
-				uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-			} else {
-				uploadFilePath = null;
-			}
+    /***
+     * Delete a Product
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
+    @DELETE
+    @Produces("application/json")
+    @Secured
+    @Path("{id}")
+    public Response deletePro(@PathParam("id") Integer id,
+                              @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            int affectedRow = Product.deleteProduct(id,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            if (affectedRow > 0)
+                resp = Response.ok().build();
+            else
+                // If no rows affected in database. It gives server status
+                // 204(NO_CONTENT).
+                resp = Response.status(204).build();
 
-			int affectedRow = Product.updateProduct(name, uploadFilePath,
-					description, division, isActive, id,
-					(LoggedInUser) crc.getProperty("userObject"));
-			if (affectedRow > 0)
-				resp = Response.ok().build();
-			else
-				resp = Response.status(204).build();
-		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to update product").build();
-		} catch (IOException e) {
-			if (resp == null)
-				resp = Response.serverError().entity(e.getMessage()).build();
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return resp;
-	}
-
-	/***
-	 * Delete a Product
-	 * 
-	 * @param id
-	 * @param crc
-	 * @return
-	 */
-	@DELETE
-	@Produces("application/json")
-	@Secured
-	@Path("{id}")
-	public Response deletePro(@PathParam("id") Integer id,
-			@Context ContainerRequestContext crc) {
-		Response resp = null;
-		try {
-			int affectedRow = Product.deleteProduct(id,
-					(LoggedInUser) crc.getProperty("userObject"));
-			if (affectedRow > 0)
-				resp = Response.ok().build();
-			else
-				// If no rows affected in database. It gives server status
-				// 204(NO_CONTENT).
-				resp = Response.status(204).build();
-
-		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to delete product").build();
-		} catch (PSQLException ex) {
-			resp = Response
-					.status(409)
-					.entity("This id is already Use in another table as foreign key")
-					.type(MediaType.TEXT_PLAIN).build();
-			ex.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return resp;
-	}
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to delete product").build();
+        } catch (PSQLException ex) {
+            resp = Response
+                    .status(409)
+                    .entity("This id is already Use in another table as foreign key")
+                    .type(MediaType.TEXT_PLAIN).build();
+            ex.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
 }
