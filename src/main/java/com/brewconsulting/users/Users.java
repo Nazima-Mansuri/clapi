@@ -220,6 +220,13 @@ public class Users {
     }
 
 
+    /**
+     * Update User
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
     @PUT
     @Produces("application/json")
     @Secured

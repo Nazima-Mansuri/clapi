@@ -473,13 +473,13 @@ public class User {
             // error if insert failed.
             System.out.println("Out of if");
 
-//            if (node.has("roles")) {
-//                System.out.println("in if");
-//                JsonNode rolesNode = node.get("roles");
-//                Iterator<JsonNode> it = rolesNode.elements();
-//                System.out.println(it.hasNext());
-//                while (it.hasNext()) {
-//                    JsonNode role = it.next();
+/*            if (node.has("roles")) {
+               System.out.println("in if");
+               JsonNode rolesNode = node.get("roles");
+                Iterator<JsonNode> it = rolesNode.elements();
+                System.out.println(it.hasNext());
+                while (it.hasNext()) {
+                    JsonNode role = it.next();*/
             stmt = con.prepareStatement(
                     "insert into master.userroleMap (userId, roleId, effectDate,createBy) values"
                             + "(?,?,?,?)");
@@ -627,14 +627,14 @@ public class User {
 
     }
 
-    /***
+    /**
      * Method allows user to deactivate User from Database.
      *
+     * @param node
      * @param loggedInUser
+     * @return
      * @throws Exception
-     * @Return
      */
-
     public static int deactivateUser(JsonNode node, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to Delete data
@@ -675,6 +675,16 @@ public class User {
     }
 
 
+    /**
+     * Method allows to update user Details
+     *
+     * @param node
+     * @param loggedInUser
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws RequiredDataMissing
+     * @throws NamingException
+     */
     public static void updateUser(JsonNode node, LoggedInUser loggedInUser)
             throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
 
@@ -693,18 +703,17 @@ public class User {
             throw new NotAuthorizedException("");
 
         Connection con = DBConnectionProvider.getConn();
-        PreparedStatement stmt = null;
+        PreparedStatement stmt;
         ResultSet result;
 
         try {
             con.setAutoCommit(false);
-            stmt = con.prepareStatement("UPDATE master.users SET firstname = ?,lastname = ?,clientId= ?,username=?,password=? WHERE id = ?");
+            stmt = con.prepareStatement("UPDATE master.users SET firstname = ?,lastname = ?,clientId= ?,username=? WHERE id = ?");
             stmt.setString(1, node.get("firstName").asText());
             stmt.setString(2, node.get("lastName").asText());
             stmt.setInt(3, node.get("clientId").asInt());
             stmt.setString(4, node.get("username").asText());
-            stmt.setString(5, node.get("password").asText());
-            stmt.setInt(6, node.get("userid").asInt());
+            stmt.setInt(5, node.get("userid").asInt());
 
             int affectedRows = stmt.executeUpdate();
             System.out.println(affectedRows);
@@ -742,8 +751,7 @@ public class User {
                 stmt.setInt(11, loggedInUser.id);
                 stmt.setInt(12, node.get("userid").asInt());
 
-                int affectedRows1 = stmt.executeUpdate();
-//                System.out.println(affectedRows1);
+                stmt.executeUpdate();
 
                 stmt = con.prepareStatement("SELECT roleid from master.userrolemap where userid=?");
                 stmt.setInt(1, node.get("userid").asInt());
@@ -757,7 +765,6 @@ public class User {
 
                     if (result.getInt("roleid") != node.get("roleid").asInt()) {
 
-//                        System.out.println("IN IF");
                         stmt.executeUpdate();
 
                         stmt = con.prepareStatement("insert into master.userrolemaphistory (userid, roleid, effectdate, createdate, createby) values (?,?,?,?,?)");
