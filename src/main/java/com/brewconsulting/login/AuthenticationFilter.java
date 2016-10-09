@@ -39,6 +39,24 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 		this.servletContext = scon;
 		servletContext.log("her eis the LOG ENTRY");
 	}
+	
+	/**
+	 *TODO: implement these steps
+	 * 1. check if the token supplied is ACCESS TOKEN. I have added this field to token
+	 * 2. if not access token 400 BAD REQUEST - the client should send only access token for API access
+	 * 3. Scenarios: LOGOUT, USER DEACTIVATED, USER DIV MAPPING CHANGE, USER NAME CHANGE, USER ROLE CHANGE
+	 * 4. if LOGOUT: the client should delete both token so they are never used again. On server put both in memcached 
+	 * with a life of (configurable) 1 month. thus for the next one month the tokens are not usable. This also means
+	 * that both these tokens for public and work domains should never be more than this value. If any token received that 
+	 * is logged out then 401 unauthorised. The client will need to show login page.
+	 * 5. USER DEACTIVATED - same as logout. Put both tokens in deactivate key value pairs in memcached
+	 * 6. DIV MAPPING CHANGED: if the access token is in this key-value pair (it will be put from update user 
+	 * function in user class -check existing divs from access token and if the updated divs differ put it here. so 
+	 * return 401 to client. the client will then send refresh token where you will goto DB and create access token
+	 * with correct values.
+	 * 7. USER NAME CHANGE and ROLE CHANGE - same as DIV mapping change. 
+	 *  
+	 */
 
 	@Override
 	public void filter(ContainerRequestContext context) throws IOException {
@@ -51,6 +69,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 				Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(authHeader);
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = mapper.readTree((String) clms.getBody().get("user"));
+				String tokenType = (String) clms.getBody().get("tokenType");
+				
 				context.setProperty("user", validate(node));
 				context.setProperty("userObject", mapper.treeToValue(node, LoggedInUser.class));
 			} catch (Exception ex) {

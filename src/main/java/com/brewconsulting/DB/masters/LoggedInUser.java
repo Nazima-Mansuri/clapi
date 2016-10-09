@@ -19,4 +19,6 @@ public class LoggedInUser {
 	public String lastName;
 	@JsonProperty("roles")
 	public ArrayList<Role> roles;
+	@JsonProperty("designation")
+	public String designation;
 }

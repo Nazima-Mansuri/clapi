@@ -77,13 +77,15 @@ public class User {
 	@JsonProperty("roleid")
 	public int roleid;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("divId")
-	public int divId;
+	
+	//TODO: convert this to array of divisions as per DB.
+//	@JsonView(UserViews.profileView.class)
+//	@JsonProperty("divId")
+//	public int divId;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("divName")
-	public String divName;
+//	@JsonView(UserViews.profileView.class)
+//	@JsonProperty("divName")
+//	public String divName;
 
 	@JsonView(UserViews.profileView.class)
 	@JsonProperty("empNumber")
@@ -274,11 +276,11 @@ public class User {
 					"select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname, schemaName schemaname, "
 							+ "c.id roleid, c.name rolename, a.username username, "
 							+ "(d.address).addLine1 line1, (d.address).addLine2 line2, (d.address).addLine3 line3,"
-							+ "(d.address).city city, (d.address).state, (d.address).phone phones, designation, d.divId divid,"
-							+ "empNumber, e.name divname," + "d.createDate cdate, d.createBy cby, "
+							+ "(d.address).city city, (d.address).state, (d.address).phone phones, designation, "
+							+ "empNumber, " + "d.createDate cdate, d.createBy cby, "
 							+ "d.updateDate  udate,  d.updateBy uby"
 							+ " from master.users a, master.userRoleMap b, master.roles c, " + user.schemaName
-							+ ".userProfile d, " + user.schemaName + ".divisions e, master.clients f "
+							+ ".userProfile d,  master.clients f "
 							+ " where a.isActive and a.id = ? and a.id = b.userId and b.roleId = c.id"
 							+ " and d.userId = a.id and d.divId = e.Id and f.id = a.clientId");
 			stmt.setInt(1, id);
@@ -301,8 +303,8 @@ public class User {
 					userProfile.state = schemaUsers.getString("state");
 					userProfile.phones = (String[]) schemaUsers.getArray("phones").getArray();
 					userProfile.designation = schemaUsers.getString("designation");
-					userProfile.divId = schemaUsers.getInt("divid");
-					userProfile.divName = schemaUsers.getString("divname");
+//					userProfile.divId = schemaUsers.getInt("divid");
+//					userProfile.divName = schemaUsers.getString("divname");
 					userProfile.empNum = schemaUsers.getString("empnumber");
 					userProfile.createDate = schemaUsers.getDate("cdate");
 					userProfile.createBy = schemaUsers.getInt("cby");
@@ -335,10 +337,10 @@ public class User {
 		try {
 			stmt = con.prepareStatement(
 					"select (address).addLine1 line1, (address).addLine2 line2, (address).addLine3 line3, "
-							+ "(address).city city, (address).state, (address).phone phones, designation, a.divId divid, "
-							+ "empNumber, b.name divname," + "a.createDate cdate, a.createBy cby, "
-							+ "a.updateDate  udate,  a.updateBy uby from " + user.schemaName + ".userProfile a, "
-							+ user.schemaName + ".divisions b where userId = ? and " + "a.divId = b.Id");
+							+ "(address).city city, (address).state, (address).phone phones, designation, "
+							+ "empNumber," + "a.createDate cdate, a.createBy cby, "
+							+ "a.updateDate  udate,  a.updateBy uby from " + user.schemaName + ".userProfile a "
+							+ " where userId = ? " );
 			stmt.setInt(1, user.id);
 
 			schemaUsers = stmt.executeQuery();
@@ -351,8 +353,8 @@ public class User {
 				user.state = schemaUsers.getString("state");
 				user.phones = (String[]) schemaUsers.getArray("phones").getArray();
 				user.designation = schemaUsers.getString("designation");
-				user.divId = schemaUsers.getInt("divid");
-				user.divName = schemaUsers.getString("divname");
+//				user.divId = schemaUsers.getInt("divid");
+//				user.divName = schemaUsers.getString("divname");
 				user.empNum = schemaUsers.getString("empnumber");
 				user.createDate = schemaUsers.getDate("cdate");
 				user.createBy = schemaUsers.getInt("cby");
@@ -594,8 +596,8 @@ public class User {
                 user.state = result.getString("state");
                 user.phones = (String[]) result.getArray("phones").getArray();
                 user.roleid = result.getInt("roleid");
-                user.divId = result.getInt("divid");
-                user.divName = result.getString("divname");
+//                user.divId = result.getInt("divid");
+//                user.divName = result.getString("divname");
                 user.empNum = result.getString("empnumber");
                 user.createDate = result.getDate("cdate");
                 user.createBy = result.getInt("cby");
