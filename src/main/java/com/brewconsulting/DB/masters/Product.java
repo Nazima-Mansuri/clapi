@@ -15,6 +15,8 @@ import java.util.List;
 
 import javax.ws.rs.NotAuthorizedException;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.amazonaws.auth.PropertiesCredentials;
@@ -125,7 +127,9 @@ public class Product {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
-                                    + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
+                                    + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
+                                    "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                    "(address).state state,(address).phone phones from "
                                     + schemaName
                                     + ".products p left join "
                                     + schemaName
@@ -494,9 +498,9 @@ public class Product {
                 + "/Product";
 
         try {
-            AmazonS3 s3Client = new AmazonS3Client(new PropertiesCredentials(
-                    Product.class
-                            .getResourceAsStream("AwsCredentials.properties")));
+
+            AWSCredentials awsCredentials = new BasicAWSCredentials("AKIAJZZRFGQGNZIDUFTQ","12uUP7pQrvR3Kf0GpyeJr328RQ/a1m8TI+/8w2X8");
+            AmazonS3 s3Client = new AmazonS3Client(awsCredentials);
 
             ObjectMetadata objectMetadata = new ObjectMetadata();
             PutObjectRequest putObjectRequest = new PutObjectRequest(
@@ -509,7 +513,7 @@ public class Product {
                     + amazonFileUploadLocationOriginal + "/" + fileName;
             System.out.println(finalUrl);
 
-        } catch (IOException ioe) {
+        } catch (Exception ioe) {
             ioe.printStackTrace();
         }
 

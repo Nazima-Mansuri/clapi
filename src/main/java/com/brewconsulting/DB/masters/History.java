@@ -54,6 +54,9 @@ public class History {
 	@JsonProperty("empnumber")
 	public String empnumber;
 
+	@JsonProperty("isHistory")
+	public Boolean isHistory;
+
 	/***
 	 * Method allows user to get history of territory.
 	 * 
@@ -61,7 +64,7 @@ public class History {
 	 * @throws Exception
 	 * @Return
 	 */
-	public static List<History> getAllHistory(LoggedInUser loggedInUser)
+	public static List<History> getAllHistory(int id,LoggedInUser loggedInUser)
 			throws Exception {
 		// TODO: check authorization of the user to see this data
 		
@@ -71,7 +74,6 @@ public class History {
 		PreparedStatement stmt = null;
 		ResultSet result = null;
 		ArrayList<History> histories = new ArrayList<History>();
-
 		try {
 			if (con != null) {
 				stmt = con
@@ -88,8 +90,9 @@ public class History {
 								+ schemaName
 								+ ".userprofile uf,"
 								+ " master.users as u"
-								+ " where t.userid = u.id AND t.userid = uf.userid");
+								+ " where t.terrid = ? AND t.userid = u.id AND t.userid = uf.userid");
 
+				stmt.setInt(1,id);
 				result = stmt.executeQuery();
 				while (result.next()) {
 					History history = new History();
@@ -107,6 +110,7 @@ public class History {
 					history.empnumber = result.getString(10);
 					history.effectDate = result.getTimestamp(11);
 					history.endDate = result.getTimestamp(12);
+					history.isHistory = true;
 					histories.add(history);
 				}
 			} else

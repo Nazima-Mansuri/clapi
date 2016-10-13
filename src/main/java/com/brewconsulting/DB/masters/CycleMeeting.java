@@ -1,37 +1,54 @@
 package com.brewconsulting.DB.masters;
 
-import java.nio.file.AccessDeniedException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.text.DateFormat;
+import com.brewconsulting.DB.Permissions;
+import com.brewconsulting.DB.common.DBConnectionProvider;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import javax.ws.rs.NotAuthorizedException;
+import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.ws.rs.NotAuthorizedException;
+import static com.brewconsulting.DB.utils.stringToDate;
 
-import com.brewconsulting.DB.Permissions;
-import com.brewconsulting.DB.common.DBConnectionProvider;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-
-public class Division {
+/**
+ * Created by lcom53 on 7/10/16.
+ */
+public class CycleMeeting {
 
     @JsonProperty("id")
     public int id;
 
-    @JsonProperty("name")
-    public String name;
+    @JsonProperty("title")
+    public String title;
 
-    @JsonProperty("description")
-    public String description;
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("groupId")
+    public int groupId;
+
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("venue")
+    public String venue;
+
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("startDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    public Date startDate;
+
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("endDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    public Date endDate;
+
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("organiser")
+    public int organiser;
 
     @JsonProperty("createDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
@@ -50,36 +67,19 @@ public class Division {
     @JsonProperty("username")
     public String username;
 
-    @JsonProperty("Firstname")
-    public String firstname;
-
-    @JsonProperty("Lastname")
-    public String lastname;
-
-    @JsonProperty("addLine1")
-    public String addLine1;
-
-    @JsonProperty("addLine2")
-    public String addLine2;
-
-    @JsonProperty("addLine3")
-    public String addLine3;
-
-    @JsonProperty("city")
-    public String city;
-
-    @JsonProperty("state")
-    public String state;
-
-    @JsonProperty("phones")
-    public String[] phones;
-
     // make the default constructor visible to package only.
-    Division() {
-
+    public CycleMeeting() {
     }
 
-    public static List<Division> getAllDivisions(LoggedInUser loggedInUser)
+
+    /***
+     * Method is used to get all meetings.
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeeting> getAllSubMeetings(int id,LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -90,42 +90,35 @@ public class Division {
             String schemaName = loggedInUser.schemaName;
 
             Connection con = DBConnectionProvider.getConn();
-            ArrayList<Division> divisions = new ArrayList<Division>();
+            ArrayList<CycleMeeting> cycleMeetings = new ArrayList<CycleMeeting>();
             PreparedStatement stmt = null;
             ResultSet result = null;
 
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy,u.username,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
-                                    + schemaName
-                                    + ".divisions d left join master.users u on d.updateBy = u.id left join "
-                                    + schemaName
-                                    + ".userprofile p on d.updateby = p.userid ORDER BY d.id DESC");
+                            .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, "
+                                    +" organiser, createdon, createdby, updatedon, updatedby, u.username"
+                                    +"  FROM "+ schemaName+".cyclemeeting c left join master.users u ON " +
+                                    " u.id = organiser where groupId = ?");
+                    stmt.setInt(1,id);
                     result = stmt.executeQuery();
                     System.out.print(result);
                     while (result.next()) {
-                        Division div = new Division();
-                        div.id = result.getInt(1);
-                        div.name = result.getString(2);
-                        div.description = result.getString(3);
-                        div.createDate = result.getTimestamp(4);
-                        div.createBy = result.getInt(5);
-                        div.updateDate = result.getTimestamp(6);
-                        div.updateBy = result.getInt(7);
-                        div.username = result.getString(8);
-                        div.addLine1 = result.getString(9);
-                        div.addLine2 = result.getString(10);
-                        div.addLine3 = result.getString(11);
-                        div.city = result.getString(12);
-                        div.state = result.getString(13);
-                        if (result.getArray(14) != null)
-                            div.phones = (String[]) result.getArray(14)
-                                    .getArray();
-                        div.firstname = loggedInUser.firstName;
-                        div.lastname = loggedInUser.lastName;
-
-                        divisions.add(div);
+                        CycleMeeting subMeeting = new CycleMeeting();
+                        subMeeting.id = result.getInt(1);
+                        subMeeting.title = result.getString(2);
+                        subMeeting.groupId = result.getInt(3);
+                        subMeeting.venue = result.getString(4);
+                        subMeeting.startDate = result.getTimestamp(5);
+                        subMeeting.endDate = result.getTimestamp(6);
+                        subMeeting.organiser = result.getInt(7);
+                        subMeeting.createDate = result.getTimestamp(8);
+                        subMeeting.createBy = result.getInt(9);
+                        subMeeting.updateDate = result.getTimestamp(10);
+                        subMeeting.updateBy = result.getInt(11);
+                        subMeeting.username = result.getString(12);
+                        cycleMeetings.add(subMeeting);
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -141,14 +134,22 @@ public class Division {
                     if (!con.isClosed())
                         con.close();
             }
-            return divisions;
+            return cycleMeetings;
         } else {
             throw new NotAuthorizedException("");
         }
 
     }
 
-    public static Division getDivisionById(int id, LoggedInUser loggedInUser)
+    /***
+     * Method allows user to get meetings by id.
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static Division getSubMeetingById(int id, LoggedInUser loggedInUser)
             throws Exception {
 
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -166,12 +167,9 @@ public class Division {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, d.updateDate, "
-                                    + " d.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
-                                    + schemaName
-                                    + ".divisions d left join "
-                                    + schemaName
-                                    + ".userprofile p on d.updateby = p.userid where id = ?");
+                            .prepareStatement("SELECT id, title, groupid, venue, startdate, enddate, " +
+                                    " organiser, createdon, createdby, updateon, updatedate " +
+                                    "  FROM "+ schemaName+".cyclemeeting where id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -213,16 +211,15 @@ public class Division {
             throw new NotAuthorizedException("");
         }
     }
-
-    /***
-     * Method allows user to insert Division in Database.
+    /**
+     * Method Used to insert Meeting
      *
-     * @param loggedInUser
      * @param node
+     * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int addDivision(JsonNode node, LoggedInUser loggedInUser)
+    public static int addSubCycleMeeting(JsonNode node, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to Insert data
 
@@ -236,6 +233,7 @@ public class Division {
             PreparedStatement stmt = null;
             int result;
 
+
             try {
                 con.setAutoCommit(false);
 
@@ -243,36 +241,44 @@ public class Division {
                         .prepareStatement(
                                 "INSERT INTO "
                                         + schemaName
-                                        + ".divisions(name,description,createDate,createBy,updateDate,"
-                                        + "updateBy) values (?,?,?,?,?,?)",
+                                        + ".cycleMeeting(title,groupId,venue,startDate,endDate,organiser,createdon,"
+                                        + "createdby,updatedon,updatedby) values (?,?,?,?,?,?,?,?,?,?)",
                                 Statement.RETURN_GENERATED_KEYS);
-                stmt.setString(1, node.get("name").asText());
+                stmt.setString(1, node.get("title").asText());
 
-                // It checks if Description is given or not
-                if (node.has("description"))
-                    stmt.setString(2, node.get("description").asText());
-                else
-                    stmt.setString(2, null);
+                stmt.setInt(2, node.get("groupId").asInt());
 
-                stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-                stmt.setInt(4, loggedInUser.id);
-                stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
-                stmt.setInt(6, loggedInUser.id);
+                stmt.setString(3, node.get("venue").asText());
+
+                stmt.setTimestamp(4, new Timestamp((stringToDate(node.get("startDate").asText())).getTime()));
+
+                stmt.setTimestamp(5, new Timestamp((stringToDate(node.get("endDate").asText())).getTime()));
+
+                stmt.setInt(6, node.get("organiser").asInt());
+
+                stmt.setTimestamp(7, new Timestamp((new Date()).getTime()));
+
+                stmt.setInt(8, loggedInUser.id);
+
+                stmt.setTimestamp(9, new Timestamp((new Date()).getTime()));
+
+                stmt.setInt(10, loggedInUser.id);
+
                 result = stmt.executeUpdate();
 
                 if (result == 0)
-                    throw new SQLException("Add Division Failed.");
+                    throw new SQLException("Add Meeting Failed.");
 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
-                int divisionId;
+                int meetingId;
                 if (generatedKeys.next())
                     // It gives last inserted Id in divisionId
-                    divisionId = generatedKeys.getInt(1);
+                    meetingId = generatedKeys.getInt(1);
                 else
                     throw new SQLException("No ID obtained");
 
                 con.commit();
-                return divisionId;
+                return meetingId;
 
             } catch (Exception ex) {
                 if (con != null)
@@ -288,17 +294,17 @@ public class Division {
         }
     }
 
-    /***
-     * Method allows user to Update Division in Database.
+    /**
+     * Method used to update Meeting
      *
-     * @param loggedInUser
      * @param node
+     * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int updateDivision(JsonNode node, LoggedInUser loggedInUser)
+    public static int updateSubCycleMeeting(JsonNode node, LoggedInUser loggedInUser)
             throws Exception {
-        // TODO: check authorization of the user to Update data
+        // TODO: check authorization of the user to Insert data
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
@@ -307,55 +313,60 @@ public class Division {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
-            PreparedStatement stmt = null;
+            PreparedStatement stmt;
             int result;
 
             try {
-                // It checks if connection is not null then perform update
-                // operation.
-                if (con != null) {
-                    stmt = con
-                            .prepareStatement("UPDATE "
-                                    + schemaName
-                                    + ".divisions SET name = ?,description = ?,updateDate = ?,"
-                                    + "updateBy = ? WHERE id = ?");
-                    stmt.setString(1, node.get("name").asText());
+                con.setAutoCommit(false);
 
-                    // It checks if Description is given or not
-                    if (node.has("description"))
-                        stmt.setString(2, node.get("description").asText());
-                    stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(4, loggedInUser.id);
-                    stmt.setInt(5, node.get("divisionId").asInt());
+                stmt = con.prepareStatement("UPDATE " + schemaName + ".cycleMeeting SET title = ? , venue = ?, " +
+                        "startDate = ? , endDate = ?, organiser = ?, updatedOn = ?, updatedBy = ? " +
+                        "WHERE id = ?");
 
-                    result = stmt.executeUpdate();
-                } else
-                    throw new Exception("DB connection is null");
+                stmt.setString(1, node.get("title").asText());
 
-            } finally {
-                if (stmt != null)
-                    if (!stmt.isClosed())
-                        stmt.close();
+                stmt.setString(2, node.get("venue").asText());
+
+                stmt.setTimestamp(3, new Timestamp((stringToDate(node.get("startDate").asText())).getTime()));
+
+                stmt.setTimestamp(4, new Timestamp((stringToDate(node.get("endDate").asText())).getTime()));
+
+                stmt.setInt(5, node.get("organiser").asInt());
+
+                stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+
+                stmt.setInt(7, loggedInUser.id);
+
+                stmt.setInt(8, node.get("id").asInt());
+
+                result = stmt.executeUpdate();
+
+                con.commit();
+                return result;
+
+            } catch (Exception ex) {
                 if (con != null)
-                    if (!con.isClosed())
-                        con.close();
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
             }
-            return result;
         } else {
             throw new NotAuthorizedException("");
         }
     }
 
-    /***
-     * Method allows user to Delete Division from Database.
+    /**
+     * Method is used to delete Meeting
      *
-     * @param loggedInUser
      * @param id
+     * @param loggedInUser
+     * @return
      * @throws Exception
-     * @Return
      */
-
-    public static int deleteDivision(int id, LoggedInUser loggedInUser)
+    public static int deleteSubCycleMeeting(int id, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to Delete data
 
@@ -373,7 +384,7 @@ public class Division {
                 // If connection is not null then perform delete operation.
                 if (con != null) {
                     stmt = con.prepareStatement("DELETE FROM " + schemaName
-                            + ".divisions WHERE id = ?");
+                            + ".cycleMeeting WHERE id = ?");
 
                     stmt.setInt(1, id);
                     result = stmt.executeUpdate();

@@ -47,7 +47,7 @@ public class Territories {
 			resp = Response.ok(
 					mapper.writeValueAsString(Territory
 							.getAllTerritories((LoggedInUser) crc
-									.getProperty("userObject"),1))).build();
+									.getProperty("userObject"),3))).build();
 		} catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
 					.header("content-type", MediaType.TEXT_PLAIN)
@@ -258,13 +258,13 @@ public class Territories {
 		return resp;
 	}
 
-	/***
+	/**
 	 * delete from userTerritoryMap. Update endDate in userTerritoryMapHistory
-	 * 
-	 * @param id
+	 *
+	 * @param input
 	 * @param crc
-	 * @return
-	 */
+     * @return
+     */
 
 	@POST
 	@Path("/deassociate")
@@ -315,14 +315,14 @@ public class Territories {
 	@GET
 	@Produces("application/json")
 	@Secured
-	@Path("history")
-	public Response histories(@Context ContainerRequestContext crc) {
+	@Path("history/{id}")
+	public Response histories(@PathParam("id") Integer id,@Context ContainerRequestContext crc) {
 		Response resp = null;
 
 		try {
 			resp = Response.ok(
 					mapper.writeValueAsString(History
-							.getAllHistory((LoggedInUser) crc
+							.getAllHistory(id,(LoggedInUser) crc
 									.getProperty("userObject")))).build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity(e.getMessage()).build();

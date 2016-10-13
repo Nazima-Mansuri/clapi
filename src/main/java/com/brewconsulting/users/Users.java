@@ -59,6 +59,12 @@ public class Users {
 
     }
 
+    /**
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
     @POST
     @Produces("application/json")
     @Secured

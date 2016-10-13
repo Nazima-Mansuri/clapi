@@ -55,6 +55,12 @@ public class Territory {
     @JsonProperty("divId")
     public int divId;
 
+    @JsonProperty("username")
+    public String username;
+
+    @JsonProperty("isHistory")
+    public boolean isHistory;
+
     @JsonProperty("effectDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
     public Date effectDate;
@@ -111,11 +117,15 @@ public class Territory {
                 if (con != null) {
 
                     stmt = con.prepareStatement(
-                            "select id,name,(address).addLine1 addLine1, " + "(address).addLine2 addLine2,"
+                            "select t.id,name,(address).addLine1 addLine1, " + "(address).addLine2 addLine2,"
                                     + "(address).addLine3 addLine3,(address).city city,(address).state state,"
-                                    + "(address).phone phones,parentId,divId from " + schemaName
-                                    + ".territories where divId = ? ORDER BY id");
+                                    + "(address).phone phones,parentId,divId,u.userid,uf.username from " + schemaName
+                                    + ".territories t left join "
+                                    + schemaName + ".userterritorymap u " + "on t.id = u.terrid" +
+                                    " left join master.users uf on uf.id = u.userid "+
+                                    "  where divId = ?");
 
+                    System.out.println("divId :"+ divId);
                     stmt.setInt(1, divId);
 
                     // We Need Data in This Type of Format When parent has children
@@ -169,11 +179,14 @@ public class Territory {
 
                         terr.parentId = result.getInt(9);
                         terr.divId = result.getInt(10);
+                        terr.personId = result.getInt(11);
+                        terr.username = result.getString(12);
                         tw.text = terr.name;
                         tw.data = terr;
 //                        tw.children = terr.children;
 //					lookup.put(terr.id, terr);
                         lookup.put(terr.id, tw);
+                        System.out.println("in while");
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -192,12 +205,14 @@ public class Territory {
 
 
             for (terrWrapper territory : lookup.values()) {
-                if (territory.data.parentId == 0)
+                if (territory.data.parentId == 0) {
                     territories.add(territory);
+                    System.out.println("territory" + territory);
+                }
                 else if (lookup.containsKey(territory.data.parentId))
                     lookup.get(territory.data.parentId).children.add(territory);
             }
-
+            System.out.println("territory" + territories);
             return territories;
         } else {
             throw new NotAuthorizedException("");
@@ -280,6 +295,14 @@ public class Territory {
         }
     }
 
+    /***
+     *
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
     public static List<terrWrapper> getTerritorieByDivisionId(int id, LoggedInUser loggedInUser) throws Exception {
 
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -299,10 +322,15 @@ public class Territory {
                 if (con != null) {
 
                     stmt = con
-                            .prepareStatement("select id,name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+                            .prepareStatement("select distinct t.id,CASE WHEN b.terrid IS NULL THEN 'false' ELSE 'true' END AS isHistory," +
+                                    "name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
                                     + "(address).addLine3 addLine3,(address).city city,(address).state state,"
-                                    + "(address).phone phones,parentId,divId from " + schemaName
-                                    + ".territories WHERE divid = ?");
+                                    + "(address).phone phones,parentId,divId,u.userid,uf.username from " + schemaName
+                                    + ".territories t left join "
+                                    + schemaName + ".userterritorymap u " + "on t.id=u.terrid " +
+                                    "LEFT JOIN " + schemaName + ".userterritorymaphistory b ON t.id = b.terrid "+
+                                    " left join master.users uf on uf.id = u.userid "+
+                                    " WHERE divid = ?");
                     stmt.setInt(1, id);
 
                     result = stmt.executeQuery();
@@ -310,19 +338,22 @@ public class Territory {
                         territory = new Territory();
                         terrWrapper tw = new terrWrapper();
                         territory.id = result.getInt(1);
-                        territory.name = result.getString(2);
-                        territory.addLine1 = result.getString(3);
-                        territory.addLine2 = result.getString(4);
-                        territory.addLine3 = result.getString(5);
-                        territory.city = result.getString(6);
-                        territory.state = result.getString(7);
+                        territory.isHistory = result.getBoolean(2);
+                        territory.name = result.getString(3);
+                        territory.addLine1 = result.getString(4);
+                        territory.addLine2 = result.getString(5);
+                        territory.addLine3 = result.getString(6);
+                        territory.city = result.getString(7);
+                        territory.state = result.getString(8);
                         // If phone number is null then it gives null pointer
                         // exception here.
                         // So it check that the phone number is null or not
-                        if (result.getArray(8) != null)
-                            territory.phones = (String[]) result.getArray(8).getArray();
-                        territory.parentId = result.getInt(9);
-                        territory.divId = result.getInt(10);
+                        if (result.getArray(9) != null)
+                            territory.phones = (String[]) result.getArray(9).getArray();
+                        territory.parentId = result.getInt(10);
+                        territory.divId = result.getInt(11);
+                        territory.personId = result.getInt(12);
+                        territory.username = result.getString(13);
                         tw.text = territory.name;
                         tw.data = territory;
 //					lookup.put(terr.id, terr);
@@ -550,10 +581,11 @@ public class Territory {
                 affectedRow = stmt.executeUpdate();
 
                 stmt = con.prepareStatement(
-                        "SELECT count(*) as Resultcount from " + schemaName + ".userterritorymap WHERE userId = ?");
+                        "SELECT userId from " + schemaName + ".userterritorymap WHERE userId = ?");
                 stmt.setInt(1, node.get("personId").asInt());
                 result = stmt.executeQuery();
 
+                System.out.println();
                 if (!result.next()) {
                     System.out.println("If Method ");
                     // It Insert data in userTerritoryMap with new userId
