@@ -19,16 +19,16 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by lcom53 on 17/10/16.
+ * Created by lcom16 on 17/10/16.
  */
-
-@Path("groupnotes")
+@Path("cyclemeetingnotes")
 @Secured
-public class GroupNotes {
+public class ChildNotes {
+
     ObjectMapper mapper = new ObjectMapper();
 
-    /***
-     * Produces list of notes for Specific Group
+    /**
+     * get child note by id
      *
      * @param id
      * @param crc
@@ -36,20 +36,19 @@ public class GroupNotes {
      */
     @GET
     @Secured
-    @Produces("application/json")
-    @Path("{groupid}")
-    public Response getGrpNotes(@PathParam("groupid") int id ,@Context ContainerRequestContext crc) {
+    @Path("/notesbyid/{id}")
+    public Response getChildNoteById(@PathParam("id") int id, @Context ContainerRequestContext crc) {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
             resp = Response.ok(
                     mapper.writerWithView(UserViews.groupNoteView.class).writeValueAsString(Note
-                            .getAllGroupNotes(id,(LoggedInUser) crc
+                            .getChildNoteById(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Notes").build();
+                    .entity("You are not authorized to get Group Tasks").build();
         } catch (Exception e) {
             resp = Response.serverError().entity(e.getMessage()).build();
             e.printStackTrace();
@@ -57,48 +56,38 @@ public class GroupNotes {
         return resp;
     }
 
-    /***
-     * get a particular Group Note.
+    /**
+     * get all notes by cyclemeeting id
      *
      * @param id
      * @param crc
      * @return
      */
     @GET
-    @Produces("application/json")
     @Secured
-    @Path("notbyid/{id}")
-    public Response getGrpNotes(@PathParam("id") Integer id,
-                                @Context ContainerRequestContext crc) {
+    @Path("{cyclemeetingid}")
+    public Response getAllChildNotes(@PathParam("cyclemeetingid") int id, @Context ContainerRequestContext crc) {
         Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
         try {
-            Note note = Note.getGroupNoteById(id,
-                    (LoggedInUser) crc.getProperty("userObject"));
-            if (note == null) {
-                resp = Response
-                        .noContent()
-                        .entity(new NoDataFound("This Group Note does not exist")
-                                .getJsonString()).build();
-            } else {
-                resp = Response.ok(mapper.writerWithView(UserViews.groupNoteView.class).writeValueAsString(note)).build();
-            }
-
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.groupNoteView.class).writeValueAsString(Note
+                            .getAllChildNote(id, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Note").build();
+                    .entity("You are not authorized to get Group Tasks").build();
         } catch (Exception e) {
-
             resp = Response.serverError().entity(e.getMessage()).build();
             e.printStackTrace();
-
         }
         return resp;
     }
 
 
-    /***
-     * Add Group Note
+    /**
+     * Add child Note
      *
      * @param input
      * @param crc
@@ -108,24 +97,24 @@ public class GroupNotes {
     @Secured
     @Produces("application/json")
 
-    public Response createGrpNote(InputStream input,
-                                  @Context ContainerRequestContext crc) {
+    public Response createChildNote(InputStream input,
+                                    @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             JsonNode node = mapper.readTree(input);
-            int groupNoteId = Note.addGroupNote(node,
+            int childNoteId = Note.addChildNote(node,
                     (LoggedInUser) crc.getProperty("userObject"));
-            if (groupNoteId != 0)
-                resp = Response.ok("{\"id\":" + groupNoteId + "}").build();
+            if (childNoteId != 0)
+                resp = Response.ok("{\"id\":" + childNoteId + "}").build();
             else
                 resp = Response
                         .noContent()
-                        .entity(new NoDataFound("Unable to Insert Group Note")
+                        .entity(new NoDataFound("Unable to Insert Group Task")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Group Note").build();
+                    .entity("You are not authorized to Insert Group Task").build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity(e.getMessage()).build();
@@ -139,7 +128,7 @@ public class GroupNotes {
     }
 
     /***
-     * Update Group Note
+     * Update child note
      *
      * @param input
      * @param crc
@@ -148,18 +137,19 @@ public class GroupNotes {
     @PUT
     @Secured
     @Produces("application/json")
-    public Response updateGrpNote(InputStream input,
-                                  @Context ContainerRequestContext crc) {
+
+    public Response updateChildNote(InputStream input,
+                                    @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             JsonNode node = mapper.readTree(input);
-            Note.updateGroupNote(node,
+            Note.updateChildNote(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Group Note")
+                    .entity("You are not authorized to update Group Task")
                     .build();
         } catch (IOException e) {
             if (resp == null)
@@ -173,7 +163,7 @@ public class GroupNotes {
     }
 
     /***
-     * Delete Group Note
+     * Delete child note
      *
      * @param id
      * @param crc
@@ -183,12 +173,12 @@ public class GroupNotes {
     @Secured
     @Produces("application/json")
     @Path("{id}")
-    public Response deleteGrpNote(@PathParam("id") Integer id,
-                                  @Context ContainerRequestContext crc) {
+    public Response deleteChildNote(@PathParam("id") Integer id,
+                                    @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             // affectedRow given how many rows deleted from database.
-            int affectedRow = Note.deleteGroupNote(id,
+            int affectedRow = Note.deleteChildNote(id,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (affectedRow > 0)
                 resp = Response.ok().build();
@@ -200,7 +190,7 @@ public class GroupNotes {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Group Note")
+                    .entity("You are not authorized to delete Group Task")
                     .build();
         } catch (PSQLException ex) {
             resp = Response

@@ -709,7 +709,7 @@ public class Task {
                     stmt.setTimestamp(4,new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
                     stmt.setArray(5,remind);
                     stmt.setInt(6,node.get("assignedTo").asInt());
-                    stmt.setInt(7,node.get("assignedBy").asInt());
+                    stmt.setInt(7,node.get("assignBy").asInt());
                     stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                     stmt.setInt(9, loggedInUser.id);
                     stmt.setInt(10, node.get("id").asInt());
