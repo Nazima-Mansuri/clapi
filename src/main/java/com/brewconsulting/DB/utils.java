@@ -6,6 +6,7 @@ import javax.ws.rs.core.Response;
 import com.brewconsulting.exceptions.RequiredDataMissing;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -36,7 +37,20 @@ public class utils {
 	public static Date stringToDate(String strDate) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
 		java.util.Date date = sdf.parse(strDate);
-
 		return date;
+	}
+
+
+	public static java.sql.Date stringTodate(String dateAsString) {
+		try {
+			String dateFormat = "dd-MM-yyyy";
+			DateFormat df;
+			df = new SimpleDateFormat(dateFormat);
+			return new java.sql.Date(df.parse(dateAsString).getTime());
+		} catch (ParseException e) {
+			return null;
+		} catch (NullPointerException e) {
+			return null;
+		}
 	}
 }

@@ -79,6 +79,13 @@ public class Division {
 
     }
 
+    /***
+     * Method used to get all Divisions.
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
     public static List<Division> getAllDivisions(LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
@@ -101,7 +108,7 @@ public class Division {
                                     + schemaName
                                     + ".divisions d left join master.users u on d.updateBy = u.id left join "
                                     + schemaName
-                                    + ".userprofile p on d.updateby = p.userid ORDER BY d.id DESC");
+                                    + ".userprofile p on d.updateby = p.userid ORDER BY d.updateDate DESC");
                     result = stmt.executeQuery();
                     System.out.print(result);
                     while (result.next()) {
@@ -148,6 +155,14 @@ public class Division {
 
     }
 
+    /***
+     * Method used to get Particular Division
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
     public static Division getDivisionById(int id, LoggedInUser loggedInUser)
             throws Exception {
 

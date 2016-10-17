@@ -182,6 +182,37 @@ public class Users {
         return resp;
     }
 
+
+    /***
+     * Produces list of users for specific Division.
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("userbydivision/{id}")
+    public Response getAllUsersByDivId(@PathParam("id") int id, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
+                            .getAllUsersByDivId(id,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get Users").build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
     /***
      * Deactivate user
      *

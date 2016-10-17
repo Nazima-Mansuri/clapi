@@ -657,6 +657,85 @@ public class User {
 
     }
 
+
+    /***
+     * This method Display all Users by specific division.
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<User> getAllUsersByDivId(int id ,LoggedInUser loggedInUser) throws Exception {
+        // TODO: check authorization of the user to see this data
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (!Permissions.isAuthorised(userRole, Permissions.USER_PROFILE, Permissions.getAccessLevel(userRole)))
+            throw new NotAuthorizedException("");
+
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+        ArrayList<User> userList = new ArrayList<User>();
+
+        try {
+            stmt = con.prepareStatement(
+                    "select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
+                            " e.roleid roleid, f.name rolename, a.username username," +
+                            " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
+                            " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
+                            " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
+                            " b.updateDate  udate,  b.updateBy uby from master.users a left join "+
+                            loggedInUser.schemaName+".userprofile b on a.id = b.userid " +
+                            " left join "+loggedInUser.schemaName+".userdivmap c on a.id = c.userid left join "+
+                            loggedInUser.schemaName+".divisions d on d.id = c.divid left join master.userrolemap e on " +
+                            " e.userid = a.id left join master.roles f on f.id = e.roleid where c.divid = ? order by a.id asc ");
+            stmt.setInt(1,id);
+            result = stmt.executeQuery();
+            while (result.next()) {
+
+                User user = new User();
+                user.id = result.getInt("id");
+                user.clientId = result.getInt("clientid");
+                user.firstName = result.getString("firstname");
+                user.lastName = result.getString("lastname");
+                user.isActive = result.getBoolean("isActive");
+                user.roles = new ArrayList<Role>();
+                user.roles.add(new Role(result.getInt("roleid"), result.getString("rolename")));
+                user.username = result.getString("username");
+                user.addLine1 = result.getString("line1");
+                user.addLine2 = result.getString("line2");
+                user.addLine3 = result.getString("line3");
+                user.city = result.getString("city");
+                user.state = result.getString("state");
+                user.phones = (String[]) result.getArray("phones").getArray();
+                user.roleid = result.getInt("roleid");
+                user.divId = result.getInt("divId");
+                user.divName = result.getString("divname");
+                user.empNum = result.getString("empnumber");
+                user.createDate = result.getDate("cdate");
+                user.createBy = result.getInt("cby");
+                user.updateDate = result.getDate("cdate");
+                user.updateBy = result.getInt("cby");
+                user.designation = result.getString("designation");
+                userList.add(user);
+            }
+        } finally {
+            if (result != null)
+                if (!result.isClosed())
+                    result.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+        return userList;
+
+    }
+
     /**
      * Method allows user to deactivate User from Database.
      *

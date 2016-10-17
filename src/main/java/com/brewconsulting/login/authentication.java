@@ -8,10 +8,7 @@ import java.util.*;
 import javax.mail.MessagingException;
 import javax.naming.InitialContext;
 import javax.servlet.ServletContext;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -64,7 +61,7 @@ public class authentication {
                 throw new Exception("Password not specified");
             }
 
-			User user = User.authenticate(username, password);
+			User user = User.authenticate(username, sb.toString());
 
 			if (user == null) {
 				resp = Response.status(Response.Status.UNAUTHORIZED).entity("Authentication Failed").build();

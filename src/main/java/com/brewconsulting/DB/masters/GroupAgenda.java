@@ -264,6 +264,8 @@ public class GroupAgenda {
                     groupAgenda.createBy = result.getInt(8);
                     groupAgenda.updateOn = result.getTimestamp(9);
                     groupAgenda.updateBy = result.getInt(10);
+                    groupAgenda.groupId=groupId;
+                    groupAgenda.dayNo=dayNo;
 
                     groupAgendas.add(groupAgenda);
                 }

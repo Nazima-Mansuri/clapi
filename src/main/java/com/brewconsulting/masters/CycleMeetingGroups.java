@@ -61,6 +61,33 @@ public class CycleMeetingGroups {
         return resp;
     }
 
+
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("meetingbyid/{id}")
+    public Response groupMeetingById(@PathParam("id") Integer id,
+                                       @Context ContainerRequestContext crc) {
+        Response resp = null;
+
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(CycleMeetingGroup
+                            .getGroupById(id, ((LoggedInUser) crc
+                                    .getProperty("userObject"))))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response
+                    .status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get divison by territory")
+                    .build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
     /**
      *  add new Meeting
      *

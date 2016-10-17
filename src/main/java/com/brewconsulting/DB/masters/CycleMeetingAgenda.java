@@ -7,13 +7,13 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import javax.rmi.CORBA.Util;
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static com.brewconsulting.DB.utils.stringToDate;
 
 
 public class CycleMeetingAgenda {
@@ -25,7 +25,6 @@ public class CycleMeetingAgenda {
     public int cycleMeetingId;
 
     @JsonProperty("meetingDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
     public Date meetingDate;
 
     @JsonProperty("sessionName")
@@ -147,7 +146,7 @@ public class CycleMeetingAgenda {
                                     + "createdOn,createdBy,updateOn,updatedBy) values (?,?,?,?,?,?,?,?,?,?)",
                             Statement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, node.get("cycleMeetingId").asInt());
-            stmt.setTimestamp(2, new Timestamp(stringToDate(node.get("meetingDate").asText()).getTime()));
+            stmt.setDate(2, utils.stringTodate(node.get("meetingDate").asText()));
             stmt.setString(3, node.get("sessionName").asText());
             stmt.setString(4, node.get("sessionDesc").asText());
             stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
@@ -213,7 +212,7 @@ public class CycleMeetingAgenda {
                                     + "updateOn=?,updatedBy=? where id=?",
                             Statement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, node.get("cycleMeetingId").asInt());
-            stmt.setTimestamp(2, new Timestamp(stringToDate(node.get("meetingDate").asText()).getTime()));
+            stmt.setDate(2, utils.stringTodate(node.get("meetingDate").asText()));
             stmt.setString(3, node.get("sessionName").asText());
             stmt.setString(4, node.get("sessionDesc").asText());
             stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
@@ -277,6 +276,69 @@ public class CycleMeetingAgenda {
         }
         return result;
 
+    }
+
+    /**
+     * method used for get agenda by date
+     *
+     * @param cycleMeetingId
+     * @param date
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeetingAgenda> getAgendaByDate(int cycleMeetingId, java.sql.Date date, LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        String schemaName = loggedInUser.schemaName;
+
+        Connection con = DBConnectionProvider.getConn();
+        ArrayList<CycleMeetingAgenda> cycleMeetingAgendas = new ArrayList<CycleMeetingAgenda>();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+
+        try {
+            if (con != null) {
+                stmt = con
+                        .prepareStatement("SELECT id, sessionname, sessiondesc, sessionstarttime," +
+                                "sessionendtime,createdon, createdby, updateon, updatedby" +
+                                " FROM " + schemaName + ".cyclemeetingagenda where cyclemeetingid= ? and meetingdate = ?");
+
+                stmt.setInt(1,cycleMeetingId);
+                stmt.setDate(2, date);
+                result = stmt.executeQuery();
+
+                while (result.next()) {
+                    CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
+                    cycleMeetingAgenda.id = result.getInt(1);
+                    cycleMeetingAgenda.sessionName = result.getString(2);
+                    cycleMeetingAgenda.sessionDesc = result.getString(3);
+                    cycleMeetingAgenda.sessionStartTime = result.getTime(4);
+                    cycleMeetingAgenda.sessionEndTime = result.getTime(5);
+                    cycleMeetingAgenda.createOn = result.getTimestamp(6);
+                    cycleMeetingAgenda.createBy = result.getInt(7);
+                    cycleMeetingAgenda.updatedOn = result.getTimestamp(8);
+                    cycleMeetingAgenda.updatedBy = result.getInt(9);
+                    cycleMeetingAgenda.meetingDate=date;
+                    cycleMeetingAgenda.cycleMeetingId=cycleMeetingId;
+
+                    cycleMeetingAgendas.add(cycleMeetingAgenda);
+                }
+            } else
+                throw new Exception("DB connection is null");
+
+        } finally {
+            if (result != null)
+                if (!result.isClosed())
+                    result.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+        return cycleMeetingAgendas;
     }
 
 }

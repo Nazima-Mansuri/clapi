@@ -51,6 +51,9 @@ public class Product {
     @JsonProperty("division")
     public int division;
 
+    @JsonProperty("divName")
+    public String divName;
+
     @JsonProperty("createDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
     public Date createDate;
@@ -129,11 +132,12 @@ public class Product {
                             .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
                                     + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
                                     "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                    "(address).state state,(address).phone phones from "
+                                    "(address).state state,(address).phone phones , d.name from "
                                     + schemaName
                                     + ".products p left join "
                                     + schemaName
-                                    + ".userprofile u on p.updateby = u.userid");
+                                    + ".userprofile u on p.updateby = u.userid" +
+                                    " left join " + schemaName +".divisions d on  p.division = d.id ");
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Product product = new Product();
@@ -159,6 +163,7 @@ public class Product {
                         if (result.getArray(16) != null)
                             product.phones = (String[]) result.getArray(16)
                                     .getArray();
+                        product.divName = result.getString(17);
                         product.firstname = loggedInUser.firstName;
                         product.lastname = loggedInUser.lastName;
                         product.username = loggedInUser.username;

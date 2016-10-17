@@ -53,6 +53,12 @@ public class CycleMeetingGroup {
     @JsonProperty("updatedBy")
     public int updatedBy;
 
+    @JsonProperty("conductedBy")
+    public String conductedBy;
+
+    @JsonProperty("divName")
+    public String divName;
+
     @JsonProperty("children")
     public ArrayList<CycleMeeting> cycleMeetings;
 
@@ -91,13 +97,15 @@ public class CycleMeetingGroup {
                     stmt = con
                             .prepareStatement("SELECT c1.id, c1.division, c1.noofdays, c1.leadorganiser, " +
                                     " c1.keywords, c1.title, c1.description, " +
-                                    " c1.createdon, c1.createdby, c1.updateon, c1.updatedby, " +
+                                    " c1.createdon, c1.createdby, c1.updateon, c1.updatedby, c3.username, " +
                                     " c2.id, c2.title, c2.groupid, c2.venue, c2.startdate, c2.enddate, " +
                                     "c2.organiser, c2.createdon, " +
-                                    " c2.createdby, c2.updatedon, c2.updatedby " +
+                                    " c2.createdby, c2.updatedon, c2.updatedby, c4.username " +
                                     " FROM client1.cyclemeetinggroup c1 " +
-                                    "left join client1.cyclemeeting c2 on c1.id = c2.groupid  " +
-                                    "where c1.division = ? ORDER BY c1.id ASC");
+                                    " left join client1.cyclemeeting c2 on c1.id = c2.groupid  " +
+                                    " left join master.users c3 on c1.leadorganiser = c3.id  "+
+                                    " left join master.users c4 on c2.organiser = c4.id"+
+                                    " where c1.division = ? ORDER BY c1.id ASC");
                     stmt.setInt(1, id);
 
                     result = stmt.executeQuery();
@@ -118,18 +126,20 @@ public class CycleMeetingGroup {
                         meetingGroup.createdBy = result.getInt(9);
                         meetingGroup.updateOn = result.getTimestamp(10);
                         meetingGroup.updatedBy = result.getInt(11);
+                        meetingGroup.conductedBy = result.getString(12);
 
-                        cycleMeeting.id = result.getInt(12);
-                        cycleMeeting.title = result.getString(13);
-                        cycleMeeting.groupId = result.getInt(14);
-                        cycleMeeting.venue = result.getString(15);
-                        cycleMeeting.startDate = result.getTimestamp(16);
-                        cycleMeeting.endDate = result.getTimestamp(17);
-                        cycleMeeting.organiser = result.getInt(18);
-                        cycleMeeting.createDate = result.getTimestamp(19);
-                        cycleMeeting.createBy = result.getInt(20);
-                        cycleMeeting.updateDate = result.getTimestamp(21);
-                        cycleMeeting.updateBy = result.getInt(22);
+                        cycleMeeting.id = result.getInt(13);
+                        cycleMeeting.title = result.getString(14);
+                        cycleMeeting.groupId = result.getInt(15);
+                        cycleMeeting.venue = result.getString(16);
+                        cycleMeeting.startDate = result.getTimestamp(17);
+                        cycleMeeting.endDate = result.getTimestamp(18);
+                        cycleMeeting.organiser = result.getInt(19);
+                        cycleMeeting.createDate = result.getTimestamp(20);
+                        cycleMeeting.createBy = result.getInt(21);
+                        cycleMeeting.updateDate = result.getTimestamp(22);
+                        cycleMeeting.updateBy = result.getInt(23);
+                        cycleMeeting.username = result.getString(24);
 
                         int index = findMeeting(meetingGroup.id, groMeetingWrappers);
                         if (index > 0) {
@@ -162,6 +172,165 @@ public class CycleMeetingGroup {
         }
     }
 
+    public static CycleMeetingGroup getGroupById(int id, LoggedInUser loggedInUser)
+            throws Exception {
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
+                Permissions.getAccessLevel(userRole))) {
+
+            CycleMeetingGroup meetingGroup = null;
+            // TODO check authorization
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement("SELECT c1.id, division, noofdays, leadorganiser, keywords,  " +
+                                    " title, c1.description, createdon, createdby, updateon, updatedby , u.username , " +
+                                    " d.name as divName" +
+                                    "  FROM "+schemaName+".cyclemeetinggroup c1 left join master.users u " +
+                                    "  on c1.leadorganiser = u.id " +
+                                    " left join client1.divisions d on d.id = division " +
+                                    " where c1.id = ?");
+                    stmt.setInt(1, id);
+                    result = stmt.executeQuery();
+                    if (result.next()) {
+                     meetingGroup = new CycleMeetingGroup();
+                     meetingGroup.id = result.getInt(1);
+                        meetingGroup.division = result.getInt(2);
+                        meetingGroup.noOfDays = result.getInt(3);
+                        meetingGroup.leadOrganiser = result.getInt(4);
+                        meetingGroup.keywords = (String[]) result.getArray(5).getArray();
+                        meetingGroup.title = result.getString(6);
+                        meetingGroup.description = result.getString(7);
+                        meetingGroup.createdOn = result.getTimestamp(8);
+                        meetingGroup.createdBy = result.getInt(9);
+                        meetingGroup.updateOn = result.getTimestamp(10);
+                        meetingGroup.updatedBy = result.getInt(11);
+                        meetingGroup.conductedBy = result.getString(12);
+                        meetingGroup.divName = result.getString(13);
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return meetingGroup;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+
+    public static List<CycleMeetingGroup> getMeetingById(int id, LoggedInUser loggedInUser) throws Exception {
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+
+            CycleMeetingGroup meetingGroup = null;
+            CycleMeeting cycleMeeting = null;
+            // TODO check authorization
+            String schemaName = loggedInUser.schemaName;
+            ArrayList<CycleMeetingGroup> groMeetingWrappers = new ArrayList<CycleMeetingGroup>();
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+
+            try {
+                if (con != null) {
+
+                    stmt = con
+                            .prepareStatement("SELECT c1.id, c1.division, c1.noofdays, c1.leadorganiser, " +
+                                    " c1.keywords, c1.title, c1.description, " +
+                                    " c1.createdon, c1.createdby, c1.updateon, c1.updatedby, c3.username, " +
+                                    " c2.id, c2.title, c2.groupid, c2.venue, c2.startdate, c2.enddate, " +
+                                    "c2.organiser, c2.createdon, " +
+                                    " c2.createdby, c2.updatedon, c2.updatedby, c4.username " +
+                                    " FROM client1.cyclemeetinggroup c1 " +
+                                    " left join client1.cyclemeeting c2 on c1.id = c2.groupid  " +
+                                    " left join master.users c3 on c1.leadorganiser = c3.id  "+
+                                    " left join master.users c4 on c2.organiser = c4.id"+
+                                    " where c2.groupid = ?");
+                    stmt.setInt(1, id);
+
+                    result = stmt.executeQuery();
+                    while (result.next()) {
+
+                        meetingGroup = new CycleMeetingGroup();
+                        cycleMeeting = new CycleMeeting();
+                        meetingGroup.cycleMeetings = new ArrayList<>();
+
+                        meetingGroup.id = result.getInt(1);
+                        meetingGroup.division = result.getInt(2);
+                        meetingGroup.noOfDays = result.getInt(3);
+                        meetingGroup.leadOrganiser = result.getInt(4);
+                        meetingGroup.keywords = (String[]) result.getArray(5).getArray();
+                        meetingGroup.title = result.getString(6);
+                        meetingGroup.description = result.getString(7);
+                        meetingGroup.createdOn = result.getTimestamp(8);
+                        meetingGroup.createdBy = result.getInt(9);
+                        meetingGroup.updateOn = result.getTimestamp(10);
+                        meetingGroup.updatedBy = result.getInt(11);
+                        meetingGroup.conductedBy = result.getString(12);
+
+                        cycleMeeting.id = result.getInt(13);
+                        cycleMeeting.title = result.getString(14);
+                        cycleMeeting.groupId = result.getInt(15);
+                        cycleMeeting.venue = result.getString(16);
+                        cycleMeeting.startDate = result.getTimestamp(17);
+                        cycleMeeting.endDate = result.getTimestamp(18);
+                        cycleMeeting.organiser = result.getInt(19);
+                        cycleMeeting.createDate = result.getTimestamp(20);
+                        cycleMeeting.createBy = result.getInt(21);
+                        cycleMeeting.updateDate = result.getTimestamp(22);
+                        cycleMeeting.updateBy = result.getInt(23);
+                        cycleMeeting.username = result.getString(24);
+
+                        int index = findMeeting(meetingGroup.id, groMeetingWrappers);
+                        if (index > 0) {
+                            groMeetingWrappers.get(index).cycleMeetings.add(cycleMeeting);
+                        } else {
+                            groMeetingWrappers.add(meetingGroup);
+                        }
+
+
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+
+            return groMeetingWrappers;
+        } else {
+            throw new NotAuthorizedException("");
+
+        }
+    }
     /***
      * Method used to insert new Meeting
      *
