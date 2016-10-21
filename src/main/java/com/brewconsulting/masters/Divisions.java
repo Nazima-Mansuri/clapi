@@ -34,10 +34,10 @@ public class Divisions {
 
 	/***
 	 * Produces a list of all divisions
-	 * 
+	 *
+	 * @param crc
 	 * @return
-	 */
-
+     */
 	@GET
 	@Produces("application/json")
 	@Secured

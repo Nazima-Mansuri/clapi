@@ -43,13 +43,14 @@ public class Products {
     @GET
     @Produces("application/json")
     @Secured
-    public Response products(@Context ContainerRequestContext crc) {
+    @Path("/productsbydiv/{divid}")
+    public Response getAllproducts(@PathParam("divid") Integer divid ,@Context ContainerRequestContext crc) {
         Response resp = null;
 
         try {
             resp = Response.ok(
                     mapper.writeValueAsString(Product
-                            .getAllProducts((LoggedInUser) crc
+                            .getAllProducts(divid,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
@@ -191,7 +192,9 @@ public class Products {
             @FormDataParam("name") String name,
             @FormDataParam("description") String description,
             @FormDataParam("division") int division,
-            @FormDataParam("isActive") Boolean isActive,
+            @FormDataParam("isActive") boolean isActive,
+            @FormDataParam("isUpdated") boolean isUpdated,
+            @FormDataParam("url") String url,
             @FormDataParam("id") int id, @Context ContainerRequestContext crc) {
 
         Response resp = null;
@@ -200,13 +203,21 @@ public class Products {
         ObjectMapper mapper = new ObjectMapper();
         try {
 
-            if (fileFormDataContentDisposition != null) {
-                fileName = System.currentTimeMillis() + "_"
-                        + fileFormDataContentDisposition.getFileName();
-                // This method is used to store image in AWS bucket.
-                uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-            } else {
-                uploadFilePath = null;
+            if(isUpdated)
+            {
+                if (fileFormDataContentDisposition != null) {
+                    fileName = System.currentTimeMillis() + "_"
+                            + fileFormDataContentDisposition.getFileName();
+                    // This method is used to store image in AWS bucket.
+                    uploadFilePath = Product.writeToFile(fileInputStream, fileName);
+                } else {
+                    uploadFilePath = null;
+                }
+
+            }
+            else
+            {
+                uploadFilePath = url;
             }
 
             int affectedRow = Product.updateProduct(name, uploadFilePath,

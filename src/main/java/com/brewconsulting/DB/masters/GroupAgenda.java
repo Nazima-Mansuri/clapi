@@ -66,6 +66,70 @@ public class GroupAgenda {
     }
 
     /**
+     * method for get group agenda by dayNo
+     *
+     * @param groupId
+     * @param dayNo
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<GroupAgenda> getAgendaByDay(int groupId, int dayNo, LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        String schemaName = loggedInUser.schemaName;
+
+        Connection con = DBConnectionProvider.getConn();
+        ArrayList<GroupAgenda> groupAgendas = new ArrayList<GroupAgenda>();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+
+        try {
+            if (con != null) {
+                stmt = con
+                        .prepareStatement("SELECT id, sessionname, sessiondesc, sessionstarttime," +
+                                "sessionendtime, sessionconductor,createdon, createdby, updateon, updatedby" +
+                                " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?");
+
+                stmt.setInt(1, groupId);
+                stmt.setInt(2, dayNo);
+                result = stmt.executeQuery();
+
+                while (result.next()) {
+                    GroupAgenda groupAgenda = new GroupAgenda();
+                    groupAgenda.id = result.getInt(1);
+                    groupAgenda.sessionName = result.getString(2);
+                    groupAgenda.sessionDesc = result.getString(3);
+                    groupAgenda.sessionStartTime = result.getTime(4);
+                    groupAgenda.sessionEndTime = result.getTime(5);
+                    groupAgenda.sessionConductor = result.getString(6);
+                    groupAgenda.createOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                    groupAgenda.createBy = result.getInt(8);
+                    groupAgenda.updateOn = new java.sql.Date(result.getTimestamp(9).getTime());
+                    groupAgenda.updateBy = result.getInt(10);
+                    groupAgenda.groupId=groupId;
+                    groupAgenda.dayNo=dayNo;
+
+                    groupAgendas.add(groupAgenda);
+                }
+            } else
+                throw new Exception("DB connection is null");
+
+        } finally {
+            if (result != null)
+                if (!result.isClosed())
+                    result.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+        return groupAgendas;
+    }
+
+    /**
      * Method Add group agenda in Database.
      *
      * @param node
@@ -106,7 +170,7 @@ public class GroupAgenda {
             result = stmt.executeUpdate();
 
             if (result == 0)
-                throw new SQLException("Add Division Failed.");
+                throw new SQLException("Add Agenda Failed.");
 
             ResultSet generatedKeys = stmt.getGeneratedKeys();
             int id;
@@ -137,7 +201,7 @@ public class GroupAgenda {
      * @param loggedInUser
      * @throws Exception
      */
-    public static void updateGroupAgenda(JsonNode node, LoggedInUser loggedInUser)
+    public static int updateGroupAgenda(JsonNode node, LoggedInUser loggedInUser)
             throws Exception {
 
         String schemaName = loggedInUser.schemaName;
@@ -178,6 +242,7 @@ public class GroupAgenda {
             if (con != null)
                 con.close();
         }
+        return result;
 
     }
 
@@ -219,70 +284,5 @@ public class GroupAgenda {
         }
         return result;
 
-    }
-
-
-    /**
-     * method for get group agenda by dayNo
-     *
-     * @param groupId
-     * @param dayNo
-     * @param loggedInUser
-     * @return
-     * @throws Exception
-     */
-    public static List<GroupAgenda> getAgendaByDay(int groupId, int dayNo, LoggedInUser loggedInUser)
-            throws Exception {
-        // TODO: check authorization of the user to see this data
-        String schemaName = loggedInUser.schemaName;
-
-        Connection con = DBConnectionProvider.getConn();
-        ArrayList<GroupAgenda> groupAgendas = new ArrayList<GroupAgenda>();
-        PreparedStatement stmt = null;
-        ResultSet result = null;
-
-        try {
-            if (con != null) {
-                stmt = con
-                        .prepareStatement("SELECT id, sessionname, sessiondesc, sessionstarttime," +
-                                "sessionendtime, sessionconductor,createdon, createdby, updateon, updatedby" +
-                                " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?");
-
-                stmt.setInt(1, groupId);
-                stmt.setInt(2, dayNo);
-                result = stmt.executeQuery();
-
-                while (result.next()) {
-                    GroupAgenda groupAgenda = new GroupAgenda();
-                    groupAgenda.id = result.getInt(1);
-                    groupAgenda.sessionName = result.getString(2);
-                    groupAgenda.sessionDesc = result.getString(3);
-                    groupAgenda.sessionStartTime = result.getTime(4);
-                    groupAgenda.sessionEndTime = result.getTime(5);
-                    groupAgenda.sessionConductor = result.getString(6);
-                    groupAgenda.createOn = result.getTimestamp(7);
-                    groupAgenda.createBy = result.getInt(8);
-                    groupAgenda.updateOn = result.getTimestamp(9);
-                    groupAgenda.updateBy = result.getInt(10);
-                    groupAgenda.groupId=groupId;
-                    groupAgenda.dayNo=dayNo;
-
-                    groupAgendas.add(groupAgenda);
-                }
-            } else
-                throw new Exception("DB connection is null");
-
-        } finally {
-            if (result != null)
-                if (!result.isClosed())
-                    result.close();
-            if (stmt != null)
-                if (!stmt.isClosed())
-                    stmt.close();
-            if (con != null)
-                if (!con.isClosed())
-                    con.close();
-        }
-        return groupAgendas;
     }
 }

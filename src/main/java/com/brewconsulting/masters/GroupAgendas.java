@@ -23,6 +23,39 @@ public class GroupAgendas {
     ObjectMapper mapper = new ObjectMapper();
 
     /**
+     * get group agenda by day.
+     *
+     * @param groupId
+     * @param dayNo
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("/day/{groupId}/{dayNo}")
+    public Response getAgendaByDay(@PathParam("groupId") Integer groupId, @PathParam("dayNo") Integer dayNo,
+                                   @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(GroupAgenda
+                            .getAgendaByDay(groupId, dayNo, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get territories")
+                    .build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+    /**
      * Method Add group agenda.
      *
      * @param input
@@ -136,39 +169,6 @@ public class GroupAgendas {
             e.printStackTrace();
 
         }
-        return resp;
-    }
-
-    /**
-     * get group agenda by day.
-     *
-     * @param groupId
-     * @param dayNo
-     * @param crc
-     * @return
-     */
-    @GET
-    @Produces("application/json")
-    @Secured
-    @Path("/day/{groupId}/{dayNo}")
-    public Response getAgendaByDay(@PathParam("groupId") Integer groupId, @PathParam("dayNo") Integer dayNo,
-                                   @Context ContainerRequestContext crc) {
-        Response resp = null;
-        try {
-            resp = Response.ok(
-                    mapper.writeValueAsString(GroupAgenda
-                            .getAgendaByDay(groupId, dayNo, (LoggedInUser) crc
-                                    .getProperty("userObject")))).build();
-        } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get territories")
-                    .build();
-        } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
-            e.printStackTrace();
-        }
-
         return resp;
     }
 

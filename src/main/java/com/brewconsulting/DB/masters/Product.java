@@ -99,19 +99,15 @@ public class Product {
 
     }
 
-    public static java.util.Date toDate(java.sql.Timestamp timestamp) {
-        long millisec = timestamp.getTime() + (timestamp.getNanos() / 1000000);
-        return new Date(millisec);
-    }
-
     /***
      * Method allows user to get All Details of Products.
      *
+     * @param divid
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Product> getAllProducts(LoggedInUser loggedInUser)
+    public static List<Product> getAllProducts(int divid, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
@@ -128,46 +124,93 @@ public class Product {
 
             try {
                 if (con != null) {
-                    stmt = con
-                            .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
-                                    + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
-                                    "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                    "(address).state state,(address).phone phones , d.name from "
-                                    + schemaName
-                                    + ".products p left join "
-                                    + schemaName
-                                    + ".userprofile u on p.updateby = u.userid" +
-                                    " left join " + schemaName +".divisions d on  p.division = d.id ");
-                    result = stmt.executeQuery();
-                    while (result.next()) {
-                        Product product = new Product();
-                        product.id = result.getInt(1);
-                        product.name = result.getString(2);
-                        if (!result.getString(3).contains("null")) {
-                            product.image = result.getString(3);
-                        } else {
-                            product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+
+                    if (divid != -1) {
+                        stmt = con
+                                .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
+                                        + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
+                                        "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                        "(address).state state,(address).phone phones ,d.name from "
+                                        + schemaName
+                                        + ".products p left join "
+                                        + schemaName
+                                        + ".userprofile u on p.updateby = u.userid" +
+                                        " left join " + schemaName + ".divisions d on  p.division = d.id where p.division=? ORDER BY p.createDate DESC ");
+                        stmt.setInt(1, divid);
+                        result = stmt.executeQuery();
+                        while (result.next()) {
+                            Product product = new Product();
+                            product.id = result.getInt(1);
+                            product.name = result.getString(2);
+                            if (!result.getString(3).contains("null")) {
+                                product.image = result.getString(3);
+                            } else {
+                                product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                            }
+                            product.description = result.getString(4);
+                            product.division = result.getInt(5);
+                            product.isActive = result.getBoolean(6);
+                            product.createDate = new java.sql.Date(result.getTimestamp(7).getTime());
+                            product.createBy = result.getInt(8);
+                            product.updateDate = new java.sql.Date(result.getTimestamp(9).getTime());
+                            product.updateBy = result.getInt(10);
+                            product.addLine1 = result.getString(11);
+                            product.addLine2 = result.getString(12);
+                            product.addLine3 = result.getString(13);
+                            product.city = result.getString(14);
+                            product.state = result.getString(15);
+                            if (result.getArray(16) != null)
+                                product.phones = (String[]) result.getArray(16)
+                                        .getArray();
+                            product.divName = result.getString(17);
+                            product.firstname = loggedInUser.firstName;
+                            product.lastname = loggedInUser.lastName;
+                            product.username = loggedInUser.username;
+                            products.add(product);
                         }
-                        product.description = result.getString(4);
-                        product.division = result.getInt(5);
-                        product.isActive = result.getBoolean(6);
-                        product.createDate = result.getTimestamp(7);
-                        product.createBy = result.getInt(8);
-                        product.updateDate = result.getTimestamp(9);
-                        product.updateBy = result.getInt(10);
-                        product.addLine1 = result.getString(11);
-                        product.addLine2 = result.getString(12);
-                        product.addLine3 = result.getString(13);
-                        product.city = result.getString(14);
-                        product.state = result.getString(15);
-                        if (result.getArray(16) != null)
-                            product.phones = (String[]) result.getArray(16)
-                                    .getArray();
-                        product.divName = result.getString(17);
-                        product.firstname = loggedInUser.firstName;
-                        product.lastname = loggedInUser.lastName;
-                        product.username = loggedInUser.username;
-                        products.add(product);
+                    } else {
+                        stmt = con
+                                .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
+                                        + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
+                                        "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                        "(address).state state,(address).phone phones ,d.name from "
+                                        + schemaName
+                                        + ".products p left join "
+                                        + schemaName
+                                        + ".userprofile u on p.updateby = u.userid" +
+                                        " left join " + schemaName + ".divisions d on  p.division = d.id  ORDER BY p.createDate DESC ");
+
+                        result = stmt.executeQuery();
+                        while (result.next()) {
+                            Product product = new Product();
+                            product.id = result.getInt(1);
+                            product.name = result.getString(2);
+                            if (!result.getString(3).contains("null")) {
+                                product.image = result.getString(3);
+                            } else {
+                                product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                            }
+                            product.description = result.getString(4);
+                            product.division = result.getInt(5);
+                            product.isActive = result.getBoolean(6);
+                            product.createDate = new java.sql.Date(result.getTimestamp(7).getTime());
+                            product.createBy = result.getInt(8);
+                            product.updateDate = new java.sql.Date(result.getTimestamp(9).getTime());
+                            product.updateBy = result.getInt(10);
+                            product.addLine1 = result.getString(11);
+                            product.addLine2 = result.getString(12);
+                            product.addLine3 = result.getString(13);
+                            product.city = result.getString(14);
+                            product.state = result.getString(15);
+                            if (result.getArray(16) != null)
+                                product.phones = (String[]) result.getArray(16)
+                                        .getArray();
+                            product.divName = result.getString(17);
+                            product.firstname = loggedInUser.firstName;
+                            product.lastname = loggedInUser.lastName;
+                            product.username = loggedInUser.username;
+                            products.add(product);
+                        }
                     }
                 }
             } finally {
@@ -237,9 +280,9 @@ public class Product {
                         product.description = result.getString(4);
                         product.division = result.getInt(5);
                         product.isActive = result.getBoolean(6);
-                        product.createDate = result.getTimestamp(7);
+                        product.createDate = new java.sql.Date(result.getTimestamp(7).getTime());
                         product.createBy = result.getInt(8);
-                        product.updateDate = result.getTimestamp(9);
+                        product.updateDate = new java.sql.Date(result.getTimestamp(9).getTime());
                         product.updateBy = result.getInt(10);
                         product.addLine1 = result.getString(11);
                         product.addLine2 = result.getString(12);
@@ -504,7 +547,7 @@ public class Product {
 
         try {
 
-            AWSCredentials awsCredentials = new BasicAWSCredentials("AKIAJZZRFGQGNZIDUFTQ","12uUP7pQrvR3Kf0GpyeJr328RQ/a1m8TI+/8w2X8");
+            AWSCredentials awsCredentials = new BasicAWSCredentials("AKIAJZZRFGQGNZIDUFTQ", "12uUP7pQrvR3Kf0GpyeJr328RQ/a1m8TI+/8w2X8");
             AmazonS3 s3Client = new AmazonS3Client(awsCredentials);
 
             ObjectMetadata objectMetadata = new ObjectMetadata();

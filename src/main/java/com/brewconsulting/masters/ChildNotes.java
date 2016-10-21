@@ -28,7 +28,36 @@ public class ChildNotes {
     ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * get child note by id
+     * Produces all Cycle Meeting Notes
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
+    @GET
+    @Secured
+    @Path("{cyclemeetingid}")
+    public Response getAllChildNotes(@PathParam("cyclemeetingid") int id, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.groupNoteView.class).writeValueAsString(Note
+                            .getAllChildNote(id, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get Cycle Meeting Notes").build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /**
+     * Produces Particulat Cycle Meeting Note.
      *
      * @param id
      * @param crc
@@ -57,37 +86,7 @@ public class ChildNotes {
     }
 
     /**
-     * get all notes by cyclemeeting id
-     *
-     * @param id
-     * @param crc
-     * @return
-     */
-    @GET
-    @Secured
-    @Path("{cyclemeetingid}")
-    public Response getAllChildNotes(@PathParam("cyclemeetingid") int id, @Context ContainerRequestContext crc) {
-        Response resp = null;
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            resp = Response.ok(
-                    mapper.writerWithView(UserViews.groupNoteView.class).writeValueAsString(Note
-                            .getAllChildNote(id, (LoggedInUser) crc
-                                    .getProperty("userObject")))).build();
-        } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Tasks").build();
-        } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
-            e.printStackTrace();
-        }
-        return resp;
-    }
-
-
-    /**
-     * Add child Note
+     * Add Cycle Meeting Note
      *
      * @param input
      * @param crc
@@ -109,12 +108,12 @@ public class ChildNotes {
             else
                 resp = Response
                         .noContent()
-                        .entity(new NoDataFound("Unable to Insert Group Task")
+                        .entity(new NoDataFound("Unable to Insert Cycle Meeting Note")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Group Task").build();
+                    .entity("You are not authorized to Insert Cycle Meeting Note").build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity(e.getMessage()).build();
@@ -149,7 +148,7 @@ public class ChildNotes {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Group Task")
+                    .entity("You are not authorized to update Cycle Meeting Note")
                     .build();
         } catch (IOException e) {
             if (resp == null)
@@ -190,7 +189,7 @@ public class ChildNotes {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Group Task")
+                    .entity("You are not authorized to delete Cycle Meeting Note")
                     .build();
         } catch (PSQLException ex) {
             resp = Response

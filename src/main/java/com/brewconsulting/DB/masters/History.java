@@ -108,8 +108,8 @@ public class History {
 						history.phones = (String[]) result.getArray(9)
 								.getArray();
 					history.empnumber = result.getString(10);
-					history.effectDate = result.getTimestamp(11);
-					history.endDate = result.getTimestamp(12);
+					history.effectDate = new java.sql.Date(result.getTimestamp(11).getTime());
+					history.endDate = new java.sql.Date(result.getTimestamp(12).getTime());
 					history.isHistory = true;
 					histories.add(history);
 				}
@@ -129,5 +129,4 @@ public class History {
 		}
 		return histories;
 		}
-	
 }

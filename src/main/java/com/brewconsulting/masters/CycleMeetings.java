@@ -36,8 +36,8 @@ public class CycleMeetings {
     @GET
     @Produces("application/json")
     @Secured
-    @Path("{id}")
-    public Response meetings(@PathParam("id") int id , @Context ContainerRequestContext crc) {
+    @Path("{groupid}")
+    public Response meetings(@PathParam("groupid") int id , @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             resp = Response.ok(
@@ -48,7 +48,34 @@ public class CycleMeetings {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get division").build();
+                    .entity("You are not authorized to get Cycle Meetings").build();
+        }
+
+        catch (Exception e) {
+
+            resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+
+        }
+        return resp;
+    }
+
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("meetingbyid/{groupid}")
+    public Response meetingsById(@PathParam("groupid") int id , @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(CycleMeeting
+                            .getSubMeetingById(id,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get Cycle Meeting").build();
         }
 
         catch (Exception e) {
@@ -83,12 +110,12 @@ public class CycleMeetings {
             else
                 resp = Response
                         .noContent()
-                        .entity(new NoDataFound("Unable to Insert Parent Meeting")
+                        .entity(new NoDataFound("Unable to Insert Cycle Meeting")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Parent Meeting").build();
+                    .entity("You are not authorized to Cycle Meeting").build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity(e.getMessage()).build();
@@ -124,7 +151,7 @@ public class CycleMeetings {
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update division")
+                    .entity("You are not authorized to update Cycle Meeting")
                     .build();
         }
         catch (IOException e) {
@@ -166,7 +193,7 @@ public class CycleMeetings {
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Meeting")
+                    .entity("You are not authorized to delete Cycle Meeting")
                     .build();
         }
         catch (PSQLException ex) {

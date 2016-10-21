@@ -39,18 +39,4 @@ public class utils {
 		java.util.Date date = sdf.parse(strDate);
 		return date;
 	}
-
-
-	public static java.sql.Date stringTodate(String dateAsString) {
-		try {
-			String dateFormat = "dd-MM-yyyy";
-			DateFormat df;
-			df = new SimpleDateFormat(dateFormat);
-			return new java.sql.Date(df.parse(dateAsString).getTime());
-		} catch (ParseException e) {
-			return null;
-		} catch (NullPointerException e) {
-			return null;
-		}
-	}
 }

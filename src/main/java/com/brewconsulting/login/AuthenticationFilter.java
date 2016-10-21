@@ -1,6 +1,7 @@
 package com.brewconsulting.login;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Iterator;
 
 import javax.annotation.Priority;
@@ -67,13 +68,16 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 		} else {
 			try {
 				Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(authHeader);
+
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = mapper.readTree((String) clms.getBody().get("user"));
 				String tokenType = (String) clms.getBody().get("tokenType");
-				
+//				System.out.println("Token Type : " + tokenType);
+
 				context.setProperty("user", validate(node));
 				context.setProperty("userObject", mapper.treeToValue(node, LoggedInUser.class));
-			} catch (Exception ex) {
+			}
+			catch (Exception ex) {
 				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
 				servletContext.log("Invalid token", ex);
 			}

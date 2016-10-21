@@ -128,35 +128,6 @@ public class Territory {
                     System.out.println("divId :"+ divId);
                     stmt.setInt(1, divId);
 
-                    // We Need Data in This Type of Format When parent has children
-                    /**
-                     * { { text:'Root', TID:1, data:{ TID:1, personId:1,
-                     * personName:'Test1', ParentID:0, name:'Root', addLine1
-                     * :'address1 of Root', addLine2 :'address2 of Root', addLine3
-                     * :'address3 of Root', city :'Surat', state :'Gujarat',
-                     * contactnumber : [
-                     * '8878785875','8787874875','7777777777','5748789887','878787 8
-                     * 5 8 9 ' ] , }, children:[{ text:'Root1_Parent1', data:{
-                     * TID:4, apersonID:2, personName:'Associate1', ParentID:0,
-                     * name:'Root1_Parent1', addLine1 :'address1 of Root', addLine2
-                     * :'address2 of Root', addLine3 :'address3 of Root', city
-                     * :'Surat', state :'Gujarat', contactnumber : [
-                     * '8878785875','8787874875','7777777777','5748789887','878787 8
-                     * 5 8 9 ' ] , },
-                     *
-                     * N number of children possible here. }] } }
-                     */
-
-                    // If Parent has No children Then data
-                    /**
-                     * { { text:'Root', TID:1, data:{ TID:1, personId:1,
-                     * personName:'Test1', ParentID:0, name:'Root', addLine1
-                     * :'address1 of Root', addLine2 :'address2 of Root', addLine3
-                     * :'address3 of Root', city :'Surat', state :'Gujarat',
-                     * contactnumber : [
-                     * '8878785875','8787874875','7777777777','5748789887','878787 8
-                     * 5 8 9 ' ] , }, } }
-                     */
                     result = stmt.executeQuery();
 
                     while (result.next()) {
@@ -296,7 +267,7 @@ public class Territory {
     }
 
     /***
-     *
+     * Get all Territories of specific Division.
      *
      * @param id
      * @param loggedInUser

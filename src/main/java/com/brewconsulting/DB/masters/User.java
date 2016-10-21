@@ -27,57 +27,57 @@ import javax.ws.rs.NotAuthorizedException;
 
 public class User {
 
-	@JsonProperty("clientId")
-	@JsonView(UserViews.authView.class)
-	public int clientId; // -1 means no client
+    @JsonProperty("clientId")
+    @JsonView(UserViews.authView.class)
+    public int clientId; // -1 means no client
 
-	@JsonProperty("id")
-	@JsonView({ UserViews.bareView.class, UserViews.deAssociateView.class })
-	public int id;
+    @JsonProperty("id")
+    @JsonView({UserViews.bareView.class, UserViews.deAssociateView.class})
+    public int id;
 
-	@JsonProperty("username")
-	@JsonView({ UserViews.bareView.class, UserViews.deAssociateView.class })
-	public String username;
+    @JsonProperty("username")
+    @JsonView({UserViews.bareView.class, UserViews.deAssociateView.class})
+    public String username;
 
-	@JsonView(UserViews.authView.class)
-	@JsonProperty("schemaName")
-	public String schemaName;
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("schemaName")
+    public String schemaName;
 
-	@JsonView(UserViews.authView.class)
-	@JsonProperty("firstName")
-	public String firstName;
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("firstName")
+    public String firstName;
 
-	@JsonView(UserViews.authView.class)
-	@JsonProperty("lastName")
-	public String lastName;
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("lastName")
+    public String lastName;
 
-	@JsonView(UserViews.authView.class)
-	@JsonProperty("roles")
-	public ArrayList<Role> roles;
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("roles")
+    public ArrayList<Role> roles;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("addLine1")
-	public String addLine1;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("addLine1")
+    public String addLine1;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("addLine2")
-	public String addLine2;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("addLine2")
+    public String addLine2;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("addLine3")
-	public String addLine3;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("addLine3")
+    public String addLine3;
 
-	@JsonView({ UserViews.profileView.class, UserViews.deAssociateView.class })
-	@JsonProperty("city")
-	public String city;
+    @JsonView({UserViews.profileView.class, UserViews.deAssociateView.class})
+    @JsonProperty("city")
+    public String city;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("state")
-	public String state;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("state")
+    public String state;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("roleid")
-	public int roleid;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("roleid")
+    public int roleid;
 
     @JsonView(UserViews.profileView.class)
     @JsonProperty("divId")
@@ -87,29 +87,29 @@ public class User {
     @JsonProperty("divName")
     public String divName;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("empNumber")
-	public String empNum;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("empNumber")
+    public String empNum;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("phones")
-	public String[] phones;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("phones")
+    public String[] phones;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("createDate")
-	public Date createDate;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("createDate")
+    public Date createDate;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("createBy")
-	public int createBy;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("createBy")
+    public int createBy;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("updateDate")
-	public Date updateDate;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("updateDate")
+    public Date updateDate;
 
-	@JsonView(UserViews.profileView.class)
-	@JsonProperty("updateBy")
-	public int updateBy;
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("updateBy")
+    public int updateBy;
 
     @JsonView(UserViews.profileView.class)
     @JsonProperty("isActive")
@@ -124,6 +124,56 @@ public class User {
 
     }
 
+    /***
+     * This method checks User is active or not and user's roles are changes or not.
+     *
+     * @param loggedInUser
+     * @return
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws NamingException
+     */
+    public static boolean getNewAccessToken(LoggedInUser loggedInUser) throws ClassNotFoundException, SQLException, NamingException {
+
+        Connection con = DBConnectionProvider.getConn();
+        boolean isActive;
+        String Role;
+
+        try {
+            PreparedStatement stmt = con.prepareStatement(
+                    "select a.isActive, b.rolename"
+                            + " from master.users a, master.userRoleMap b where a.id=b.userid and a.id=?");
+            stmt.setInt(1, loggedInUser.id);
+            ResultSet resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                isActive = resultSet.getBoolean(1);
+                Role = resultSet.getString(2);
+
+                if (isActive && Role.equalsIgnoreCase(loggedInUser.roles.get(0).roleName)) {
+                    return true;
+                } else {
+                    return false;
+                }
+
+            }
+        } finally {
+            if (con != null)
+                con.close();
+        }
+
+        return false;
+    }
+
+    /***
+     * If username and password exixtes , return details of that User.
+     *
+     * @param username
+     * @param password
+     * @return
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws NamingException
+     */
     public static User authenticate(String username, String password)
             throws ClassNotFoundException, SQLException, NamingException {
         User user = null;
@@ -138,32 +188,32 @@ public class User {
             stmt.setString(1, username);
             stmt.setString(2, password);
 
-			final ResultSet masterUsers = stmt.executeQuery();
-			while (masterUsers.next()) {
-				if (user == null) { // execute for the first iteration
-					user = new User();
-					user.id = masterUsers.getInt(1);
-					user.clientId = masterUsers.getInt(2);
-					user.firstName = masterUsers.getString(3);
-					user.lastName = masterUsers.getString(4);
-					user.schemaName = masterUsers.getString(5);
-					user.username = masterUsers.getString(8);
-					user.roles = new ArrayList<Role>();
-					user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
-					continue;
-				}
+            final ResultSet masterUsers = stmt.executeQuery();
+            while (masterUsers.next()) {
+                if (user == null) { // execute for the first iteration
+                    user = new User();
+                    user.id = masterUsers.getInt(1);
+                    user.clientId = masterUsers.getInt(2);
+                    user.firstName = masterUsers.getString(3);
+                    user.lastName = masterUsers.getString(4);
+                    user.schemaName = masterUsers.getString(5);
+                    user.username = masterUsers.getString(8);
+                    user.roles = new ArrayList<Role>();
+                    user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                    continue;
+                }
 
-				if (user.roles != null) {
-					user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
-				}
-			}
-		} finally {
-			if (con != null)
-				con.close();
-		}
+                if (user.roles != null) {
+                    user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                }
+            }
+        } finally {
+            if (con != null)
+                con.close();
+        }
 
-		return user;
-	}
+        return user;
+    }
 
     /***
      * Get the basic details of the user.
@@ -179,94 +229,104 @@ public class User {
         User user = null;
         try {
 
-			PreparedStatement stmt = con.prepareStatement(
-					"select a.id, a.clientId, a.firstname, a.lastname, schemaName, d.id roleid, d.name rolename, a.username "
-							+ " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
-							+ " where a.isActive and a.id = ? and a.clientId = b.id and "
-							+ " a.id = c.userId and c.roleId = d.id");
-			stmt.setInt(1, id);
-			final ResultSet masterUsers = stmt.executeQuery();
-			while (masterUsers.next()) {
-				if (user == null) { // execute for the first iteration
-					user = new User();
-					user.id = id;
-					user.clientId = masterUsers.getInt(2);
-					user.schemaName = masterUsers.getString(5);
-					user.firstName = masterUsers.getString(3);
-					user.lastName = masterUsers.getString(4);
-					user.username = masterUsers.getString(8);
-					user.roles = new ArrayList<Role>();
-					user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+            PreparedStatement stmt = con.prepareStatement(
+                    "select a.id, a.clientId, a.firstname, a.lastname, schemaName, d.id roleid, d.name rolename, a.username "
+                            + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
+                            + " where a.isActive and a.id = ? and a.clientId = b.id and "
+                            + " a.id = c.userId and c.roleId = d.id");
+            stmt.setInt(1, id);
+            final ResultSet masterUsers = stmt.executeQuery();
+            while (masterUsers.next()) {
+                if (user == null) { // execute for the first iteration
+                    user = new User();
+                    user.id = id;
+                    user.clientId = masterUsers.getInt(2);
+                    user.schemaName = masterUsers.getString(5);
+                    user.firstName = masterUsers.getString(3);
+                    user.lastName = masterUsers.getString(4);
+                    user.username = masterUsers.getString(8);
+                    user.roles = new ArrayList<Role>();
+                    user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
 
-					continue;
-				}
+                    continue;
+                }
 
-				if (user.roles != null) {
-					user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
-				}
-			}
-		} finally {
-			if (con != null)
-				con.close();
-		}
-		return user;
+                if (user.roles != null) {
+                    user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                }
+            }
+        } finally {
+            if (con != null)
+                con.close();
+        }
+        return user;
 
-	}
+    }
 
-	/***
-	 * User profile class inherits User and includes profile data that comes
-	 * from client db schema.
-	 *
-	 * @param loggedInUser
-	 * @param id
-	 * @return
-	 * @throws Exception
-	 */
-	public static User getProfile(LoggedInUser loggedInUser, int id) throws Exception {
-		// check if the profile request of for self? else check if the role
-		// allows it.
-		User user = null;
+    /***
+     * User profile class inherits User and includes profile data that comes
+     * from client db schema.
+     *
+     * @param loggedInUser
+     * @param id
+     * @return
+     * @throws Exception
+     */
+    public static User getProfile(LoggedInUser loggedInUser, int id) throws Exception {
+        // check if the profile request of for self? else check if the role
+        // allows it.
+        User user = null;
 
-		// check if the user has permission to see others profile.
-		if (loggedInUser.id != id) {
-			boolean isAllowed = false;
+        // check if the user has permission to see others profile.
+        if (loggedInUser.id != id) {
+            boolean isAllowed = false;
 
-			for (Role role : loggedInUser.roles) {
-				if (Permissions.isAuthorised(role.roleId, Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
-					isAllowed = true;
-					break;
-				}
-			}
+            for (Role role : loggedInUser.roles) {
+                if (Permissions.isAuthorised(role.roleId, Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
+                    isAllowed = true;
+                    break;
+                }
+            }
 
-			if (!isAllowed)
-				throw new NotAuthorizedException("");
+            if (!isAllowed)
+                throw new NotAuthorizedException("");
 
-			// user = new UserProfile(find(id));
-			user = fillFullProfile(loggedInUser, id);
-		} else {
-			user = new User();
-			user.id = loggedInUser.id;
-			user.clientId = loggedInUser.clientId;
-			user.schemaName = loggedInUser.schemaName;
-			user.firstName = loggedInUser.firstName;
-			user.lastName = loggedInUser.lastName;
-			user.username = loggedInUser.username;
-			user.roles = new ArrayList<Role>();
-			for (Role role : loggedInUser.roles) {
-				user.roles.add(role);
-			}
-			fillProfileInfo(user);
-		} // else
+            // user = new UserProfile(find(id));
+            user = fillFullProfile(loggedInUser, id);
+        } else {
+            user = new User();
+            user.id = loggedInUser.id;
+            user.clientId = loggedInUser.clientId;
+            user.schemaName = loggedInUser.schemaName;
+            user.firstName = loggedInUser.firstName;
+            user.lastName = loggedInUser.lastName;
+            user.username = loggedInUser.username;
+            user.roles = new ArrayList<Role>();
+            for (Role role : loggedInUser.roles) {
+                user.roles.add(role);
+            }
+            fillProfileInfo(user);
+        } // else
 
-		// admin users will not have their profiles filled with any other
-		// details as they are not in
-		// any firm DB.
-		// if (!isUserAdmin(user))
-		// fillProfileInfo(user);
+        // admin users will not have their profiles filled with any other
+        // details as they are not in
+        // any firm DB.
+        // if (!isUserAdmin(user))
+        // fillProfileInfo(user);
 
-		return user;
-	}
+        return user;
+    }
 
+    /**
+     *  Give user's full Profile Information
+     *
+     * @param user
+     * @param id
+     * @return
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws NamingException
+     */
     private static User fillFullProfile(LoggedInUser user, int id)
             throws ClassNotFoundException, SQLException, NamingException {
         Connection con = DBConnectionProvider.getConn();
@@ -317,22 +377,29 @@ public class User {
                 }
                 userProfile.roles.add(new Role(schemaUsers.getInt("roleid"), schemaUsers.getString("rolename")));
 
-			}
+            }
 
-		} finally {
-			if (schemaUsers != null)
-				if (!schemaUsers.isClosed())
-					schemaUsers.close();
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
-		}
-		return userProfile;
-	}
+        } finally {
+            if (schemaUsers != null)
+                if (!schemaUsers.isClosed())
+                    schemaUsers.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+        return userProfile;
+    }
 
+    /***
+     *
+     * @param user
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws NamingException
+     */
     private static void fillProfileInfo(User user) throws ClassNotFoundException, SQLException, NamingException {
         Connection con = DBConnectionProvider.getConn();
         ResultSet schemaUsers = null;
@@ -365,39 +432,50 @@ public class User {
                 user.updateBy = schemaUsers.getInt("cby");
             }
 
-		} finally {
-			if (schemaUsers != null)
-				if (!schemaUsers.isClosed())
-					schemaUsers.close();
-			if (stmt != null)
-				if (!stmt.isClosed())
-					stmt.close();
-			if (con != null)
-				if (!con.isClosed())
-					con.close();
-		}
+        } finally {
+            if (schemaUsers != null)
+                if (!schemaUsers.isClosed())
+                    schemaUsers.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
 
-	}
+    }
 
-	public static int createUser(JsonNode node, LoggedInUser loggedInUser)
-			throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
+    /***
+     *  Create New User
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws RequiredDataMissing
+     * @throws NamingException
+     */
+    public static int createUser(JsonNode node, LoggedInUser loggedInUser)
+            throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
 
-		// TODO: check if the user has rights to perform this action.
+        // TODO: check if the user has rights to perform this action.
 
-		boolean isAllowed = false;
+        boolean isAllowed = false;
 
-		for (Role role : loggedInUser.roles) {
-			if (Permissions.isAuthorised(role.roleId, Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
-				isAllowed = true;
-				break;
-			}
-		}
+        for (Role role : loggedInUser.roles) {
+            if (Permissions.isAuthorised(role.roleId, Permissions.USER_PROFILE, Permissions.READ_ONLY)) {
+                isAllowed = true;
+                break;
+            }
+        }
 
-		if (!isAllowed)
-			throw new NotAuthorizedException("");
+        if (!isAllowed)
+            throw new NotAuthorizedException("");
 
-		Connection con = DBConnectionProvider.getConn();
-		PreparedStatement stmt = null;
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
 
         MessageDigest md = null;
         try {
@@ -474,9 +552,19 @@ public class User {
                 stmt.setString(6, node.get("state").asText());
             else
                 stmt.setString(6, null);
-            stmt.setArray(7, pharr);
-            stmt.setString(8, node.get("designation").asText());
-            stmt.setString(9, node.get("empNumber").asText());
+            if (node.has("phones"))
+                stmt.setArray(7, pharr);
+            else
+                stmt.setString(7, null);
+            if (node.has("designation"))
+                stmt.setString(8, node.get("designation").asText());
+            else
+                stmt.setString(8, null);
+            if (node.has("empNumber"))
+                stmt.setString(9, node.get("empNumber").asText());
+            else
+                stmt.setString(9, null);
+
             stmt.setInt(10, loggedInUser.id);
             stmt.setTimestamp(11, new Timestamp((new Date()).getTime()));
             stmt.setInt(12, loggedInUser.id);
@@ -530,7 +618,8 @@ public class User {
         }
     }
 
-    /**
+    /***
+     * It gives all Users Which are not associate to any territory.
      *
      * @param loggedInUser
      * @return
@@ -608,10 +697,10 @@ public class User {
                             " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                             " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
                             " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
-                            " b.updateDate  udate,  b.updateBy uby from master.users a left join "+
-                             loggedInUser.schemaName+".userprofile b on a.id = b.userid " +
-                            " left join "+loggedInUser.schemaName+".userdivmap c on a.id = c.userid left join "+
-                            loggedInUser.schemaName+".divisions d on d.id = c.divid left join master.userrolemap e on " +
+                            " b.updateDate  udate,  b.updateBy uby from master.users a left join " +
+                            loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
+                            " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
+                            loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
                             " e.userid = a.id left join master.roles f on f.id = e.roleid order by a.id asc ");
             result = stmt.executeQuery();
             while (result.next()) {
@@ -666,7 +755,7 @@ public class User {
      * @return
      * @throws Exception
      */
-    public static List<User> getAllUsersByDivId(int id ,LoggedInUser loggedInUser) throws Exception {
+    public static List<User> getAllUsersByDivId(int id, LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -686,12 +775,12 @@ public class User {
                             " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                             " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
                             " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
-                            " b.updateDate  udate,  b.updateBy uby from master.users a left join "+
-                            loggedInUser.schemaName+".userprofile b on a.id = b.userid " +
-                            " left join "+loggedInUser.schemaName+".userdivmap c on a.id = c.userid left join "+
-                            loggedInUser.schemaName+".divisions d on d.id = c.divid left join master.userrolemap e on " +
+                            " b.updateDate  udate,  b.updateBy uby from master.users a left join " +
+                            loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
+                            " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
+                            loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
                             " e.userid = a.id left join master.roles f on f.id = e.roleid where c.divid = ? order by a.id asc ");
-            stmt.setInt(1,id);
+            stmt.setInt(1, id);
             result = stmt.executeQuery();
             while (result.next()) {
 
@@ -907,8 +996,6 @@ public class User {
         }
 
     }
-
-
 }
 
 

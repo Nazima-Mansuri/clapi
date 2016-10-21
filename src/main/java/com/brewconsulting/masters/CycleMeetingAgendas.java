@@ -203,7 +203,7 @@ public class CycleMeetingAgendas {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create cycle meeting agenda")
+                    .entity("You are not authorized to get cycle meeting agenda")
                     .build();
         } catch (IOException e) {
             if (resp == null) {

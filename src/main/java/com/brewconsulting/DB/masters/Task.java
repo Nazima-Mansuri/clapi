@@ -126,22 +126,19 @@ public class Task {
                     stmt.setInt(1,id);
                     result = stmt.executeQuery();
                     while (result.next()) {
-                    java.sql.Date date= new java.sql.Date(result.getTimestamp(10).getTime());
-                        System.out.println("Date : " + date);
-
                         Task task = new Task();
                         task.id = result.getInt(1);
                         task.groupId = result.getInt(2);
                         task.title = result.getString(3);
                         task.description = result.getString(4);
                         task.status = result.getString(5);
-                        task.dueDate = result.getTimestamp(6);
+                        task.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
                         task.reminders = (Integer[]) result.getArray(7).getArray();
                         task.assignTo = result.getInt(8);
                         task.assignBy = result.getInt(9);
-                        task.createOn = result.getTimestamp(10);
+                        task.createOn = new java.sql.Date(result.getTimestamp(10).getTime());
                         task.createBy = result.getInt(11);
-                        task.updateOn = result.getTimestamp(12);
+                        task.updateOn = new java.sql.Date(result.getTimestamp(12).getTime());
                         task.updateBy = result.getInt(13);
 
                         groupTasks.add(task);
@@ -202,13 +199,13 @@ public class Task {
                         groupTask.title = result.getString(3);
                         groupTask.description = result.getString(4);
                         groupTask.status = result.getString(5);
-                        groupTask.dueDate = result.getTimestamp(6);
+                        groupTask.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
                         groupTask.reminders = (Integer[]) result.getArray(7).getArray();
                         groupTask.assignTo = result.getInt(8);
                         groupTask.assignBy = result.getInt(9);
-                        groupTask.createOn = result.getTimestamp(10);
+                        groupTask.createOn =  new java.sql.Date(result.getTimestamp(10).getTime());
                         groupTask.createBy = result.getInt(11);
-                        groupTask.updateOn = result.getTimestamp(12);
+                        groupTask.updateOn = new java.sql.Date(result.getTimestamp(12).getTime());
                         groupTask.updateBy = result.getInt(13);
 
                     }
@@ -437,7 +434,7 @@ public class Task {
     }
 
   // ===========================================================================================
-    // This all methods for CycleMeetingTask.
+    // These all methods for CycleMeetingTask.
 
     /***
      * Method used to get details of CycleMeeting Tasks.
@@ -450,7 +447,7 @@ public class Task {
             throws Exception {
         // TODO: check authorization of the user to see this data
 
-        int userRole = loggedInUser.roles.get(0).roleId;
+        //int userRole = loggedInUser.roles.get(0).roleId;
 
         String schemaName = loggedInUser.schemaName;
         Connection con = DBConnectionProvider.getConn();
@@ -469,20 +466,19 @@ public class Task {
                 stmt.setInt(1,id);
                 result = stmt.executeQuery();
                 while (result.next()) {
-
                     Task task = new Task();
                     task.id = result.getInt(1);
                     task.cycleMeetingId = result.getInt(2);
                     task.title = result.getString(3);
                     task.description = result.getString(4);
                     task.status = result.getString(5);
-                    task.dueDate = result.getTimestamp(6);
+                    task.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
                     task.reminders = (Integer[]) result.getArray(7).getArray();
                     task.assignTo = result.getInt(8);
                     task.assignBy = result.getInt(9);
-                    task.createOn = result.getTimestamp(10);
+                    task.createOn = new java.sql.Date(result.getTimestamp(10).getTime());
                     task.createBy = result.getInt(11);
-                    task.updateOn = result.getTimestamp(12);
+                    task.updateOn =  new java.sql.Date(result.getTimestamp(12).getTime());
                     task.updateBy = result.getInt(13);
 
                     groupTasks.add(task);
@@ -543,13 +539,13 @@ public class Task {
                         groupTask.title = result.getString(3);
                         groupTask.description = result.getString(4);
                         groupTask.status = result.getString(5);
-                        groupTask.dueDate = result.getTimestamp(6);
+                        groupTask.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
                         groupTask.reminders = (Integer[]) result.getArray(7).getArray();
                         groupTask.assignTo = result.getInt(8);
                         groupTask.assignBy = result.getInt(9);
-                        groupTask.createOn = result.getTimestamp(10);
+                        groupTask.createOn = new java.sql.Date(result.getTimestamp(10).getTime());
                         groupTask.createBy = result.getInt(11);
-                        groupTask.updateOn = result.getTimestamp(12);
+                        groupTask.updateOn = new java.sql.Date(result.getTimestamp(12).getTime());
                         groupTask.updateBy = result.getInt(13);
 
                     }
@@ -635,7 +631,7 @@ public class Task {
                 result = stmt.executeUpdate();
 
                 if (result == 0)
-                    throw new SQLException("Add Sub Task Failed.");
+                    throw new SQLException("Add Cycle Meeting Task Failed.");
 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int groupTaskId;

@@ -60,6 +60,7 @@ public class Users {
     }
 
     /**
+     * Create new User
      *
      * @param input
      * @param crc
@@ -89,12 +90,6 @@ public class Users {
                 resp = Response.serverError()
                         .header("content-type", MediaType.TEXT_PLAIN)
                         .entity(e.getStackTrace()).build();
-            e.printStackTrace();
-
-        } catch (PSQLException e) {
-
-            resp = Response.status(409).entity(e.getMessage())
-                    .type(MediaType.TEXT_PLAIN).build();
             e.printStackTrace();
 
         } catch (SQLException e) {

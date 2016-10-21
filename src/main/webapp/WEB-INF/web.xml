@@ -28,11 +28,11 @@
 	</context-param>
 	<context-param>
 		<param-name>from</param-name>
-		<param-value>nazima.lanetteam@gmail.com</param-value>
+		<param-value>testrolla@gmail.com</param-value>
 	</context-param>
 	<context-param>
 		<param-name>password</param-name>
-		<param-value>lanet@123</param-value>
+		<param-value>Rolla@test</param-value>
 	</context-param>
 	<env-entry>
 		<env-entry-name>DB_URL</env-entry-name>

@@ -86,6 +86,9 @@ public class CycleMeetingAgenda {
                 result = stmt.executeQuery();
                 System.out.print(result);
                 while (result.next()) {
+                    java.sql.Date createDate = new java.sql.Date(result.getTimestamp(8).getTime());
+                    java.sql.Date updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
+
                     CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
                     cycleMeetingAgenda.id = result.getInt(1);
                     cycleMeetingAgenda.cycleMeetingId = result.getInt(2);
@@ -94,9 +97,9 @@ public class CycleMeetingAgenda {
                     cycleMeetingAgenda.sessionDesc = result.getString(5);
                     cycleMeetingAgenda.sessionStartTime = result.getTime(6);
                     cycleMeetingAgenda.sessionEndTime = result.getTime(7);
-                    cycleMeetingAgenda.createOn = result.getDate(8);
+                    cycleMeetingAgenda.createOn = createDate;
                     cycleMeetingAgenda.createBy = result.getInt(9);
-                    cycleMeetingAgenda.updatedOn = result.getDate(10);
+                    cycleMeetingAgenda.updatedOn =updateDate;
                     cycleMeetingAgenda.updatedBy = result.getInt(11);
 
                     cycleMeetingAgendas.add(cycleMeetingAgenda);
@@ -146,7 +149,7 @@ public class CycleMeetingAgenda {
                                     + "createdOn,createdBy,updateOn,updatedBy) values (?,?,?,?,?,?,?,?,?,?)",
                             Statement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, node.get("cycleMeetingId").asInt());
-            stmt.setDate(2, utils.stringTodate(node.get("meetingDate").asText()));
+            stmt.setDate(2, java.sql.Date.valueOf(node.get("meetingDate").asText()));
             stmt.setString(3, node.get("sessionName").asText());
             stmt.setString(4, node.get("sessionDesc").asText());
             stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
@@ -159,7 +162,7 @@ public class CycleMeetingAgenda {
             result = stmt.executeUpdate();
 
             if (result == 0)
-                throw new SQLException("Add Division Failed.");
+                throw new SQLException("Add Cycle Meeting Failed.");
 
             ResultSet generatedKeys = stmt.getGeneratedKeys();
             int id;
@@ -212,17 +215,16 @@ public class CycleMeetingAgenda {
                                     + "updateOn=?,updatedBy=? where id=?",
                             Statement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, node.get("cycleMeetingId").asInt());
-            stmt.setDate(2, utils.stringTodate(node.get("meetingDate").asText()));
+            stmt.setDate(2, java.sql.Date.valueOf(node.get("meetingDate").asText()));
             stmt.setString(3, node.get("sessionName").asText());
             stmt.setString(4, node.get("sessionDesc").asText());
             stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
             stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
             stmt.setTimestamp(7, new Timestamp((new Date()).getTime()));
             stmt.setInt(8, loggedInUser.id);
-            stmt.setTimestamp(9, new Timestamp((new Date()).getTime()));
-            stmt.setInt(10, loggedInUser.id);
-            stmt.setInt(11, node.get("id").asInt());
+            stmt.setInt(9, node.get("id").asInt());
 
+            stmt.executeUpdate();
             con.commit();
 
         } catch (Exception ex) {
@@ -309,15 +311,17 @@ public class CycleMeetingAgenda {
                 result = stmt.executeQuery();
 
                 while (result.next()) {
+                    java.sql.Date createDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                    java.sql.Date updateDate = new java.sql.Date(result.getTimestamp(8).getTime());
                     CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
                     cycleMeetingAgenda.id = result.getInt(1);
                     cycleMeetingAgenda.sessionName = result.getString(2);
                     cycleMeetingAgenda.sessionDesc = result.getString(3);
                     cycleMeetingAgenda.sessionStartTime = result.getTime(4);
                     cycleMeetingAgenda.sessionEndTime = result.getTime(5);
-                    cycleMeetingAgenda.createOn = result.getTimestamp(6);
+                    cycleMeetingAgenda.createOn = createDate;
                     cycleMeetingAgenda.createBy = result.getInt(7);
-                    cycleMeetingAgenda.updatedOn = result.getTimestamp(8);
+                    cycleMeetingAgenda.updatedOn = updateDate;
                     cycleMeetingAgenda.updatedBy = result.getInt(9);
                     cycleMeetingAgenda.meetingDate=date;
                     cycleMeetingAgenda.cycleMeetingId=cycleMeetingId;

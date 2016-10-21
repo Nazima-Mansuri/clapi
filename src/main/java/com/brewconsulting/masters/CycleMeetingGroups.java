@@ -52,7 +52,7 @@ public class CycleMeetingGroups {
             resp = Response
                     .status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get divison by territory")
+                    .entity("You are not authorized to get Cycle meeting group ")
                     .build();
         } catch (Exception e) {
             resp = Response.serverError().entity(e.getMessage()).build();
@@ -61,7 +61,13 @@ public class CycleMeetingGroups {
         return resp;
     }
 
-
+    /***
+     * Produce particular Group meeting.
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
     @GET
     @Produces("application/json")
     @Secured
@@ -79,7 +85,7 @@ public class CycleMeetingGroups {
             resp = Response
                     .status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get divison by territory")
+                    .entity("You are not authorized to Particular meeting")
                     .build();
         } catch (Exception e) {
             resp = Response.serverError().entity(e.getMessage()).build();
@@ -111,12 +117,12 @@ public class CycleMeetingGroups {
             else
                 resp = Response
                         .noContent()
-                        .entity(new NoDataFound("Unable to Insert Parent Meeting")
+                        .entity(new NoDataFound("Unable to Insert Group Meeting")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Parent Meeting").build();
+                    .entity("You are not authorized to Group Meeting").build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity(e.getMessage()).build();
@@ -151,7 +157,7 @@ public class CycleMeetingGroups {
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update division")
+                    .entity("You are not authorized to update group meeting")
                     .build();
         }
         catch (IOException e) {

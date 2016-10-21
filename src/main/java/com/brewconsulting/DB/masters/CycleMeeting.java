@@ -100,7 +100,7 @@ public class CycleMeeting {
                             .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, "
                                     +" organiser, createdon, createdby, updatedon, updatedby, u.username"
                                     +"  FROM "+ schemaName+".cyclemeeting c left join master.users u ON " +
-                                    " u.id = organiser where groupId = ?");
+                                    " u.id = organiser where groupId = ?ORDER BY createdon DESC ");
                     stmt.setInt(1,id);
                     result = stmt.executeQuery();
                     System.out.print(result);
@@ -110,12 +110,12 @@ public class CycleMeeting {
                         subMeeting.title = result.getString(2);
                         subMeeting.groupId = result.getInt(3);
                         subMeeting.venue = result.getString(4);
-                        subMeeting.startDate = result.getTimestamp(5);
-                        subMeeting.endDate = result.getTimestamp(6);
+                        subMeeting.startDate = new java.sql.Date(result.getTimestamp(5).getTime());
+                        subMeeting.endDate = new java.sql.Date(result.getTimestamp(6).getTime());
                         subMeeting.organiser = result.getInt(7);
-                        subMeeting.createDate = result.getTimestamp(8);
+                        subMeeting.createDate = new java.sql.Date(result.getTimestamp(8).getTime());
                         subMeeting.createBy = result.getInt(9);
-                        subMeeting.updateDate = result.getTimestamp(10);
+                        subMeeting.updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
                         subMeeting.updateBy = result.getInt(11);
                         subMeeting.username = result.getString(12);
                         cycleMeetings.add(subMeeting);
@@ -142,14 +142,14 @@ public class CycleMeeting {
     }
 
     /***
-     * Method allows user to get meetings by id.
+     * Method allows user to get Particular Metting.
      *
      * @param id
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static Division getSubMeetingById(int id, LoggedInUser loggedInUser)
+    public static CycleMeeting getSubMeetingById(int id, LoggedInUser loggedInUser)
             throws Exception {
 
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -157,7 +157,7 @@ public class CycleMeeting {
         if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
                 Permissions.getAccessLevel(userRole))) {
 
-            Division division = null;
+            CycleMeeting subMeeting = null;
             // TODO check authorization
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -173,24 +173,19 @@ public class CycleMeeting {
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
-                        division = new Division();
-                        division.id = result.getInt(1);
-                        division.name = result.getString(2);
-                        division.description = result.getString(3);
-                        division.createDate = result.getTimestamp(4);
-                        division.createBy = result.getInt(5);
-                        division.updateDate = result.getTimestamp(6);
-                        division.updateBy = result.getInt(7);
-                        division.addLine1 = result.getString(8);
-                        division.addLine2 = result.getString(9);
-                        division.addLine3 = result.getString(10);
-                        division.city = result.getString(11);
-                        division.state = result.getString(12);
-                        if (result.getArray(13) != null)
-                            division.phones = (String[]) result.getArray(13)
-                                    .getArray();
-                        division.firstname = loggedInUser.firstName;
-                        division.lastname = loggedInUser.lastName;
+                        subMeeting = new CycleMeeting();
+                        subMeeting.id = result.getInt(1);
+                        subMeeting.title = result.getString(2);
+                        subMeeting.groupId = result.getInt(3);
+                        subMeeting.venue = result.getString(4);
+                        subMeeting.startDate = new java.sql.Date(result.getTimestamp(5).getTime());
+                        subMeeting.endDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                        subMeeting.organiser = result.getInt(7);
+                        subMeeting.createDate = new java.sql.Date(result.getTimestamp(8).getTime());
+                        subMeeting.createBy = result.getInt(9);
+                        subMeeting.updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
+                        subMeeting.updateBy = result.getInt(11);
+                        subMeeting.username = result.getString(12);
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -206,13 +201,13 @@ public class CycleMeeting {
                     if (!con.isClosed())
                         con.close();
             }
-            return division;
+            return subMeeting;
         } else {
             throw new NotAuthorizedException("");
         }
     }
     /**
-     * Method Used to insert Meeting
+     * Method Used to insert Cycle Meeting
      *
      * @param node
      * @param loggedInUser
@@ -295,7 +290,7 @@ public class CycleMeeting {
     }
 
     /**
-     * Method used to update Meeting
+     * Method used to update Cycle Meeting
      *
      * @param node
      * @param loggedInUser
@@ -359,7 +354,7 @@ public class CycleMeeting {
     }
 
     /**
-     * Method is used to delete Meeting
+     * Method is used to delete Cycle Meeting
      *
      * @param id
      * @param loggedInUser

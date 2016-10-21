@@ -22,6 +22,12 @@ import java.util.Random;
 /**
  * Created by lcom53 on 12/10/16.
  */
+
+/***
+ *  Forgot Password Class.
+ *  In which mail will send to user with Auto generated Alpha-numeric characters.
+ *  And that new password updated in Database.
+ */
 public class ForgotPassword {
 
     static Properties mailServerProperties;
@@ -63,6 +69,16 @@ public class ForgotPassword {
         }
     }
 
+    /***
+     * Method used to Update password in database.
+     *
+     * @param username
+     * @param password
+     * @return
+     * @throws SQLException
+     * @throws NamingException
+     * @throws ClassNotFoundException
+     */
     public static int updatePassword(String username, String password) throws SQLException, NamingException, ClassNotFoundException {
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt;
@@ -106,7 +122,7 @@ public class ForgotPassword {
     public static boolean generateAndSendEmail(String username,String from, String password) throws MessagingException, SQLException, NamingException, ClassNotFoundException {
 
         // Step1
-        System.out.println("\n 1st ===> setup Mail Server Properties..");
+//        System.out.println("\n 1st ===> setup Mail Server Properties..");
         mailServerProperties = System.getProperties();
         mailServerProperties.put("mail.smtp.port", "587");
         mailServerProperties.put("mail.smtp.auth", "true");
@@ -114,7 +130,7 @@ public class ForgotPassword {
         System.out.println("Mail Server Properties have been setup successfully..");
 
         // Step2
-        System.out.println("\n\n 2nd ===> get Mail Session..");
+//        System.out.println("\n\n 2nd ===> get Mail Session..");
         getMailSession = Session.getDefaultInstance(mailServerProperties, null);
         generateMailMessage = new MimeMessage(getMailSession);
         generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(username));
@@ -125,14 +141,14 @@ public class ForgotPassword {
         System.out.println("Mail Session has been created successfully..");
 
         // Step3
-        System.out.println("\n\n 3rd ===> Get Session and Send mail");
+//        System.out.println("\n\n 3rd ===> Get Session and Send mail");
         Transport transport = getMailSession.getTransport("smtp");
 
         transport.connect("smtp.gmail.com", from , password);
         if (transport.isConnected())
         {
             transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
-            //updatePassword(username,emailBody);
+            updatePassword(username,emailBody);
             transport.close();
             return true;
         }

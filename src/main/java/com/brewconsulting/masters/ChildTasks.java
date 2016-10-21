@@ -28,10 +28,10 @@ public class ChildTasks {
     ObjectMapper mapper = new ObjectMapper();
 
     /***
-     * Produces list of group tasks.
+     * Produces list of Cycle Meeting tasks.
      *
      * @param crc
-     * @return /*
+     * @return
      */
     @GET
     @Secured
@@ -48,7 +48,7 @@ public class ChildTasks {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Sub Tasks").build();
+                    .entity("You are not authorized to get Cycle Meeting Tasks").build();
         } catch (Exception e) {
             resp = Response.serverError().entity(e.getMessage()).build();
             e.printStackTrace();
@@ -57,7 +57,7 @@ public class ChildTasks {
     }
 
     /***
-     * get a particular Group Task.
+     *  Produce particular Cycle Meeting Tasks.
      *
      * @param id
      * @param crc
@@ -76,7 +76,7 @@ public class ChildTasks {
             if (task == null) {
                 resp = Response
                         .noContent()
-                        .entity(new NoDataFound("This Sub Task does not exist")
+                        .entity(new NoDataFound("This Cycle Meeting Task does not exist")
                                 .getJsonString()).build();
             } else {
                 resp = Response.ok(mapper.writerWithView(UserViews.childTaskView.class).
@@ -86,7 +86,7 @@ public class ChildTasks {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Task").build();
+                    .entity("You are not authorized to get Cycle Meeting Task").build();
         } catch (Exception e) {
 
             resp = Response.serverError().entity(e.getMessage()).build();
@@ -97,7 +97,7 @@ public class ChildTasks {
     }
 
     /***
-     * Add Sub Tasks.
+     * Add Cycle Meeting Tasks.
      *
      * @param input
      * @param crc
@@ -119,12 +119,12 @@ public class ChildTasks {
             else
                 resp = Response
                         .noContent()
-                        .entity(new NoDataFound("Unable to Insert Sub Task")
+                        .entity(new NoDataFound("Unable to Insert Cycle Meeting Task")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Sub Task").build();
+                    .entity("You are not authorized to Insert Cycle Meeting Task").build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity(e.getMessage()).build();
@@ -138,7 +138,7 @@ public class ChildTasks {
     }
 
     /***
-     * Update Sub Task
+     * Update Cycle Meeting Task
      *
      * @param input
      * @param crc
@@ -159,7 +159,7 @@ public class ChildTasks {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Sub Task")
+                    .entity("You are not authorized to update Cycle Meeting Task")
                     .build();
         } catch (IOException e) {
             if (resp == null)
@@ -173,7 +173,7 @@ public class ChildTasks {
     }
 
     /***
-     * Delete Group Task
+     * Delete Cycle Meeting Task
      *
      * @param id
      * @param crc
@@ -200,7 +200,7 @@ public class ChildTasks {
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Sub Task")
+                    .entity("You are not authorized to delete Cycle Meeting Task")
                     .build();
         } catch (PSQLException ex) {
             resp = Response

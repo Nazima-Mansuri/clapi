@@ -116,9 +116,9 @@ public class Division {
                         div.id = result.getInt(1);
                         div.name = result.getString(2);
                         div.description = result.getString(3);
-                        div.createDate = result.getTimestamp(4);
+                        div.createDate = new java.sql.Date(result.getTimestamp(4).getTime());
                         div.createBy = result.getInt(5);
-                        div.updateDate = result.getTimestamp(6);
+                        div.updateDate = new java.sql.Date(result.getTimestamp(6).getTime());
                         div.updateBy = result.getInt(7);
                         div.username = result.getString(8);
                         div.addLine1 = result.getString(9);
@@ -194,9 +194,9 @@ public class Division {
                         division.id = result.getInt(1);
                         division.name = result.getString(2);
                         division.description = result.getString(3);
-                        division.createDate = result.getTimestamp(4);
+                        division.createDate = new java.sql.Date(result.getTimestamp(4).getTime());
                         division.createBy = result.getInt(5);
-                        division.updateDate = result.getTimestamp(6);
+                        division.updateDate = new java.sql.Date(result.getTimestamp(6).getTime());
                         division.updateBy = result.getInt(7);
                         division.addLine1 = result.getString(8);
                         division.addLine2 = result.getString(9);

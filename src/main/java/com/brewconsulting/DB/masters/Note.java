@@ -103,22 +103,15 @@ public class Note
                 stmt.setInt(1,id);
                 result = stmt.executeQuery();
                 while (result.next()) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
-//                    java.sql.Date createOn= new java.sql.Date(result.getTimestamp(6).getTime());
-//                    java.sql.Date date= new java.sql.Date(result.getTimestamp(10).getTime());
-//                    System.out.println("Date : " + createOn);
-                    java.sql.Date createDate = new java.sql.Date(result.getTimestamp(6).getTime());
-                    java.sql.Date updateDate = new java.sql.Date(result.getTimestamp(8).getTime());
-
                     Note note = new Note();
                     note.id = result.getInt(1);
                     note.groupId = result.getInt(2);
                     note.title = result.getString(3);
                     note.description = result.getString(4);
                     note.category = result.getString(5);
-                    note.createOn = createDate;
+                    note.createOn = new java.sql.Date(result.getTimestamp(6).getTime());
                     note.createBy = result.getInt(7);
-                    note.updateOn = updateDate;
+                    note.updateOn = new java.sql.Date(result.getTimestamp(8).getTime());
                     note.updateBy = result.getInt(9);
 
                     groupNotes.add(note);
@@ -172,18 +165,15 @@ public class Note
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
-                        java.sql.Date createDate = new java.sql.Date(result.getTimestamp(6).getTime());
-                        java.sql.Date updateDate = new java.sql.Date(result.getTimestamp(8).getTime());
-
                         groupNote = new Note();
                         groupNote.id = result.getInt(1);
                         groupNote.groupId = result.getInt(2);
                         groupNote.title = result.getString(3);
                         groupNote.description = result.getString(4);
                         groupNote.category = result.getString(5);
-                        groupNote.createOn = createDate;
+                        groupNote.createOn = new java.sql.Date(result.getTimestamp(6).getTime());
                         groupNote.createBy = result.getInt(7);
-                        groupNote.updateOn = updateDate;
+                        groupNote.updateOn = new java.sql.Date(result.getTimestamp(8).getTime());
                         groupNote.updateBy = result.getInt(9);
 
                     }
@@ -253,7 +243,7 @@ public class Note
                 result = stmt.executeUpdate();
 
                 if (result == 0)
-                    throw new SQLException("Add Group Task Failed.");
+                    throw new SQLException("Add Group Note Failed.");
 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int groupNoteId;
@@ -383,7 +373,7 @@ public class Note
     }
 
     //===============================================================================================
-
+    // Method for Cycle Meeting Notes.
     /**
      * Method allows user to get child Note by id
      *
@@ -565,7 +555,7 @@ public class Note
                 result = stmt.executeUpdate();
 
                 if (result == 0)
-                    throw new SQLException("Add child Note Failed.");
+                    throw new SQLException("Add Cycle Meeting Note Failed.");
 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int groupNoteId;
