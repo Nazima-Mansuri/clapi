@@ -132,17 +132,17 @@
 	<env-entry>
 		<env-entry-name>ACCESS_TOKEN_PUBLIC_TIMEOUT</env-entry-name>
 		<env-entry-type>java.lang.Integer</env-entry-type>
-		<env-entry-value>50</env-entry-value>
+		<env-entry-value>1</env-entry-value>
 	</env-entry>
 	<env-entry>
 		<env-entry-name>REFRESH_TOKEN_PUBLIC_TIMEOUT</env-entry-name>
 		<env-entry-type>java.lang.Integer</env-entry-type>
-		<env-entry-value>12000</env-entry-value>
+		<env-entry-value>12</env-entry-value>
 	</env-entry>
 	<env-entry>
 		<env-entry-name>ACCESS_TOKEN_WORK_TIMEOUT</env-entry-name>
 		<env-entry-type>java.lang.Integer</env-entry-type>
-		<env-entry-value>500</env-entry-value>
+		<env-entry-value>200</env-entry-value>
 	</env-entry>
 	<env-entry>
 		<env-entry-name>REFRESH_TOKEN_WORK_TIMEOUT</env-entry-name>
