@@ -4,10 +4,13 @@ package com.brewconsulting.DB.masters;
 import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.brewconsulting.exceptions.RequiredDataMissing;
+import com.brewconsulting.masters.Mem;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Array;
@@ -133,39 +136,66 @@ public class User {
      * @throws SQLException
      * @throws NamingException
      */
-    public static boolean getNewAccessToken(LoggedInUser loggedInUser) throws ClassNotFoundException, SQLException, NamingException {
+    public static User getNewAccessToken(LoggedInUser loggedInUser) throws ClassNotFoundException, SQLException, NamingException {
 
         Connection con = DBConnectionProvider.getConn();
         boolean isActive;
-        String Role;
 
         try {
+
             PreparedStatement stmt = con.prepareStatement(
-                    "select a.isActive, b.rolename"
-                            + " from master.users a, master.userRoleMap b where a.id=b.userid and a.id=?");
+                    "select a.isActive"
+                            + " from master.users a where a.id=?");
             stmt.setInt(1, loggedInUser.id);
             ResultSet resultSet = stmt.executeQuery();
             if (resultSet.next()) {
                 isActive = resultSet.getBoolean(1);
-                Role = resultSet.getString(2);
 
-                if (isActive && Role.equalsIgnoreCase(loggedInUser.roles.get(0).roleName)) {
-                    return true;
+                System.out.println("ACTIVE : " + isActive);
+
+                if (isActive) {
+                    User user = null;
+                    stmt = con.prepareStatement(
+                            "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username "
+                                    + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
+                                    + " where a.isActive  and a.clientId = b.id and "
+                                    + " a.id = c.userId and c.roleId = d.id");
+
+                    final ResultSet masterUsers = stmt.executeQuery();
+                    while (masterUsers.next()) {
+                        if (user == null) { // execute for the first iteration
+                            user = new User();
+                            user.id = masterUsers.getInt(1);
+                            user.clientId = masterUsers.getInt(2);
+                            user.firstName = masterUsers.getString(3);
+                            user.lastName = masterUsers.getString(4);
+                            user.schemaName = masterUsers.getString(5);
+                            user.username = masterUsers.getString(8);
+                            user.roles = new ArrayList<Role>();
+                            user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                            continue;
+                        }
+
+                        if (user.roles != null) {
+                            user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                        }
+                    }
+                    return user;
                 } else {
-                    return false;
+                    return null;
                 }
 
             }
-        } finally {
+        }  finally {
             if (con != null)
                 con.close();
         }
 
-        return false;
+        return null;
     }
 
-    /***
-     * If username and password exixtes , return details of that User.
+      /***
+     * If username and password exists , return details of that User.
      *
      * @param username
      * @param password
@@ -858,6 +888,10 @@ public class User {
                 stmt.setBoolean(1, node.get("isactive").asBoolean());
                 stmt.setInt(2, node.get("id").asInt());
                 result = stmt.executeUpdate();
+                if(node.get("isactive").asBoolean() == false)
+                {
+                    Mem.setData(node.get("id").asInt() + "#DEACTIVATED" ,0);
+                }
             } else
                 throw new Exception("DB connection is null");
         } finally {
@@ -884,7 +918,7 @@ public class User {
      * @throws NamingException
      */
     public static void updateUser(JsonNode node, LoggedInUser loggedInUser)
-            throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
+            throws Exception {
 
         // TODO: check if the user has rights to perform this action.
 
@@ -969,6 +1003,8 @@ public class User {
 
                         stmt.executeUpdate();
 
+                        Mem.setData(node.get("username").asText() + "#ROLECHANGED",0);
+
                         stmt = con.prepareStatement("insert into master.userrolemaphistory (userid, roleid, effectdate, createdate, createby) values (?,?,?,?,?)");
                         stmt.setInt(1, node.get("userid").asInt());
                         stmt.setInt(2, node.get("roleid").asInt());
@@ -979,6 +1015,7 @@ public class User {
                         int affectedrows = stmt.executeUpdate();
                         System.out.println(affectedrows);
 
+                        throw new Exception(new NotAuthorizedException("You Must Login Again..."));
                     }
                 }
 

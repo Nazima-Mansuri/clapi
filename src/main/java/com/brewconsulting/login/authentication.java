@@ -17,9 +17,8 @@ import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.masters.ForgotPassword;
 import com.brewconsulting.DB.masters.LoggedInUser;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.jsonwebtoken.*;
 
 import java.io.IOException;
 import java.sql.*;
@@ -155,54 +154,74 @@ public class authentication {
     @Produces(MediaType.APPLICATION_JSON)
     public Response refreshAccessToken(Credentials credentials, @Context ContainerRequestContext context, @Context ServletContext servletContext) throws SQLException, NamingException, ClassNotFoundException {
         Response resp = null;
-        boolean isValid;
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode node = mapper.createObjectNode();
-        try {
-            isValid = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
-            javax.naming.Context env = null;
-            env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
-            int accessTimeout = 0;
-            String salt = servletContext.getInitParameter("salt");
-            if (salt == null) {
-                resp = Response.serverError().entity("Salt value missing").build();
-                throw new Exception("SALT value missing");
-            }
+        String salt = servletContext.getInitParameter("salt");
 
+            String refreshToken = credentials.getRefreshToken();
+            System.out.println("TOKEN : " + refreshToken + "\n");
 
-            if (credentials.getIsPublic()) {
-
-                accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
-
-            } else {
-                accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
-
-            }
-
-            if (accessTimeout < 1)
-                throw new Exception("Access token timeout not specified.");
-
-            if (isValid) {
-
-                JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
-                        .setSubject(credentials.getUsername()).setId(UUID.randomUUID().toString())
-                        .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
-                        .signWith(SignatureAlgorithm.HS256, salt);
-                bldr.claim("tokenType", "ACCESS");
-
-                node.put("accessToken", bldr.compact());
-                resp = Response.ok(node.toString()).build();
-
-            }else
+            if(refreshToken == null || refreshToken == "")
             {
-                throw new NotAuthorizedException("You are not authorized,Please Login again.");
+                context.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
             }
-        } catch (Exception ex) {
-            if (resp == null)
-                resp = Response.serverError().entity(ex.getMessage()).build();
-            ex.printStackTrace();
-        }
+            else
+            {
+                try {
+                    Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
+                    JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
+                    String tokenType = (String) clms.getBody().get("tokenType");
+                    System.out.println("TYPE : " + tokenType);
+                    context.setProperty("userObject", mapper.treeToValue(jsonNode, LoggedInUser.class));
 
+                    User user = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
+
+                    javax.naming.Context env = null;
+                    env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
+                    int accessTimeout = 0;
+                    if (salt == null) {
+                        resp = Response.serverError().entity("Salt value missing").build();
+                        throw new Exception("SALT value missing");
+                    }
+
+
+                    if (credentials.getIsPublic()) {
+
+                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+
+                    } else {
+                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+
+                    }
+
+                    if (accessTimeout < 1)
+                        throw new Exception("Access token timeout not specified.");
+
+                    if (user != null) {
+
+                        JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
+                                .setSubject(user.username).setId(UUID.randomUUID().toString())
+                                .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
+                                .signWith(SignatureAlgorithm.HS256, salt);
+                        bldr.claim("tokenType", "ACCESS");
+
+                        node.put("accessToken", bldr.compact());
+                        resp = Response.ok(node.toString()).build();
+
+                    }else
+                    {
+                        resp = Response.status(Response.Status.UNAUTHORIZED).entity("You are not authorized,Please Login again.").
+                                type(MediaType.TEXT_PLAIN).build();
+                        throw new NotAuthorizedException("You are not authorized,Please Login again.");
+                    }
+                }
+                catch (Exception ex) {
+                    context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
+                    servletContext.log("Invalid token", ex);
+                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("Authentication Failed").build();
+
+                }
+            }
         return resp;
     }
 
