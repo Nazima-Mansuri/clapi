@@ -100,7 +100,7 @@ public class CycleMeetingGroup {
                                     " left join client1.cyclemeeting c2 on c1.id = c2.groupid  " +
                                     " left join master.users c3 on c1.leadorganiser = c3.id  " +
                                     " left join master.users c4 on c2.organiser = c4.id" +
-                                    " where c1.division = ? ORDER BY c1.id ASC");
+                                    " where c1.division = ? ORDER BY c1.createdon DESC ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
 

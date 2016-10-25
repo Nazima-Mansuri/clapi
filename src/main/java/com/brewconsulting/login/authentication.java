@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.masters.ForgotPassword;
 import com.brewconsulting.DB.masters.LoggedInUser;
+import com.brewconsulting.masters.Mem;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.jsonwebtoken.*;
 
@@ -206,6 +207,9 @@ public class authentication {
                         bldr.claim("tokenType", "ACCESS");
 
                         node.put("accessToken", bldr.compact());
+
+                        Mem.deleteData(user.id + "#DEACTIVATED");
+                        Mem.deleteData(user.username+"#ROLECHANGED");
                         resp = Response.ok(node.toString()).build();
 
                     }else

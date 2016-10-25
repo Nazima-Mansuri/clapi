@@ -35,14 +35,15 @@ public class SettingContents {
      */
     @GET
     @Produces("application/json")
+    @Path("{divId}")
     @Secured
-    public Response products(@Context ContainerRequestContext crc) {
+    public Response products(@PathParam("divId") int divId,@Context ContainerRequestContext crc) {
         Response resp = null;
 
         try {
             resp = Response.ok(
                     mapper.writeValueAsString(SettingContent
-                            .getAllContent((LoggedInUser) crc
+                            .getAllContent(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)

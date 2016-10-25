@@ -53,13 +53,13 @@ public class SettingContent {
 
 
     /**
-     * method to get all setting content
+     * method to get all setting content by specific division
      *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<SettingContent> getAllContent(LoggedInUser loggedInUser)
+    public static List<SettingContent> getAllContent(int divId,LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
@@ -76,28 +76,59 @@ public class SettingContent {
 
             try {
                 if (con != null) {
-                    stmt = con
-                            .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
-                                    "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby");
-                    result = stmt.executeQuery();
-                    while (result.next()) {
-                        SettingContent content = new SettingContent();
-                        content.id = result.getInt(1);
-                        content.contentName = result.getString(2);
+                    if(divId != -1)
+                    {
+                        stmt = con
+                                .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
+                                        "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby" +
+                                        " where divid = ?");
+                        stmt.setInt(1,divId);
+                        result = stmt.executeQuery();
+                        while (result.next()) {
+                            SettingContent content = new SettingContent();
+                            content.id = result.getInt(1);
+                            content.contentName = result.getString(2);
 
-                        content.contentDesc = result.getString(3);
-                        content.divId = result.getInt(4);
-                        if (!result.getString(5).contains("null")) {
-                            content.url = result.getString(5);
-                        } else {
-                            content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                            content.contentDesc = result.getString(3);
+                            content.divId = result.getInt(4);
+                            if (!result.getString(5).contains("null")) {
+                                content.url = result.getString(5);
+                            } else {
+                                content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                            }
+                            content.createBy = result.getInt(6);
+                            content.createdOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                            content.username = result.getString(8);
+
+                            contents.add(content);
                         }
-                        content.createBy = result.getInt(6);
-                        content.createdOn = new java.sql.Date(result.getTimestamp(7).getTime());
-                        content.username = result.getString(8);
-
-                        contents.add(content);
                     }
+                    else
+                    {
+                        stmt = con
+                                .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
+                                        "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby");
+                        result = stmt.executeQuery();
+                        while (result.next()) {
+                            SettingContent content = new SettingContent();
+                            content.id = result.getInt(1);
+                            content.contentName = result.getString(2);
+
+                            content.contentDesc = result.getString(3);
+                            content.divId = result.getInt(4);
+                            if (!result.getString(5).contains("null")) {
+                                content.url = result.getString(5);
+                            } else {
+                                content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                            }
+                            content.createBy = result.getInt(6);
+                            content.createdOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                            content.username = result.getString(8);
+
+                            contents.add(content);
+                        }
+                    }
+
                 }
             } finally {
                 if (result != null)

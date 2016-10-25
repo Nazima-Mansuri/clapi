@@ -4,6 +4,7 @@ package com.brewconsulting.DB.masters;
 import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.brewconsulting.exceptions.RequiredDataMissing;
+import com.brewconsulting.login.Credentials;
 import com.brewconsulting.masters.Mem;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -25,6 +26,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.ws.rs.NotAuthorizedException;
 
@@ -148,6 +150,10 @@ public class User {
                             + " from master.users a where a.id=?");
             stmt.setInt(1, loggedInUser.id);
             ResultSet resultSet = stmt.executeQuery();
+
+            boolean data = Mem.getData(loggedInUser.id + "#DEACTIVATED");
+            System.out.println("DATA : " + data);
+
             if (resultSet.next()) {
                 isActive = resultSet.getBoolean(1);
 
@@ -186,7 +192,9 @@ public class User {
                 }
 
             }
-        }  finally {
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
             if (con != null)
                 con.close();
         }
@@ -194,7 +202,7 @@ public class User {
         return null;
     }
 
-      /***
+    /***
      * If username and password exists , return details of that User.
      *
      * @param username
@@ -348,7 +356,7 @@ public class User {
     }
 
     /**
-     *  Give user's full Profile Information
+     * Give user's full Profile Information
      *
      * @param user
      * @param id
@@ -424,7 +432,6 @@ public class User {
     }
 
     /***
-     *
      * @param user
      * @throws ClassNotFoundException
      * @throws SQLException
@@ -477,7 +484,7 @@ public class User {
     }
 
     /***
-     *  Create New User
+     * Create New User
      *
      * @param node
      * @param loggedInUser
@@ -630,7 +637,7 @@ public class User {
                     "insert into " + loggedInUser.schemaName + ".userdivmap (userId,divid,createdate,createBy) values"
                             + "(?,?,?,?)");
             stmt.setInt(1, userid);
-            stmt.setInt(2, node.get("divid").asInt());
+            stmt.setInt(2, node.get("divId").asInt());
             stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
             stmt.setInt(4, loggedInUser.id);
             stmt.executeUpdate();
@@ -878,6 +885,9 @@ public class User {
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt = null;
         int result = 0;
+        javax.naming.Context env = null;
+        env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
+
 
         try {
             // If connection is not null then perform delete operation.
@@ -888,9 +898,21 @@ public class User {
                 stmt.setBoolean(1, node.get("isactive").asBoolean());
                 stmt.setInt(2, node.get("id").asInt());
                 result = stmt.executeUpdate();
-                if(node.get("isactive").asBoolean() == false)
-                {
-                    Mem.setData(node.get("id").asInt() + "#DEACTIVATED" ,0);
+                if (node.get("isactive").asBoolean() == false) {
+                    int accessTimeout = 0;
+
+//                    if (node.get("isPublic").asBoolean()) {
+//
+//                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+//                        Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
+//
+//                    } else {
+//                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+//                        Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
+//
+//                    }
+
+
                 }
             } else
                 throw new Exception("DB connection is null");
@@ -937,6 +959,9 @@ public class User {
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt;
         ResultSet result;
+        int accessTimeout = 0;
+        javax.naming.Context env = null;
+        env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
 
         try {
             con.setAutoCommit(false);
@@ -1003,7 +1028,16 @@ public class User {
 
                         stmt.executeUpdate();
 
-                        Mem.setData(node.get("username").asText() + "#ROLECHANGED",0);
+//                        if (node.get("isPublic").asBoolean()) {
+//
+//                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+//                            Mem.setData(node.get("username").asInt() + "#ROLECHANGED", accessTimeout * 2);
+//
+//                        } else {
+//                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+//                            Mem.setData(node.get("username").asInt() + "#ROLECHANGED", accessTimeout * 2);
+//
+//                        }
 
                         stmt = con.prepareStatement("insert into master.userrolemaphistory (userid, roleid, effectdate, createdate, createby) values (?,?,?,?,?)");
                         stmt.setInt(1, node.get("userid").asInt());

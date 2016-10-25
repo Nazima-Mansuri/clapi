@@ -450,7 +450,7 @@ public class Territory {
                 else
                     throw new SQLException("No ID obtained");
 
-                if (node.get("personId") != null) {
+                if (node.get("personId").asInt() != 0) {
                     stmt = con.prepareStatement(
                             "SELECT userId from " + schemaName + ".userterritorymap WHERE userId = ?");
 
