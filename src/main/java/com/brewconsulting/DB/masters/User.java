@@ -119,7 +119,7 @@ public class User {
     @JsonProperty("updateBy")
     public int updateBy;
 
-    @JsonView({UserViews.profileView.class,UserViews.clientView.class})
+    @JsonView({UserViews.profileView.class})
     @JsonProperty("isActive")
     public boolean isActive;
 
@@ -131,9 +131,6 @@ public class User {
     @JsonProperty("updatedName")
     public String updatedName;
 
-    @JsonView(UserViews.clientView.class)
-    @JsonProperty("clientName")
-    public String clientName;
 
     // make the constructor private.
     protected User() {
