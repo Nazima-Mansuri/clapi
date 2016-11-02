@@ -169,54 +169,63 @@ public class authentication {
             else
             {
                 try {
-                    Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
-                    JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
-                    String tokenType = (String) clms.getBody().get("tokenType");
-                    System.out.println("TYPE : " + tokenType);
-                    context.setProperty("userObject", mapper.treeToValue(jsonNode, LoggedInUser.class));
+                    boolean isExist = Mem.getToken("refreshToken",refreshToken);
+                    if(!isExist) {
+                        Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
+                        JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
+                        String tokenType = (String) clms.getBody().get("tokenType");
+                        System.out.println("TYPE : " + tokenType);
+                        context.setProperty("userObject", mapper.treeToValue(jsonNode, LoggedInUser.class));
 
-                    User user = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
+                        User user = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
 
-                    javax.naming.Context env = null;
-                    env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
-                    int accessTimeout = 0;
-                    if (salt == null) {
-                        resp = Response.serverError().entity("Salt value missing").build();
-                        throw new Exception("SALT value missing");
+                        javax.naming.Context env = null;
+                        env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
+                        int accessTimeout = 0;
+                        if (salt == null) {
+                            resp = Response.serverError().entity("Salt value missing").build();
+                            throw new Exception("SALT value missing");
+                        }
+
+
+                        if (credentials.getIsPublic()) {
+
+                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+
+                        } else {
+                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+
+                        }
+
+                        if (accessTimeout < 1)
+                            throw new Exception("Access token timeout not specified.");
+
+                        if (user != null) {
+
+                            JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
+                                    .setSubject(user.username).setId(UUID.randomUUID().toString())
+                                    .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
+                                    .signWith(SignatureAlgorithm.HS256, salt);
+
+                            bldr.claim("user", mapper.writerWithView(UserViews.authView.class).writeValueAsString(user));
+                            bldr.claim("tokenType", "ACCESS");
+
+                            node.put("accessToken", bldr.compact());
+
+                            Mem.deleteData(user.id + "#DEACTIVATED");
+                            Mem.deleteData(user.username + "#ROLECHANGED");
+                            resp = Response.ok(node.toString()).build();
+
+                        } else {
+                            resp = Response.status(Response.Status.UNAUTHORIZED).entity("You are not authorized,Please Login again.").
+                                    type(MediaType.TEXT_PLAIN).build();
+                            throw new NotAuthorizedException("You are not authorized,Please Login again.");
+
+                        }
                     }
-
-
-                    if (credentials.getIsPublic()) {
-
-                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
-
-                    } else {
-                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
-
-                    }
-
-                    if (accessTimeout < 1)
-                        throw new Exception("Access token timeout not specified.");
-
-                    if (user != null) {
-
-                        JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
-                                .setSubject(user.username).setId(UUID.randomUUID().toString())
-                                .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
-                                .signWith(SignatureAlgorithm.HS256, salt);
-                        bldr.claim("tokenType", "ACCESS");
-
-                        node.put("accessToken", bldr.compact());
-
-                        Mem.deleteData(user.id + "#DEACTIVATED");
-                        Mem.deleteData(user.username+"#ROLECHANGED");
-                        resp = Response.ok(node.toString()).build();
-
-                    }else
+                    else
                     {
-                        resp = Response.status(Response.Status.UNAUTHORIZED).entity("You are not authorized,Please Login again.").
-                                type(MediaType.TEXT_PLAIN).build();
-                        throw new NotAuthorizedException("You are not authorized,Please Login again.");
+                        resp = Response.status(498).entity("Invalid Token, Please Login again!").build();
                     }
                 }
                 catch (Exception ex) {

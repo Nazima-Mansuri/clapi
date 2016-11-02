@@ -137,7 +137,7 @@ public class CycleMeetingGroup {
                         }
 
                         int index = findMeeting(meetingGroup.id, groMeetingWrappers);
-                        if (index != 0) {
+                        if (index !=-1) {
                             groMeetingWrappers.get(index).cycleMeetings.add(cycleMeeting);
                         } else {
                             groMeetingWrappers.add(meetingGroup);
@@ -454,17 +454,17 @@ public class CycleMeetingGroup {
     /**
      * Method used to find meeting by id.
      *
-     * @param id
+     * @param meetingid
      * @param list
      * @return
      */
-    public static int findMeeting(int id, List<CycleMeetingGroup> list) {
+    public static int findMeeting(int meetingid, List<CycleMeetingGroup> list) {
         for (CycleMeetingGroup cycleMeetingGroup : list) {
-            if (cycleMeetingGroup.id == id) {
+            if (cycleMeetingGroup.id == meetingid) {
                 return list.indexOf(cycleMeetingGroup);
             }
         }
-        return 0;
+        return -1;
     }
 }
 

@@ -99,6 +99,40 @@ public class CycleMeetingAgendas {
     }
 
     /**
+     *  Clone cyclemeeting agenda from group agenda
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @POST
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("/clone")
+    public Response cloneAgenda(InputStream input , @Context ContainerRequestContext crc)
+    {
+        Response resp = null;
+        try
+        {
+            JsonNode node = mapper.readTree(input);
+            List<Integer> list = new ArrayList<>();
+            list = CycleMeetingAgenda.cloneCycleMeetingAgenda(node,(LoggedInUser) crc.getProperty("userObject"));
+            for (int i = 0;i<list.size();i++)
+            {
+                resp = Response.ok("{\"id\":" + list+ "}").build();
+            }
+        }
+        catch (Exception e)
+        {
+            if (resp == null) {
+                resp = Response.serverError().entity(e.getMessage()).build();
+                e.printStackTrace();
+            }
+        }
+        return resp;
+    }
+    /**
      * Update cycle meeting agenda.
      *
      * @param input

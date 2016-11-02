@@ -23,17 +23,39 @@ public class Mem {
     static Integer port = 11211;
     static MemcachedClient client;
 
-      public static boolean getData(String key) throws IOException {
+      public static boolean getToken(String key,String value) throws IOException {
+
+          client = new MemcachedClient(new InetSocketAddress(node1, port));
+
+
+          Object myObject = client.get(key);
+          if (client == null) { // the object does not exist
+              return false;
+          } else {
+              if (myObject == value) {
+                  return true;
+              } else {
+                  return false;
+              }
+          }
+      }
+
+    public static boolean getData(String key) throws IOException {
 
         client =  new MemcachedClient(new InetSocketAddress(node1, port));
 
 
-          Object myObject = client.get(key);
-          if(client == null) { // the object does not exist
-              return false;
-          } else {
-              return  true;
-          }
+        Object myObject = client.get(key);
+        if(client == null)
+        { // the object does not exist
+            return false;
+        }
+        else
+        {
+            return  true;
+
+        }
+
 
 //		List<InetSocketAddress> cluster = new ArrayList<InetSocketAddress>();
 //		cluster.add(new InetSocketAddress(node1, port));
@@ -51,7 +73,6 @@ public class Mem {
     public static void setData(String key, int time) throws IOException {
         client =  new MemcachedClient(new InetSocketAddress(node1, port));
         client.set(key, time, "");
-        System.out.println(client.get("theKey"));
         client.shutdown();
     }
 

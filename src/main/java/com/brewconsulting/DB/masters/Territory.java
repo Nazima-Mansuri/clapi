@@ -325,7 +325,10 @@ public class Territory {
                         territory.divId = result.getInt(11);
                         territory.personId = result.getInt(12);
                         territory.username = result.getString(13);
-                        tw.text = territory.name;
+                        if(territory.username != null)
+                            tw.text = territory.name +" - " + territory.username;
+                        else
+                            tw.text = territory.name;
                         tw.data = territory;
 //					lookup.put(terr.id, terr);
                         lookup.put(territory.id, tw);
@@ -551,40 +554,43 @@ public class Territory {
 
                 affectedRow = stmt.executeUpdate();
 
-                stmt = con.prepareStatement(
-                        "SELECT userId from " + schemaName + ".userterritorymap WHERE userId = ?");
-                stmt.setInt(1, node.get("personId").asInt());
-                result = stmt.executeQuery();
-
-                System.out.println();
-                if (!result.next()) {
-                    System.out.println("If Method ");
-                    // It Insert data in userTerritoryMap with new userId
-                    stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymap"
-                            + "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
-
+                if(node.get("personId").asInt() >0)
+                {
+                    stmt = con.prepareStatement(
+                            "SELECT userId from " + schemaName + ".userterritorymap WHERE userId = ?");
                     stmt.setInt(1, node.get("personId").asInt());
-                    stmt.setInt(2, node.get("id").asInt());
-                    stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(4, loggedInUser.id);
-                    stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+                    result = stmt.executeQuery();
 
-                    stmt.executeUpdate();
+                    System.out.println();
+                    if (!result.next()) {
+                        System.out.println("If Method ");
+                        // It Insert data in userTerritoryMap with new userId
+                        stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymap"
+                                + "(userId,terrId,effectDate,createBy,createDate) values (?,?,?,?,?)");
 
-                    // It Insert data in userTerritoryMapHistory with new userId
-                    stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymaphistory"
-                            + "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+                        stmt.setInt(1, node.get("personId").asInt());
+                        stmt.setInt(2, node.get("id").asInt());
+                        stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(4, loggedInUser.id);
+                        stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
 
-                    stmt.setInt(1, node.get("personId").asInt());
-                    stmt.setInt(2, node.get("id").asInt());
-                    stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-                    stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(5, loggedInUser.id);
-                    stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                        stmt.executeUpdate();
 
-                    stmt.executeUpdate();
+                        // It Insert data in userTerritoryMapHistory with new userId
+                        stmt = con.prepareStatement("INSERT INTO " + schemaName + ".userterritorymaphistory"
+                                + "(userId,terrId,effectDate,endDate,createBy,createDate) values (?,?,?,?,?,?)");
+
+                        stmt.setInt(1, node.get("personId").asInt());
+                        stmt.setInt(2, node.get("id").asInt());
+                        stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+                        stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(5, loggedInUser.id);
+                        stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+
+                        stmt.executeUpdate();
+                    }
+
                 }
-
                 con.commit();
                 return affectedRow;
             } catch (Exception ex) {

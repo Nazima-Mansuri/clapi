@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import javax.naming.NamingException;
 import javax.rmi.CORBA.Util;
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
@@ -60,6 +61,92 @@ public class CycleMeetingAgenda {
     }
 
 
+    /***
+     *  Method is used to clone child agenda from parent agenda.
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws SQLException
+     * @throws NamingException
+     * @throws ClassNotFoundException
+     */
+    public static List<Integer> cloneCycleMeetingAgenda(JsonNode node,LoggedInUser loggedInUser) throws SQLException, NamingException, ClassNotFoundException {
+        String schemaName = loggedInUser.schemaName;
+
+        Connection con = DBConnectionProvider.getConn();
+        ArrayList<CycleMeetingAgenda> cycleMeetingAgendas = new ArrayList<CycleMeetingAgenda>();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+        int affectedRows;
+        int meetingid = 0;
+        List<Integer> idList = new ArrayList<>();
+        try {
+            con.setAutoCommit(false);
+
+            stmt = con.prepareStatement("SELECT sessionname, sessiondesc, sessionstarttime," +
+                                        "sessionendtime FROM client1.groupagenda where groupid = ? and dayNo = ?");
+            stmt.setInt(1,node.get("groupid").asInt());
+            stmt.setInt(2,node.get("dayNo").asInt());
+            result = stmt.executeQuery();
+            while (result.next())
+            {
+                CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
+                cycleMeetingAgenda.sessionName = result.getString(1);
+                cycleMeetingAgenda.sessionDesc = result.getString(2);
+                cycleMeetingAgenda.sessionStartTime = result.getTime(3);
+                cycleMeetingAgenda.sessionEndTime = result.getTime(4);
+                cycleMeetingAgendas.add(cycleMeetingAgenda);
+            }
+
+            for (int i=0;i<cycleMeetingAgendas.size();i++)
+            {
+                stmt = con
+                        .prepareStatement(
+                                "INSERT INTO "
+                                        + schemaName
+                                        + ".cycleMeetingAgenda(cycleMeetingId,meetingDate,sessionName,sessionDesc,sessionStartTime,sessionEndTime,"
+                                        + "createdOn,createdBy,updateOn,updatedBy) values (?,?,?,?,?,?,?,?,?,?)",
+                                Statement.RETURN_GENERATED_KEYS);
+                stmt.setInt(1, node.get("cycleMeetingId").asInt());
+                stmt.setDate(2, java.sql.Date.valueOf(node.get("meetingDate").asText()));
+                stmt.setString(3, cycleMeetingAgendas.get(i).sessionName);
+                stmt.setString(4, cycleMeetingAgendas.get(i).sessionDesc);
+                stmt.setTime(5, Time.valueOf(cycleMeetingAgendas.get(i).sessionStartTime.toString()));
+                stmt.setTime(6, Time.valueOf(cycleMeetingAgendas.get(i).sessionEndTime.toString()));
+                stmt.setTimestamp(7, new Timestamp((new Date()).getTime()));
+                stmt.setInt(8, loggedInUser.id);
+                stmt.setTimestamp(9, new Timestamp((new Date()).getTime()));
+                stmt.setInt(10, loggedInUser.id);
+                affectedRows = stmt.executeUpdate();
+
+                if (affectedRows == 0)
+                    throw new SQLException("Add Cycle Meeting Failed.");
+
+                ResultSet generatedKeys = stmt.getGeneratedKeys();
+                
+                if (generatedKeys.next()) {
+                    // It gives last inserted Id in divisionId
+                    meetingid = generatedKeys.getInt(1);
+                    idList.add(meetingid);
+                }
+                else
+                    throw new SQLException("No ID obtained");
+            }
+            con.commit();
+            return idList;
+        }
+        catch (Exception ex) {
+            if (con != null)
+                con.rollback();
+            throw ex;
+        } finally {
+            con.setAutoCommit(false);
+            if (con != null)
+                con.close();
+        }
+
+    }
     /**
      * method to get all cycle meeting agenda
      *

@@ -21,11 +21,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.ws.rs.NotAuthorizedException;
@@ -37,7 +40,7 @@ public class User {
     public int clientId; // -1 means no client
 
     @JsonProperty("id")
-    @JsonView({UserViews.bareView.class, UserViews.deAssociateView.class})
+    @JsonView({UserViews.bareView.class, UserViews.deAssociateView.class })
     public int id;
 
     @JsonProperty("username")
@@ -116,7 +119,7 @@ public class User {
     @JsonProperty("updateBy")
     public int updateBy;
 
-    @JsonView(UserViews.profileView.class)
+    @JsonView({UserViews.profileView.class,UserViews.clientView.class})
     @JsonProperty("isActive")
     public boolean isActive;
 
@@ -124,10 +127,55 @@ public class User {
     @JsonProperty("designation")
     public String designation;
 
+    @JsonView(UserViews.profileView.class)
+    @JsonProperty("updatedName")
+    public String updatedName;
+
+    @JsonView(UserViews.clientView.class)
+    @JsonProperty("clientName")
+    public String clientName;
+
     // make the constructor private.
     protected User() {
 
     }
+
+
+    private static final String CHAR_LIST =
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    private static final int RANDOM_STRING_LENGTH = 8;
+
+    /**
+     * This method generates random string
+     * @return
+     */
+    public static String generateRandomString()
+    {
+
+        StringBuffer randStr = new StringBuffer();
+        for(int i=0; i<RANDOM_STRING_LENGTH; i++){
+            int number = getRandomNumber();
+            char ch = CHAR_LIST.charAt(number);
+            randStr.append(ch);
+        }
+        return randStr.toString();
+    }
+
+    /**
+     * This method generates random numbers
+     * @return int
+     */
+    private static int getRandomNumber() {
+        int randomInt = 0;
+        Random randomGenerator = new Random();
+        randomInt = randomGenerator.nextInt(CHAR_LIST.length());
+        if (randomInt - 1 == -1) {
+            return randomInt;
+        } else {
+            return randomInt - 1;
+        }
+    }
+
 
     /***
      * This method checks User is active or not and user's roles are changes or not.
@@ -152,12 +200,9 @@ public class User {
             ResultSet resultSet = stmt.executeQuery();
 
             boolean data = Mem.getData(loggedInUser.id + "#DEACTIVATED");
-            System.out.println("DATA : " + data);
 
             if (resultSet.next()) {
                 isActive = resultSet.getBoolean(1);
-
-                System.out.println("ACTIVE : " + isActive);
 
                 if (isActive) {
                     User user = null;
@@ -165,7 +210,9 @@ public class User {
                             "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username "
                                     + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
                                     + " where a.isActive  and a.clientId = b.id and "
-                                    + " a.id = c.userId and c.roleId = d.id");
+                                    + " a.id = c.userId and c.roleId = d.id and a.id = ?");
+
+                    stmt.setInt(1,loggedInUser.id);
 
                     final ResultSet masterUsers = stmt.executeQuery();
                     while (masterUsers.next()) {
@@ -495,7 +542,7 @@ public class User {
      * @throws NamingException
      */
     public static int createUser(JsonNode node, LoggedInUser loggedInUser)
-            throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException {
+            throws ClassNotFoundException, SQLException, RequiredDataMissing, NamingException, MessagingException {
 
         // TODO: check if the user has rights to perform this action.
 
@@ -513,103 +560,114 @@ public class User {
 
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt = null;
-
-        MessageDigest md = null;
-        try {
-            md = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        md.update(node.get("password").asText().getBytes());
-
-        byte byteData[] = md.digest();
-
-        //convert the byte to hex format method 1
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < byteData.length; i++) {
-            sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
-        }
-
-        System.out.println("Digest(in hex format):: " + sb.toString());
+        ResultSet result;
 
         try {
+
             con.setAutoCommit(false);
-            stmt = con.prepareStatement("insert into master.users (firstname, lastname, "
-                    + "clientId, username, password) values (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            stmt.setString(1, node.get("firstName").asText());
-            stmt.setString(2, node.get("lastName").asText());
-            stmt.setInt(3, node.get("clientId").asInt());
-            stmt.setString(4, node.get("username").asText());
-            stmt.setString(5, sb.toString());
+
+            stmt = con.prepareStatement("select username from master.users where username = ?");
+            stmt.setString(1,node.get("username").asText());
+            result = stmt.executeQuery();
+            if(!result.next()) {
+
+                String password = generateRandomString();
+
+                MessageDigest md = null;
+                try {
+                    md = MessageDigest.getInstance("MD5");
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+                md.update(password.getBytes());
+
+                byte byteData[] = md.digest();
+
+                //convert the byte to hex format method 1
+                StringBuffer sb = new StringBuffer();
+                for (int i = 0; i < byteData.length; i++) {
+                    sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+                }
+
+                System.out.println("Digest(in hex format):: " + sb.toString());
+
+                stmt = con.prepareStatement("insert into master.users (firstname, lastname, "
+                        + "clientId, username, password,isactive) values (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                stmt.setString(1, node.get("firstName").asText());
+                stmt.setString(2, node.get("lastName").asText());
+                stmt.setInt(3, node.get("clientId").asInt());
+                stmt.setString(4, node.get("username").asText());
+                stmt.setString(5, sb.toString());
+                stmt.setBoolean(6,node.get("isActive").asBoolean());
 
 
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0)
-                throw new SQLException("Create user failed.");
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0)
+                    throw new SQLException("Create user failed.");
 
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
-            int userid;
-            if (generatedKeys.next())
-                userid = generatedKeys.getInt(1);
-            else
-                throw new SQLException("Create user failed. No ID obtained");
+                ResultSet generatedKeys = stmt.getGeneratedKeys();
+                int userid;
+                if (generatedKeys.next())
+                    userid = generatedKeys.getInt(1);
+                else
+                    throw new SQLException("Create user failed. No ID obtained");
 
-            // TODO: set up the phones string array
-            String[] phoneArr = new String[node.withArray("phones").size()];
+                // TODO: set up the phones string array
+                String[] phoneArr = new String[node.withArray("phones").size()];
 
-            // Convert JsonArray into String Array
-            for (int i = 0; i < node.withArray("phones").size(); i++) {
-                phoneArr[i] = node.withArray("phones").get(i).asText();
-            }
+                // Convert JsonArray into String Array
+                for (int i = 0; i < node.withArray("phones").size(); i++) {
+                    phoneArr[i] = node.withArray("phones").get(i).asText();
+                }
 
-            Array pharr = con.createArrayOf("text", phoneArr);
+                Array pharr = con.createArrayOf("text", phoneArr);
 
-            stmt = con.prepareStatement("insert into " + loggedInUser.schemaName + ".userProfile(userId,"
-                    + "address, designation, empNumber, createBy, updateDate, updateBy) values (?, "
-                    + "ROW(?,?,?,?,?,?), ?, ?,?,?,?)");
-            stmt.setInt(1, userid);
-            if (node.has("addLine1"))
-                stmt.setString(2, node.get("addLine1").asText());
-            else
-                stmt.setString(2, null);
+                stmt = con.prepareStatement("insert into " + loggedInUser.schemaName + ".userProfile(userId,"
+                        + "address, designation, empNumber, createBy, updateDate, updateBy) values (?, "
+                        + "ROW(?,?,?,?,?,?), ?, ?,?,?,?)");
+                stmt.setInt(1, userid);
+                if (node.has("addLine1"))
+                    stmt.setString(2, node.get("addLine1").asText());
+                else
+                    stmt.setString(2, null);
 
-            if (node.has("addLine2"))
-                stmt.setString(3, node.get("addLine2").asText());
-            else
-                stmt.setString(3, null);
-            if (node.has("addLine3"))
-                stmt.setString(4, node.get("addLine3").asText());
-            else
-                stmt.setString(4, null);
-            if (node.has("city"))
-                stmt.setString(5, node.get("city").asText());
-            else
-                stmt.setString(5, null);
-            if (node.has("state"))
-                stmt.setString(6, node.get("state").asText());
-            else
-                stmt.setString(6, null);
-            if (node.has("phones"))
-                stmt.setArray(7, pharr);
-            else
-                stmt.setString(7, null);
-            if (node.has("designation"))
-                stmt.setString(8, node.get("designation").asText());
-            else
-                stmt.setString(8, null);
-            if (node.has("empNumber"))
-                stmt.setString(9, node.get("empNumber").asText());
-            else
-                stmt.setString(9, null);
+                if (node.has("addLine2"))
+                    stmt.setString(3, node.get("addLine2").asText());
+                else
+                    stmt.setString(3, null);
+                if (node.has("addLine3"))
+                    stmt.setString(4, node.get("addLine3").asText());
+                else
+                    stmt.setString(4, null);
+                if (node.has("city"))
+                    stmt.setString(5, node.get("city").asText());
+                else
+                    stmt.setString(5, null);
+                if (node.has("state"))
+                    stmt.setString(6, node.get("state").asText());
+                else
+                    stmt.setString(6, null);
+                if (node.has("phones"))
+                    stmt.setArray(7, pharr);
+                else
+                    stmt.setString(7, null);
+                if (node.has("designation"))
+                    stmt.setString(8, node.get("designation").asText());
+                else
+                    stmt.setString(8, null);
+                if (node.has("empNumber"))
+                    stmt.setString(9, node.get("empNumber").asText());
+                else
+                    stmt.setString(9, null);
 
-            stmt.setInt(10, loggedInUser.id);
-            stmt.setTimestamp(11, new Timestamp((new Date()).getTime()));
-            stmt.setInt(12, loggedInUser.id);
+                stmt.setInt(10, loggedInUser.id);
+                stmt.setTimestamp(11, new Timestamp((new Date()).getTime()));
+                stmt.setInt(12, loggedInUser.id);
 
-            stmt.executeUpdate();
+                stmt.executeUpdate();
 
-            // TODO: you need to check the return value here also and throw
-            // error if insert failed.
+                // TODO: you need to check the return value here also and throw
+                // error if insert failed.
 
 /*            if (node.has("roles")) {
                System.out.println("in if");
@@ -618,32 +676,37 @@ public class User {
                 System.out.println(it.hasNext());
                 while (it.hasNext()) {
                     JsonNode role = it.next();*/
-            stmt = con.prepareStatement(
-                    "insert into master.userroleMap (userId, roleId, effectDate,createBy) values"
-                            + "(?,?,?,?)");
-            System.out.println(stmt);
-            stmt.setInt(1, userid);
-            stmt.setInt(2, node.get("roleid").asInt());
-            stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-            stmt.setInt(4, loggedInUser.id);
-            stmt.executeUpdate();
-            System.out.println("role inserted");
-            // TODO: check the return and throw errors.
-            //}
+                stmt = con.prepareStatement(
+                        "insert into master.userroleMap (userId, roleId, effectDate,createBy) values"
+                                + "(?,?,?,?)");
+                System.out.println(stmt);
+                stmt.setInt(1, userid);
+                stmt.setInt(2, node.get("roleid").asInt());
+                stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+                stmt.setInt(4, loggedInUser.id);
+                stmt.executeUpdate();
+                System.out.println("role inserted");
+                // TODO: check the return and throw errors.
+                //}
 //            } else
 //                throw new RequiredDataMissing("Role is required");
 
-            stmt = con.prepareStatement(
-                    "insert into " + loggedInUser.schemaName + ".userdivmap (userId,divid,createdate,createBy) values"
-                            + "(?,?,?,?)");
-            stmt.setInt(1, userid);
-            stmt.setInt(2, node.get("divId").asInt());
-            stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-            stmt.setInt(4, loggedInUser.id);
-            stmt.executeUpdate();
-
-            con.commit();
-            return userid;
+                stmt = con.prepareStatement(
+                        "insert into " + loggedInUser.schemaName + ".userdivmap (userId,divid,createdate,createBy) values"
+                                + "(?,?,?,?)");
+                stmt.setInt(1, userid);
+                stmt.setInt(2, node.get("divId").asInt());
+                stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+                stmt.setInt(4, loggedInUser.id);
+                stmt.executeUpdate();
+                generateAndSendEmail(node.get("username").asText(),"testrolla@gmail.com","Rolla@test",password);
+                con.commit();
+                return userid;
+            }
+            else
+            {
+                return 0;
+            }
         } catch (Exception ex) {
             if (con != null)
                 con.rollback();
@@ -680,8 +743,8 @@ public class User {
 
             stmt = con.prepareStatement("select a.userid id, (a.address).city city, c.username username " + "from "
                     + loggedInUser.schemaName + ".userProfile a left outer join " + loggedInUser.schemaName
-                    + ".userTerritoryMap b " + "on (a.userId = b.userId), master.users c "
-                    + "where b.terrId is null and c.id = a.userId");
+                    + ".userTerritoryMap b " + " on (a.userId = b.userId), master.users c "
+                    + "where b.terrId is null and c.id = a.userId AND c.isactive");
 
             result = stmt.executeQuery();
             while (result.next()) {
@@ -734,7 +797,9 @@ public class User {
                             " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                             " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
                             " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
-                            " b.updateDate  udate,  b.updateBy uby from master.users a left join " +
+                            " b.updateDate  udate,  b.updateBy uby,(select a1.username from master.users a1," +
+                            " client1.userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename " +
+                            " from master.users a left join " +
                             loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
                             " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
                             loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
@@ -756,7 +821,12 @@ public class User {
                 user.addLine3 = result.getString("line3");
                 user.city = result.getString("city");
                 user.state = result.getString("state");
+                if(result.getArray("phones").getArray() == null)
+                    user.phones = null;
+                else
                 user.phones = (String[]) result.getArray("phones").getArray();
+
+
                 user.roleid = result.getInt("roleid");
                 user.divId = result.getInt("divId");
                 user.divName = result.getString("divname");
@@ -766,6 +836,7 @@ public class User {
                 user.updateDate = result.getDate("cdate");
                 user.updateBy = result.getInt("cby");
                 user.designation = result.getString("designation");
+                user.updatedName = result.getString("updatename");
                 userList.add(user);
             }
         } finally {
@@ -806,48 +877,57 @@ public class User {
         ArrayList<User> userList = new ArrayList<User>();
 
         try {
-            stmt = con.prepareStatement(
-                    "select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
-                            " e.roleid roleid, f.name rolename, a.username username," +
-                            " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
-                            " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
-                            " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
-                            " b.updateDate  udate,  b.updateBy uby from master.users a left join " +
-                            loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
-                            " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
-                            loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
-                            " e.userid = a.id left join master.roles f on f.id = e.roleid where c.divid = ? order by a.id asc ");
-            stmt.setInt(1, id);
-            result = stmt.executeQuery();
-            while (result.next()) {
-
-                User user = new User();
-                user.id = result.getInt("id");
-                user.clientId = result.getInt("clientid");
-                user.firstName = result.getString("firstname");
-                user.lastName = result.getString("lastname");
-                user.isActive = result.getBoolean("isActive");
-                user.roles = new ArrayList<Role>();
-                user.roles.add(new Role(result.getInt("roleid"), result.getString("rolename")));
-                user.username = result.getString("username");
-                user.addLine1 = result.getString("line1");
-                user.addLine2 = result.getString("line2");
-                user.addLine3 = result.getString("line3");
-                user.city = result.getString("city");
-                user.state = result.getString("state");
-                user.phones = (String[]) result.getArray("phones").getArray();
-                user.roleid = result.getInt("roleid");
-                user.divId = result.getInt("divId");
-                user.divName = result.getString("divname");
-                user.empNum = result.getString("empnumber");
-                user.createDate = result.getDate("cdate");
-                user.createBy = result.getInt("cby");
-                user.updateDate = result.getDate("cdate");
-                user.updateBy = result.getInt("cby");
-                user.designation = result.getString("designation");
-                userList.add(user);
+            if (id == -1) {
+                userList = (ArrayList<User>) getAllUsers(loggedInUser);
             }
-        } finally {
+            else
+            {
+                stmt = con.prepareStatement(
+                        "select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
+                                " e.roleid roleid, f.name rolename, a.username username," +
+                                " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
+                                " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
+                                " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
+                                " b.updateDate  udate,  b.updateBy uby ,(select a1.username from master.users a1," +
+                                " client1.userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename " +
+                                " from master.users a left join " +
+                                loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
+                                " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
+                                loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
+                                " e.userid = a.id left join master.roles f on f.id = e.roleid  where c.divid = ? order by a.id asc ");
+                stmt.setInt(1, id);
+                result = stmt.executeQuery();
+                while (result.next()) {
+
+                    User user = new User();
+                    user.id = result.getInt("id");
+                    user.clientId = result.getInt("clientid");
+                    user.firstName = result.getString("firstname");
+                    user.lastName = result.getString("lastname");
+                    user.isActive = result.getBoolean("isActive");
+                    user.roles = new ArrayList<Role>();
+                    user.roles.add(new Role(result.getInt("roleid"), result.getString("rolename")));
+                    user.username = result.getString("username");
+                    user.addLine1 = result.getString("line1");
+                    user.addLine2 = result.getString("line2");
+                    user.addLine3 = result.getString("line3");
+                    user.city = result.getString("city");
+                    user.state = result.getString("state");
+                    user.phones = (String[]) result.getArray("phones").getArray();
+                    user.roleid = result.getInt("roleid");
+                    user.divId = result.getInt("divId");
+                    user.divName = result.getString("divname");
+                    user.empNum = result.getString("empnumber");
+                    user.createDate = result.getDate("cdate");
+                    user.createBy = result.getInt("cby");
+                    user.updateDate = result.getDate("cdate");
+                    user.updateBy = result.getInt("cby");
+                    user.designation = result.getString("designation");
+                    user.updatedName = result.getString("updatename");
+                    userList.add(user);
+                }
+            }
+        }finally {
             if (result != null)
                 if (!result.isClosed())
                     result.close();
@@ -965,12 +1045,14 @@ public class User {
 
         try {
             con.setAutoCommit(false);
-            stmt = con.prepareStatement("UPDATE master.users SET firstname = ?,lastname = ?,clientId= ?,username=? WHERE id = ?");
+            stmt = con.prepareStatement("UPDATE master.users SET firstname = ?,lastname = ?,clientId= ?,username=?, isactive=? " +
+                    " WHERE id = ?");
             stmt.setString(1, node.get("firstName").asText());
             stmt.setString(2, node.get("lastName").asText());
             stmt.setInt(3, node.get("clientId").asInt());
             stmt.setString(4, node.get("username").asText());
-            stmt.setInt(5, node.get("userid").asInt());
+            stmt.setBoolean(5,node.get("isActive").asBoolean());
+            stmt.setInt(6, node.get("userid").asInt());
 
             int affectedRows = stmt.executeUpdate();
             System.out.println(affectedRows);
@@ -1067,6 +1149,48 @@ public class User {
         }
 
     }
+
+    public static boolean generateAndSendEmail(String username,String from, String password,String emailBody) throws MessagingException, SQLException, NamingException, ClassNotFoundException {
+         Properties mailServerProperties;
+         Session getMailSession;
+         MimeMessage generateMailMessage;
+        // Step1
+//        System.out.println("\n 1st ===> setup Mail Server Properties..");
+        mailServerProperties = System.getProperties();
+        mailServerProperties.put("mail.smtp.port", "587");
+        mailServerProperties.put("mail.smtp.auth", "true");
+        mailServerProperties.put("mail.smtp.starttls.enable", "true");
+        System.out.println("Mail Server Properties have been setup successfully..");
+
+        // Step2
+//        System.out.println("\n\n 2nd ===> get Mail Session..");
+        getMailSession = Session.getDefaultInstance(mailServerProperties, null);
+        generateMailMessage = new MimeMessage(getMailSession);
+        generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(username));
+        generateMailMessage.setSubject("Rolla Password..");
+//        String emailBody = generateRandomString();
+//        System.out.println(generateRandomString());
+        generateMailMessage.setContent(emailBody, "text/html");
+        System.out.println("Mail Session has been created successfully..");
+
+        // Step3
+//        System.out.println("\n\n 3rd ===> Get Session and Send mail");
+        Transport transport = getMailSession.getTransport("smtp");
+
+        transport.connect("smtp.gmail.com", from , password);
+        if (transport.isConnected())
+        {
+            transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
+            transport.close();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
 }
 
 

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 
+import javax.mail.MessagingException;
 import javax.naming.NamingException;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -12,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.brewconsulting.DB.masters.*;
+import com.brewconsulting.login.Credentials;
 import org.postgresql.util.PSQLException;
 
 import com.brewconsulting.exceptions.RequiredDataMissing;
@@ -78,7 +80,6 @@ public class Users {
             int userid = User.createUser(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + userid + "}").build();
-
         } catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError()
@@ -108,6 +109,8 @@ public class Users {
                 resp = Response.serverError()
                         .header("content-type", MediaType.TEXT_PLAIN)
                         .entity(e.getStackTrace()).build();
+            e.printStackTrace();
+        } catch (MessagingException e) {
             e.printStackTrace();
         }
 
@@ -195,7 +198,7 @@ public class Users {
         try {
             resp = Response.ok(
                     mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
-                            .getAllUsersByDivId(id,(LoggedInUser) crc
+                            .getAllUsersByDivId(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
