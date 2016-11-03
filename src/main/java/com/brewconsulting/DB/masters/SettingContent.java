@@ -81,7 +81,7 @@ public class SettingContent {
                         stmt = con
                                 .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
                                         "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby" +
-                                        " where divid = ?");
+                                        " where divid = ? ORDER BY createdon");
                         stmt.setInt(1,divId);
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -107,7 +107,8 @@ public class SettingContent {
                     {
                         stmt = con
                                 .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
-                                        "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby");
+                                        "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby" +
+                                        " ORDER BY createdon");
                         result = stmt.executeQuery();
                         while (result.next()) {
                             SettingContent content = new SettingContent();

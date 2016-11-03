@@ -56,18 +56,20 @@ public class authentication {
             System.out.println("Digest(in hex format):: " + sb.toString());
 
             if (username.equals(null) || username.equals("")) {
-                resp = Response.status(Response.Status.BAD_REQUEST).entity("Username not specified").build();
+                resp = Response.status(Response.Status.BAD_REQUEST).entity("{\"Message\":" + "\" Username not specified\"}").build();
                 throw new Exception("Username not specified");
             }
             if (password.equals(null) || password.equals("")) {
-                resp = Response.status(Response.Status.BAD_REQUEST).entity("Password not specified").build();
+                resp = Response.status(Response.Status.BAD_REQUEST).entity("{\"Message\":" + "\" Password not specified\"}").build();
                 throw new Exception("Password not specified");
             }
 
             User user = User.authenticate(username, sb.toString());
 
             if (user == null) {
-                resp = Response.status(Response.Status.UNAUTHORIZED).entity("Authentication Failed").build();
+
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" Authentication Failed \"}")
+                        .type(MediaType.APPLICATION_JSON).build();
                 throw new Exception("User authentication failed.");
 
             }
@@ -75,13 +77,13 @@ public class authentication {
             ObjectNode node = mapper.createObjectNode();
 
             if (context == null) {
-                resp = Response.serverError().entity("ServeletContext missing").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\" ServeletContext missing\"}").build();
                 throw new Exception("Servlet context missing");
             }
 
             String salt = context.getInitParameter("salt");
             if (salt == null) {
-                resp = Response.serverError().entity("Salt value missing").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\" Salt value missing \"}").build();
                 throw new Exception("SALT value missing");
             }
 
@@ -131,7 +133,8 @@ public class authentication {
             resp = Response.ok(node.toString()).build();
         } catch (Exception ex) {
             if (resp == null)
-                resp = Response.serverError().entity(ex.getMessage()).build();
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage()  +"\"}")
+                        .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         }
         return resp;
@@ -183,7 +186,7 @@ public class authentication {
                         env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
                         int accessTimeout = 0;
                         if (salt == null) {
-                            resp = Response.serverError().entity("Salt value missing").build();
+                            resp = Response.serverError().entity("{\"Message\":" + "\" Salt value missing \"}").build();
                             throw new Exception("SALT value missing");
                         }
 
@@ -217,21 +220,22 @@ public class authentication {
                             resp = Response.ok(node.toString()).build();
 
                         } else {
-                            resp = Response.status(Response.Status.UNAUTHORIZED).entity("You are not authorized,Please Login again.").
-                                    type(MediaType.TEXT_PLAIN).build();
+                            resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" You are not authorized,Please Login again.\"}")
+                                    .type(MediaType.APPLICATION_JSON).build();
                             throw new NotAuthorizedException("You are not authorized,Please Login again.");
 
                         }
                     }
                     else
                     {
-                        resp = Response.status(498).entity("Invalid Token, Please Login again!").build();
+                        resp = Response.status(498).entity("{\"Message\":" + "\" Invalid Token , Please Login Again!\"}").build();
                     }
                 }
                 catch (Exception ex) {
                     context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
                     servletContext.log("Invalid token", ex);
-                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("Authentication Failed").build();
+                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" Authentication Failed \"}")
+                            .type(MediaType.APPLICATION_JSON).build();
 
                 }
             }
@@ -260,17 +264,19 @@ public class authentication {
             System.out.println("isTrue " + isTrue);
             if(isTrue)
             {
-                resp = Response.ok().entity("Password send by Email Succesfully.").type(MediaType.TEXT_PLAIN).build();
+                resp = Response.ok().entity("{\"Message\":" + "\" Password send by Email Succesfully.\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
             }
             else
             {
-                resp = Response.serverError().entity("Something Went Wrong").type(MediaType.TEXT_PLAIN).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\" Something went wrong\"}")
+                        .type(MediaType.APPLICATION_JSON).build();
             }
         }
         catch (Exception e)
         {
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
-            resp = Response.serverError().entity(e.getMessage()).build();
         }
         return resp;
     }

@@ -51,7 +51,7 @@ public class GroupNotes {
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to get Group Notes").build();
         } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -88,10 +88,8 @@ public class GroupNotes {
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to get Group Note").build();
         } catch (Exception e) {
-
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
-
         }
         return resp;
     }
@@ -128,7 +126,7 @@ public class GroupNotes {
                     .entity("You are not authorized to Insert Group Note").build();
         } catch (IOException e) {
             if (resp == null) {
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
@@ -163,7 +161,7 @@ public class GroupNotes {
                     .build();
         } catch (IOException e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -204,15 +202,14 @@ public class GroupNotes {
                     .build();
         } catch (PSQLException ex) {
             resp = Response
-                    .status(409)
-                    .entity("This id is already Use in another table as foreign key")
-                    .type(MediaType.TEXT_PLAIN).build();
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
-
         }
         return resp;
     }

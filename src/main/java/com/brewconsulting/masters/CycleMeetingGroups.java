@@ -55,7 +55,7 @@ public class CycleMeetingGroups {
                     .entity("You are not authorized to get Cycle meeting group ")
                     .build();
         } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -88,7 +88,7 @@ public class CycleMeetingGroups {
                     .entity("You are not authorized to Particular meeting")
                     .build();
         } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -125,7 +125,7 @@ public class CycleMeetingGroups {
                     .entity("You are not authorized to Group Meeting").build();
         } catch (IOException e) {
             if (resp == null) {
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
@@ -162,7 +162,7 @@ public class CycleMeetingGroups {
         }
         catch (IOException e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -204,13 +204,13 @@ public class CycleMeetingGroups {
         }
         catch (PSQLException ex) {
             resp = Response
-                    .status(409)
-                    .entity("This id is already Use in another table as foreign key")
-                    .type(MediaType.TEXT_PLAIN).build();
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
 
         }

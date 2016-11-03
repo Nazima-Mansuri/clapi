@@ -54,7 +54,7 @@ public class Territories {
 					.entity("You are not authorized to get territories")
 					.build();
 		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -89,7 +89,7 @@ public class Territories {
 					.header("content-type", MediaType.TEXT_PLAIN)
 					.entity("You are not authorized to get territory").build();
 		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -122,7 +122,7 @@ public class Territories {
 					.entity("You are not authorized to get divison by territory")
 					.build();
 		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -159,7 +159,7 @@ public class Territories {
 					.entity("You are not authorized to add Territory").build();
 		} catch (IOException e) {
 			if (resp == null) {
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 				e.printStackTrace();
 			}
 		} catch (Exception e) {
@@ -202,7 +202,7 @@ public class Territories {
 					.build();
 		} catch (IOException e) {
 			if (resp == null)
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -246,13 +246,13 @@ public class Territories {
 					.build();
 		} catch (PSQLException ex) {
 			resp = Response
-					.status(409)
-					.entity("This id is already Use in another table as foreign key")
-					.type(MediaType.TEXT_PLAIN).build();
+					.status(Response.Status.CONFLICT)
+					.entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+					.type(MediaType.APPLICATION_JSON).build();
 			ex.printStackTrace();
 		} catch (Exception e) {
 			if (resp == null)
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -295,7 +295,7 @@ public class Territories {
 					.build();
 		} catch (IOException e) {
 			if (resp == null) {
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 				e.printStackTrace();
 			}
 		} catch (Exception e) {
@@ -325,7 +325,7 @@ public class Territories {
 							.getAllHistory(id,(LoggedInUser) crc
 									.getProperty("userObject")))).build();
 		} catch (Exception e) {
-			resp = Response.serverError().entity(e.getMessage()).build();
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;

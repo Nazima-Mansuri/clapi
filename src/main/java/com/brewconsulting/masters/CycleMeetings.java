@@ -52,10 +52,8 @@ public class CycleMeetings {
         }
 
         catch (Exception e) {
-
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
-
         }
         return resp;
     }
@@ -63,8 +61,8 @@ public class CycleMeetings {
     @GET
     @Produces("application/json")
     @Secured
-    @Path("meetingbyid/{groupid}")
-    public Response meetingsById(@PathParam("groupid") int id , @Context ContainerRequestContext crc) {
+    @Path("meetingbyid/{id}")
+    public Response meetingsById(@PathParam("id") int id , @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             resp = Response.ok(
@@ -79,10 +77,8 @@ public class CycleMeetings {
         }
 
         catch (Exception e) {
-
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
-
         }
         return resp;
     }
@@ -118,7 +114,7 @@ public class CycleMeetings {
                     .entity("You are not authorized to Cycle Meeting").build();
         } catch (IOException e) {
             if (resp == null) {
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
@@ -156,7 +152,7 @@ public class CycleMeetings {
         }
         catch (IOException e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -198,13 +194,13 @@ public class CycleMeetings {
         }
         catch (PSQLException ex) {
             resp = Response
-                    .status(409)
-                    .entity("This id is already Use in another table as foreign key")
-                    .type(MediaType.TEXT_PLAIN).build();
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
 
         }

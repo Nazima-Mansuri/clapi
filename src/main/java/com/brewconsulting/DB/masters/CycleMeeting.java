@@ -67,6 +67,9 @@ public class CycleMeeting {
     @JsonProperty("username")
     public String username;
 
+    @JsonProperty("count")
+    public int count;
+
     // make the default constructor visible to package only.
     public CycleMeeting() {
     }
@@ -100,7 +103,7 @@ public class CycleMeeting {
                             .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, "
                                     +" organiser, createdon, createdby, updatedon, updatedby, u.username"
                                     +"  FROM "+ schemaName+".cyclemeeting c left join master.users u ON " +
-                                    " u.id = organiser where groupId = ?ORDER BY createdon DESC ");
+                                    " u.id = organiser where groupId = ? ORDER BY createdon DESC ");
                     stmt.setInt(1,id);
                     result = stmt.executeQuery();
                     System.out.print(result);
@@ -167,9 +170,12 @@ public class CycleMeeting {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("SELECT id, title, groupid, venue, startdate, enddate, " +
-                                    " organiser, createdon, createdby, updateon, updatedate " +
-                                    "  FROM "+ schemaName+".cyclemeeting where id = ?");
+                            .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, " +
+                                    " organiser, createdon, createdby,updatedon, updatedby, u.username, count(t.cyclemeetingid) " +
+                                    "  FROM "+ schemaName+".cyclemeeting c " +
+                                    "  left join master.users u ON u.id = organiser" +
+                                    " left join "+ schemaName +".cyclemeetingterritories t on c.id = t.cyclemeetingid " +
+                                    " where c.id = ? GROUP BY c.id,u.username ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -186,6 +192,7 @@ public class CycleMeeting {
                         subMeeting.updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
                         subMeeting.updateBy = result.getInt(11);
                         subMeeting.username = result.getString(12);
+                        subMeeting.count = result.getInt(13);
                     }
                 } else
                     throw new Exception("DB connection is null");

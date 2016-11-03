@@ -56,10 +56,8 @@ public class Divisions {
 		}
 
 		catch (Exception e) {
-
-			resp = Response.serverError().entity(e.getMessage()).build();
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
-
 		}
 
 		return resp;
@@ -96,10 +94,8 @@ public class Divisions {
 					.header("content-type", MediaType.TEXT_PLAIN)
 					.entity("You are not authorized to get division").build();
 		} catch (Exception e) {
-
-			resp = Response.serverError().entity(e.getMessage()).build();
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
-
 		}
 		return resp;
 	}
@@ -130,7 +126,7 @@ public class Divisions {
 					.build();
 		} catch (IOException e) {
 			if (resp == null) {
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 				e.printStackTrace();
 			}
 		} catch (Exception e) {
@@ -169,7 +165,7 @@ public class Divisions {
 		} 
 		catch (IOException e) {
 			if (resp == null)
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -192,6 +188,7 @@ public class Divisions {
 	public Response deleteDiv(@PathParam("id") Integer id,
 			@Context ContainerRequestContext crc) {
 		Response resp = null;
+		String err = "This id is already Use in another table as foreign key";
 		try {
 			// affectedRow given how many rows deleted from database.
 			int affectedRow = Division.deleteDivision(id,
@@ -211,15 +208,14 @@ public class Divisions {
 		}
 		catch (PSQLException ex) {
 			resp = Response
-					.status(409)
-					.entity("This id is already Use in another table as foreign key")
-					.type(MediaType.TEXT_PLAIN).build();
+					.status(Response.Status.CONFLICT)
+					.entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+					.type(MediaType.APPLICATION_JSON).build();
 			ex.printStackTrace();
 		} catch (Exception e) {
 			if (resp == null)
-				resp = Response.serverError().entity(e.getMessage()).build();
+				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
-
 		}
 		return resp;
 	}

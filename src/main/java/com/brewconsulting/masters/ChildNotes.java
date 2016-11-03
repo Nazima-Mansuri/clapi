@@ -116,7 +116,7 @@ public class ChildNotes {
                     .entity("You are not authorized to Insert Cycle Meeting Note").build();
         } catch (IOException e) {
             if (resp == null) {
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
@@ -152,7 +152,7 @@ public class ChildNotes {
                     .build();
         } catch (IOException e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -193,13 +193,13 @@ public class ChildNotes {
                     .build();
         } catch (PSQLException ex) {
             resp = Response
-                    .status(409)
-                    .entity("This id is already Use in another table as foreign key")
-                    .type(MediaType.TEXT_PLAIN).build();
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
 
         }

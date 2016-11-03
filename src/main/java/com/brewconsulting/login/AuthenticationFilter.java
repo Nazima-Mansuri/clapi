@@ -9,6 +9,7 @@ import javax.servlet.ServletContext;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.ext.Provider;
@@ -78,7 +79,10 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 				context.setProperty("userObject", mapper.treeToValue(node, LoggedInUser.class));
 			}
 			catch (Exception ex) {
-				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
+				/*resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+				e.printStackTrace();*/
+				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage()  +"\"}")
+						.type(MediaType.APPLICATION_JSON).build());
 				servletContext.log("Invalid token", ex);
 			}
 		}
