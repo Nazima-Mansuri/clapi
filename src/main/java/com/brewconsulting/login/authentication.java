@@ -130,7 +130,7 @@ public class authentication {
             bldr.claim("tokenType", "REFRESH");
             node.put("refreshToken", bldr.compact());
 
-            resp = Response.ok(node.toString()).build();
+            resp = Response.ok("" + node.toString() + "").type(MediaType.APPLICATION_JSON).build();
         } catch (Exception ex) {
             if (resp == null)
                 resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage()  +"\"}")

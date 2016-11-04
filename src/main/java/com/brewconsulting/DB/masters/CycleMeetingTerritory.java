@@ -160,8 +160,7 @@ public class CycleMeetingTerritory {
                             .prepareStatement(
                                     "INSERT INTO "
                                             + schemaName
-                                            + ".cyclemeetingterritories(cycleMeetingId,territoryId) values (?,?)",
-                                    Statement.RETURN_GENERATED_KEYS);
+                                            + ".cyclemeetingterritories(cycleMeetingId,territoryId) values (?,?)");
 
                     stmt.setInt(1, node.get("cycleMeetingId").asInt());
                     stmt.setInt(2,node.withArray("territoryId").get(i).asInt());
@@ -187,5 +186,66 @@ public class CycleMeetingTerritory {
         } else {
             throw new NotAuthorizedException("");
         }
+    }
+
+    /***
+     *  Method used to delete existing cyclemeeting territory and insert new requested cyclemeeting territory
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int updateMeetingTerritory(JsonNode node, LoggedInUser loggedInUser) throws Exception {
+        // TODO: check authorization of the user to Update data
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int affectedRow = 0;
+            int count=0;
+
+            try {
+                con.setAutoCommit(false);
+
+                stmt = con.prepareStatement(
+                            "DELETE FROM "+schemaName+".cyclemeetingterritories WHERE cyclemeetingid = ?");
+
+                stmt.setInt(1, node.get("cycleMeetingId").asInt());
+                affectedRow = stmt.executeUpdate();
+
+                // It Insert data in userTerritoryMap with new territoryId
+                for (int i = 0; i < node.withArray("territoryId").size(); i++) {
+
+                    stmt = con
+                            .prepareStatement(
+                                    "INSERT INTO "
+                                            + schemaName
+                                            + ".cyclemeetingterritories(cycleMeetingId,territoryId) values (?,?)");
+
+                    stmt.setInt(1, node.get("cycleMeetingId").asInt());
+                    stmt.setInt(2,node.withArray("territoryId").get(i).asInt());
+                    stmt.executeUpdate();
+                    count++;
+                }
+                con.commit();
+                return count;
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+        } else {
+            throw new NotAuthorizedException("");
+        }
+
     }
 }

@@ -131,7 +131,7 @@ public class User {
     @JsonProperty("updatedName")
     public String updatedName;
 
-    @JsonView(UserViews.clientView.class)
+    @JsonView({UserViews.profileView.class , UserViews.clientView.class})
     @JsonProperty("clientName")
     public String clientName;
 
@@ -420,16 +420,16 @@ public class User {
         User userProfile = null;
         try {
             stmt = con.prepareStatement(
-                    "select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname, schemaName schemaname,"
+                    "select a.id id, a.clientId clientid,h.name clientname , a.firstname firstname, a.lastname lastname, h.schemaName schemaname,"
                             + "c.id roleid, c.name rolename, a.username username, "
                             + "(d.address).addLine1 line1, (d.address).addLine2 line2, (d.address).addLine3 line3,"
                             + "(d.address).city city, (d.address).state, (d.address).phone phones, d.designation, g.divId divId,"
                             + "empNumber, e.name divname," + "d.createDate cdate, d.createBy cby, "
                             + "d.updateDate  udate,  d.updateBy uby"
                             + " from master.users a, master.userRoleMap b, master.roles c, " + user.schemaName
-                            + ".userProfile d," + user.schemaName + ".divisions e, master.clients f," + user.schemaName + ".userdivmap g"
+                            + ".userProfile d," + user.schemaName + ".divisions e, master.clients f," + user.schemaName + ".userdivmap g , master.clients h"
                             + " where a.isActive and a.id = ? and a.id = b.userId and b.roleId = c.id"
-                            + " and d.userId = a.id and g.divId = e.Id and f.id = a.clientId");
+                            + " and d.userId = a.id and g.divId = e.Id and f.id = a.clientId and h.id = a.clientId");
             stmt.setInt(1, id);
             schemaUsers = stmt.executeQuery();
             while (schemaUsers.next()) {
@@ -437,6 +437,7 @@ public class User {
                     userProfile = new User();
                     userProfile.id = schemaUsers.getInt("id");
                     userProfile.clientId = schemaUsers.getInt("clientid");
+                    userProfile.clientName = schemaUsers.getString("clientname");
                     userProfile.firstName = schemaUsers.getString("firstname");
                     userProfile.lastName = schemaUsers.getString("lastname");
                     userProfile.schemaName = schemaUsers.getString("schemaname");
@@ -792,7 +793,7 @@ public class User {
 
         try {
             stmt = con.prepareStatement(
-                    "select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
+                    "select a.id id, a.clientId clientid,h.name clientname, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
                             " e.roleid roleid, f.name rolename, a.username username," +
                             " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                             " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
@@ -803,13 +804,16 @@ public class User {
                             loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
                             " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
                             loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
-                            " e.userid = a.id left join master.roles f on f.id = e.roleid order by a.id asc ");
+                            " e.userid = a.id left join master.roles f on f.id = e.roleid " +
+                            " left join master.clients h on h.id = a.clientId " +
+                            "order by a.id asc ");
             result = stmt.executeQuery();
             while (result.next()) {
 
                 User user = new User();
                 user.id = result.getInt("id");
                 user.clientId = result.getInt("clientid");
+                user.clientName = result.getString("clientname");
                 user.firstName = result.getString("firstname");
                 user.lastName = result.getString("lastname");
                 user.isActive = result.getBoolean("isActive");
@@ -883,7 +887,7 @@ public class User {
             else
             {
                 stmt = con.prepareStatement(
-                        "select a.id id, a.clientId clientid, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
+                        "select a.id id, a.clientId clientid,h.name clientname, a.firstname firstname, a.lastname lastname,a.isactive isActive, " +
                                 " e.roleid roleid, f.name rolename, a.username username," +
                                 " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                                 " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
@@ -894,7 +898,9 @@ public class User {
                                 loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
                                 " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
                                 loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
-                                " e.userid = a.id left join master.roles f on f.id = e.roleid  where c.divid = ? order by a.id asc ");
+                                " e.userid = a.id left join master.roles f on f.id = e.roleid  " +
+                                " left join master.clients h on h.id = a.clientId " +
+                                " where c.divid = ? order by a.id asc ");
                 stmt.setInt(1, id);
                 result = stmt.executeQuery();
                 while (result.next()) {
@@ -902,6 +908,7 @@ public class User {
                     User user = new User();
                     user.id = result.getInt("id");
                     user.clientId = result.getInt("clientid");
+                    user.clientName = result.getString("clientname");
                     user.firstName = result.getString("firstname");
                     user.lastName = result.getString("lastname");
                     user.isActive = result.getBoolean("isActive");

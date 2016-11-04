@@ -413,7 +413,6 @@ public class Product {
      * @param name
      * @param image
      * @param description
-     * @param division
      * @param isActive
      * @param id
      * @param loggedInUser
@@ -421,7 +420,7 @@ public class Product {
      * @throws Exception
      */
     public static int updateProduct(String name, String image,
-                                    String description, int division, Boolean isActive, int id,
+                                    String description, Boolean isActive, int id,
                                     LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to Update data
 
@@ -439,7 +438,7 @@ public class Product {
                     stmt = con
                             .prepareStatement("UPDATE "
                                     + schemaName
-                                    + ".products SET name = ?,image = ?,description = ?,division = ?,isActive = ?"
+                                    + ".products SET name = ?,image = ?,description = ?,isActive = ?"
                                     + ",updateDate = ?, updateBy = ? WHERE id = ?");
                     stmt.setString(1, name);
 
@@ -451,16 +450,15 @@ public class Product {
                     else
                         stmt.setString(3, null);
 
-                    stmt.setInt(4, division);
-                    // Checks isActive empty or not
+                                       // Checks isActive empty or not
                     if (isActive != null)
-                        stmt.setBoolean(5, isActive);
+                        stmt.setBoolean(4, isActive);
                     else
                         // If isActive empty it set default TRUE
-                        stmt.setBoolean(5, true);
-                    stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(7, loggedInUser.id);
-                    stmt.setInt(8, id);
+                        stmt.setBoolean(4, true);
+                    stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(6, loggedInUser.id);
+                    stmt.setInt(7, id);
 
                     result = stmt.executeUpdate();
                 } else

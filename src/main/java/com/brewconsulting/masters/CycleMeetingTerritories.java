@@ -93,4 +93,42 @@ public class CycleMeetingTerritories {
         }
         return resp;
     }
+
+    /***
+     *  Update cyclemeeting territory in which delete records for existing cyclemeeting id and insert new cyclemeeting territory.
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    public Response updateMeetingTerr(InputStream input,
+                                      @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            JsonNode node = mapper.readTree(input);
+            int count = CycleMeetingTerritory.updateMeetingTerritory(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"Count\":" + count + "}").build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to create division")
+                    .build();
+        } catch (IOException e) {
+            if (resp == null) {
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+
 }

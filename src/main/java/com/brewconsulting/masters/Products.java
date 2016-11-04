@@ -176,7 +176,6 @@ public class Products {
      * @param fileFormDataContentDisposition
      * @param name
      * @param description
-     * @param division
      * @param isActive
      * @param id
      * @param crc
@@ -191,7 +190,6 @@ public class Products {
             @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
             @FormDataParam("name") String name,
             @FormDataParam("description") String description,
-            @FormDataParam("division") int division,
             @FormDataParam("isActive") boolean isActive,
             @FormDataParam("isUpdated") boolean isUpdated,
             @FormDataParam("url") String url,
@@ -221,7 +219,7 @@ public class Products {
             }
 
             int affectedRow = Product.updateProduct(name, uploadFilePath,
-                    description, division, isActive, id,
+                    description, isActive, id,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (affectedRow > 0)
                 resp = Response.ok().build();
