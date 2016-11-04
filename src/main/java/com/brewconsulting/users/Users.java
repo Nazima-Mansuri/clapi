@@ -51,9 +51,7 @@ public class Users {
                     .build();
         } catch (Exception e) {
             if (resp == null)
-                resp = Response.serverError()
-                        .header("content-type", MediaType.TEXT_PLAIN)
-                        .entity(e.getStackTrace()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getStackTrace() + "\"}").build();
             e.printStackTrace();
         }
 
@@ -82,22 +80,16 @@ public class Users {
             resp = Response.ok("{\"id\":" + userid + "}").build();
         } catch (IOException e) {
             if (resp == null)
-                resp = Response.serverError()
-                        .header("content-type", MediaType.TEXT_PLAIN)
-                        .entity(e.getStackTrace()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getStackTrace() + "\"}").build();
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             if (resp == null)
-                resp = Response.serverError()
-                        .header("content-type", MediaType.TEXT_PLAIN)
-                        .entity(e.getStackTrace()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getStackTrace() + "\"}").build();
             e.printStackTrace();
 
         } catch (SQLException e) {
             if (resp == null)
-                resp = Response.serverError()
-                        .header("content-type", MediaType.TEXT_PLAIN)
-                        .entity(e.getStackTrace()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getStackTrace() + "\"}").build();
             e.printStackTrace();
 
         } catch (RequiredDataMissing e) {
@@ -106,9 +98,7 @@ public class Users {
 
         } catch (NamingException e) {
             if (resp == null)
-                resp = Response.serverError()
-                        .header("content-type", MediaType.TEXT_PLAIN)
-                        .entity(e.getStackTrace()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getStackTrace() + "\"}").build();
             e.printStackTrace();
         } catch (MessagingException e) {
             e.printStackTrace();
@@ -144,7 +134,7 @@ public class Users {
                     .entity("You are not authorized to get Deassociate User")
                     .build();
         } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -174,7 +164,7 @@ public class Users {
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to get Users").build();
         } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -205,7 +195,68 @@ public class Users {
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to get Users").build();
         } catch (Exception e) {
-            resp = Response.serverError().entity(e.getMessage()).build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     * Produces al Roles
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Path("roles")
+    @Secured
+    public Response roles(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(Role.getAllRoles(
+                            (LoggedInUser) crc.getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to view other's profile")
+                    .build();
+        } catch (Exception e) {
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+
+    }
+
+    /***
+     * Produces all clients which are active
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("clients")
+    public Response getClients(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.clientView.class).writeValueAsString(User
+                            .getAllClients((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get Users").build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -243,9 +294,9 @@ public class Users {
                     .entity("You are not authorized to delete User").build();
         } catch (PSQLException ex) {
             resp = Response
-                    .status(409)
-                    .entity("This id is already Use in another table as foreign key")
-                    .type(MediaType.TEXT_PLAIN).build();
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -282,7 +333,7 @@ public class Users {
                     .build();
         } catch (IOException e) {
             if (resp == null)
-                resp = Response.serverError().entity(e.getMessage()).build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block

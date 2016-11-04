@@ -36,7 +36,7 @@ import javax.ws.rs.NotAuthorizedException;
 public class User {
 
     @JsonProperty("clientId")
-    @JsonView(UserViews.authView.class)
+    @JsonView({UserViews.authView.class, UserViews.clientView.class })
     public int clientId; // -1 means no client
 
     @JsonProperty("id")
@@ -47,7 +47,7 @@ public class User {
     @JsonView({UserViews.bareView.class, UserViews.deAssociateView.class})
     public String username;
 
-    @JsonView(UserViews.authView.class)
+    @JsonView({UserViews.authView.class, UserViews.clientView.class })
     @JsonProperty("schemaName")
     public String schemaName;
 
@@ -119,7 +119,7 @@ public class User {
     @JsonProperty("updateBy")
     public int updateBy;
 
-    @JsonView({UserViews.profileView.class})
+    @JsonView({UserViews.profileView.class , UserViews.clientView.class})
     @JsonProperty("isActive")
     public boolean isActive;
 
@@ -131,6 +131,9 @@ public class User {
     @JsonProperty("updatedName")
     public String updatedName;
 
+    @JsonView(UserViews.clientView.class)
+    @JsonProperty("clientName")
+    public String clientName;
 
     // make the constructor private.
     protected User() {
@@ -767,7 +770,7 @@ public class User {
     }
 
     /**
-     * WHY is this required?
+     *  Display All Users
      *
      * @param loggedInUser
      * @return
@@ -978,16 +981,16 @@ public class User {
                 if (node.get("isactive").asBoolean() == false) {
                     int accessTimeout = 0;
 
-//                    if (node.get("isPublic").asBoolean()) {
-//
-//                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
-//                        Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
-//
-//                    } else {
-//                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
-//                        Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
-//
-//                    }
+                    if (node.get("isPublic").asBoolean()) {
+
+                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+                        Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
+
+                    } else {
+                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+                        Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
+
+                    }
 
 
                 }
@@ -1147,6 +1150,75 @@ public class User {
 
     }
 
+    /***
+     *  Method used to give all Clients which are active
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<User> getAllClients(LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
+                Permissions.getAccessLevel(userRole))) {
+
+            String schemaName = loggedInUser.schemaName;
+
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<User> users = new ArrayList<User>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement("SELECT id, name, isactive, schemaname FROM master.clients where isactive");
+                    result = stmt.executeQuery();
+                    System.out.print(result);
+                    while (result.next()) {
+                        User user = new User();
+                        user.clientId = result.getInt(1);
+                        user.clientName = result.getString(2);
+                        user.isActive = result.getBoolean(3);
+                        user.schemaName = result.getString(4);
+                        users.add(user);
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return users;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     * Method used to send mail to user.
+     *
+     * @param username
+     * @param from
+     * @param password
+     * @param emailBody
+     * @return
+     * @throws MessagingException
+     * @throws SQLException
+     * @throws NamingException
+     * @throws ClassNotFoundException
+     */
     public static boolean generateAndSendEmail(String username,String from, String password,String emailBody) throws MessagingException, SQLException, NamingException, ClassNotFoundException {
          Properties mailServerProperties;
          Session getMailSession;
@@ -1186,7 +1258,6 @@ public class User {
             return false;
         }
     }
-
 
 }
 

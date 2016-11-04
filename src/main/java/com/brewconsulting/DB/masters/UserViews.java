@@ -9,4 +9,5 @@ public class UserViews {
 	public static class childTaskView{};
 	public static class groupNoteView{};
 	public static class childNoteView{};
+	public static class clientView{};
 }
