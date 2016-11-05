@@ -998,8 +998,6 @@ public class User {
                         Mem.setData(node.get("id").asInt() + "#DEACTIVATED", accessTimeout * 2);
 
                     }
-
-
                 }
             } else
                 throw new Exception("DB connection is null");
@@ -1112,21 +1110,21 @@ public class User {
                 if (result.next()) {
                     stmt.setInt(1, node.get("roleid").asInt());
                     stmt.setInt(2, node.get("userid").asInt());
-
+                    System.out.println("NEW ID : " + node.get("roleid").asInt());
                     if (result.getInt("roleid") != node.get("roleid").asInt()) {
-
+                        System.out.println("OLD ID : " + result.getInt("roleid"));
                         stmt.executeUpdate();
 
-//                        if (node.get("isPublic").asBoolean()) {
-//
-//                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
-//                            Mem.setData(node.get("username").asInt() + "#ROLECHANGED", accessTimeout * 2);
-//
-//                        } else {
-//                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
-//                            Mem.setData(node.get("username").asInt() + "#ROLECHANGED", accessTimeout * 2);
-//
-//                        }
+                        if (node.get("isPublic").asBoolean()) {
+
+                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+                            Mem.setData(node.get("username").asInt() + "#ROLECHANGED", accessTimeout * 2);
+
+                        } else {
+                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+                            Mem.setData(node.get("username").asInt() + "#ROLECHANGED", accessTimeout * 2);
+
+                        }
 
                         stmt = con.prepareStatement("insert into master.userrolemaphistory (userid, roleid, effectdate, createdate, createby) values (?,?,?,?,?)");
                         stmt.setInt(1, node.get("userid").asInt());
