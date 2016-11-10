@@ -47,7 +47,7 @@ public class Note
 
     @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
     @JsonProperty("createdOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
 
     @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
@@ -56,7 +56,7 @@ public class Note
 
     @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
     @JsonProperty("updateOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateOn;
 
     @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
