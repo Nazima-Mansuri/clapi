@@ -81,7 +81,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 			catch (Exception ex) {
 				/*resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 				e.printStackTrace();*/
-				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage()  +"\"}")
+				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ ex.toString() +" \" }")
 						.type(MediaType.APPLICATION_JSON).build());
 				servletContext.log("Invalid token", ex);
 			}

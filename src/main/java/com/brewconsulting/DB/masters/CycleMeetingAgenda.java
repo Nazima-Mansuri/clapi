@@ -11,7 +11,9 @@ import javax.naming.NamingException;
 import javax.rmi.CORBA.Util;
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -26,6 +28,7 @@ public class CycleMeetingAgenda {
     public int cycleMeetingId;
 
     @JsonProperty("meetingDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date meetingDate;
 
     @JsonProperty("sessionName")
@@ -41,14 +44,14 @@ public class CycleMeetingAgenda {
     public Time sessionEndTime;
 
     @JsonProperty("createOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
 
     @JsonProperty("createBy")
     public int createBy;
 
     @JsonProperty("updatedOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updatedOn;
 
     @JsonProperty("updateBy")
@@ -173,8 +176,6 @@ public class CycleMeetingAgenda {
                 result = stmt.executeQuery();
                 System.out.print(result);
                 while (result.next()) {
-                    java.sql.Date createDate = new java.sql.Date(result.getTimestamp(8).getTime());
-                    java.sql.Date updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
 
                     CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
                     cycleMeetingAgenda.id = result.getInt(1);
@@ -184,9 +185,9 @@ public class CycleMeetingAgenda {
                     cycleMeetingAgenda.sessionDesc = result.getString(5);
                     cycleMeetingAgenda.sessionStartTime = result.getTime(6);
                     cycleMeetingAgenda.sessionEndTime = result.getTime(7);
-                    cycleMeetingAgenda.createOn = createDate;
+                    cycleMeetingAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));;
                     cycleMeetingAgenda.createBy = result.getInt(9);
-                    cycleMeetingAgenda.updatedOn =updateDate;
+                    cycleMeetingAgenda.updatedOn =new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));;
                     cycleMeetingAgenda.updatedBy = result.getInt(11);
 
                     cycleMeetingAgendas.add(cycleMeetingAgenda);
@@ -376,7 +377,7 @@ public class CycleMeetingAgenda {
      * @return
      * @throws Exception
      */
-    public static List<CycleMeetingAgenda> getAgendaByDate(int cycleMeetingId, java.sql.Date date, LoggedInUser loggedInUser)
+    public static List<CycleMeetingAgenda> getAgendaByDate(int cycleMeetingId, Date date, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
         String schemaName = loggedInUser.schemaName;
@@ -386,6 +387,8 @@ public class CycleMeetingAgenda {
         PreparedStatement stmt = null;
         ResultSet result = null;
 
+
+
         try {
             if (con != null) {
                 stmt = con
@@ -394,23 +397,25 @@ public class CycleMeetingAgenda {
                                 " FROM " + schemaName + ".cyclemeetingagenda where cyclemeetingid= ? and meetingdate = ?");
 
                 stmt.setInt(1,cycleMeetingId);
-                stmt.setDate(2, date);
+                stmt.setDate(2, new java.sql.Date(date.getTime()));
+                System.out.println(" In METHOD : " + new java.sql.Date(date.getTime()));
+
                 result = stmt.executeQuery();
 
                 while (result.next()) {
-                    java.sql.Date createDate = new java.sql.Date(result.getTimestamp(6).getTime());
-                    java.sql.Date updateDate = new java.sql.Date(result.getTimestamp(8).getTime());
+
                     CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
                     cycleMeetingAgenda.id = result.getInt(1);
                     cycleMeetingAgenda.sessionName = result.getString(2);
                     cycleMeetingAgenda.sessionDesc = result.getString(3);
                     cycleMeetingAgenda.sessionStartTime = result.getTime(4);
                     cycleMeetingAgenda.sessionEndTime = result.getTime(5);
-                    cycleMeetingAgenda.createOn = createDate;
+                    cycleMeetingAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                     cycleMeetingAgenda.createBy = result.getInt(7);
-                    cycleMeetingAgenda.updatedOn = updateDate;
+                    cycleMeetingAgenda.updatedOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                     cycleMeetingAgenda.updatedBy = result.getInt(9);
-                    cycleMeetingAgenda.meetingDate=date;
+                    cycleMeetingAgenda.meetingDate =new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(date.getTime())));
+                    System.out.println("Meeting Date : " + cycleMeetingAgenda.meetingDate);
                     cycleMeetingAgenda.cycleMeetingId=cycleMeetingId;
 
                     cycleMeetingAgendas.add(cycleMeetingAgenda);

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
 
@@ -40,14 +41,14 @@ public class CycleMeetingGroup {
     public String description;
 
     @JsonProperty("createdOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createdOn;
 
     @JsonProperty("createdBy")
     public int createdBy;
 
     @JsonProperty("updateOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateOn;
 
     @JsonProperty("updatedBy")
@@ -115,9 +116,9 @@ public class CycleMeetingGroup {
                         meetingGroup.keywords = (String[]) result.getArray(5).getArray();
                         meetingGroup.title = result.getString(6);
                         meetingGroup.description = result.getString(7);
-                        meetingGroup.createdOn = new java.sql.Date(result.getTimestamp(8).getTime());
+                        meetingGroup.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         meetingGroup.createdBy = result.getInt(9);
-                        meetingGroup.updateOn = new java.sql.Date(result.getTimestamp(10).getTime());
+                        meetingGroup.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         meetingGroup.updatedBy = result.getInt(11);
                         meetingGroup.conductedBy = result.getString(12);
 
@@ -126,12 +127,12 @@ public class CycleMeetingGroup {
                             cycleMeeting.title = result.getString(14);
                             cycleMeeting.groupId = result.getInt(15);
                             cycleMeeting.venue = result.getString(16);
-                            cycleMeeting.startDate = new java.sql.Date(result.getTimestamp(17).getTime());
-                            cycleMeeting.endDate = new java.sql.Date(result.getTimestamp(18).getTime());
+                            cycleMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(17).getTime())));
+                            cycleMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(18).getTime())));
                             cycleMeeting.organiser = result.getInt(19);
-                            cycleMeeting.createDate = new java.sql.Date(result.getTimestamp(20).getTime());
+                            cycleMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(20).getTime())));
                             cycleMeeting.createBy = result.getInt(21);
-                            cycleMeeting.updateDate = new java.sql.Date(result.getTimestamp(22).getTime());
+                            cycleMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(22).getTime())));
                             cycleMeeting.updateBy = result.getInt(23);
                             cycleMeeting.username = result.getString(24);
                         }
@@ -208,9 +209,9 @@ public class CycleMeetingGroup {
                         meetingGroup.keywords = (String[]) result.getArray(5).getArray();
                         meetingGroup.title = result.getString(6);
                         meetingGroup.description = result.getString(7);
-                        meetingGroup.createdOn = new java.sql.Date(result.getTimestamp(8).getTime());
+                        meetingGroup.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         meetingGroup.createdBy = result.getInt(9);
-                        meetingGroup.updateOn = new java.sql.Date(result.getTimestamp(10).getTime());
+                        meetingGroup.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         meetingGroup.updatedBy = result.getInt(11);
                         meetingGroup.conductedBy = result.getString(12);
                         meetingGroup.divName = result.getString(13);

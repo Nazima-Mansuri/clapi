@@ -1,9 +1,8 @@
 package com.brewconsulting.masters;
 
-import com.brewconsulting.DB.masters.CycleMeeting;
-import com.brewconsulting.DB.masters.CycleMeetingTerritory;
 import com.brewconsulting.DB.masters.Division;
 import com.brewconsulting.DB.masters.LoggedInUser;
+import com.brewconsulting.DB.masters.Question;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,49 +16,16 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by lcom53 on 3/11/16.
+ * Created by lcom53 on 7/11/16.
  */
-
-@Path("cyclemeetingterritories")
+@Path("questions")
 @Secured
-public class CycleMeetingTerritories {
+public class Questions {
 
     ObjectMapper mapper = new ObjectMapper();
 
     /***
-     *  Produces Cyclemeeting Territories
-     *
-     * @param id
-     * @param crc
-     * @return
-     */
-    @GET
-    @Produces("application/json")
-    @Secured
-    @Path("{id}")
-    public Response meetingsTerr(@PathParam("id") int id , @Context ContainerRequestContext crc) {
-        Response resp = null;
-        try {
-            resp = Response.ok(
-                    mapper.writeValueAsString(CycleMeetingTerritory
-                            .getAllCycleMeetingTerr(id,(LoggedInUser) crc
-                                    .getProperty("userObject")))).build();
-
-        } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meetings").build();
-        }
-
-        catch (Exception e) {
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-            e.printStackTrace();
-        }
-        return resp;
-    }
-
-    /***
-     *  Add Cyclemeeting Territory
+     *  Add MCQ Question
      *
      * @param input
      * @param crc
@@ -69,14 +35,14 @@ public class CycleMeetingTerritories {
     @Produces("application/json")
     @Secured
     @Consumes("application/json")
-    public Response createMeetingTerr(InputStream input,
+    public Response createQues(InputStream input,
                               @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             JsonNode node = mapper.readTree(input);
-            int count = CycleMeetingTerritory.addCycleMeetingTerr(node,
+            int questionId = Question.addMCQQurstion(node,
                     (LoggedInUser) crc.getProperty("userObject"));
-            resp = Response.ok("{\"Count\":" + count + "}").build();
+            resp = Response.ok("{\"id\":" + questionId + "}").build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
                     .header("content-type", MediaType.TEXT_PLAIN)
@@ -93,4 +59,5 @@ public class CycleMeetingTerritories {
         }
         return resp;
     }
+
 }

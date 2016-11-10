@@ -61,13 +61,14 @@ public class Territory {
     @JsonProperty("isHistory")
     public boolean isHistory;
 
-    @JsonProperty("effectDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    // effectDate and createDate propertirs are not used anywhere in territory.
+/*    @JsonProperty("effectDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date effectDate;
 
     @JsonProperty("createDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
-    public Date createDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    public Date createDate;*/
 
     @JsonProperty("createBy")
     public int createBy;

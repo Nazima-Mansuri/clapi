@@ -21,4 +21,6 @@ public class LoggedInUser {
 	public ArrayList<Role> roles;
 	@JsonProperty("designation")
 	public String designation;
+	@JsonProperty("isFirstLogin")
+	public boolean isFirstLogin;
 }

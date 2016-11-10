@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -55,14 +56,14 @@ public class Product {
     public String divName;
 
     @JsonProperty("createDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createDate;
 
     @JsonProperty("createBy")
     public int createBy;
 
     @JsonProperty("updateDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateDate;
 
     @JsonProperty("updateBy")
@@ -142,17 +143,17 @@ public class Product {
                             Product product = new Product();
                             product.id = result.getInt(1);
                             product.name = result.getString(2);
-                            if (!result.getString(3).contains("null")) {
-                                product.image = result.getString(3);
-                            } else {
-                                product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
-                            }
+                            product.image = result.getString(3);
                             product.description = result.getString(4);
                             product.division = result.getInt(5);
                             product.isActive = result.getBoolean(6);
-                            product.createDate = new java.sql.Date(result.getTimestamp(7).getTime());
+                            product.createDate = new SimpleDateFormat("dd-MM-yyyy")
+                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
+                                            .format(new java.sql.Date(result.getTimestamp(7).getTime())));
                             product.createBy = result.getInt(8);
-                            product.updateDate = new java.sql.Date(result.getTimestamp(9).getTime());
+                            product.updateDate = new SimpleDateFormat("dd-MM-yyyy")
+                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
+                                            .format(new java.sql.Date(result.getTimestamp(9).getTime())));
                             product.updateBy = result.getInt(10);
                             product.addLine1 = result.getString(11);
                             product.addLine2 = result.getString(12);
@@ -185,17 +186,17 @@ public class Product {
                             Product product = new Product();
                             product.id = result.getInt(1);
                             product.name = result.getString(2);
-                            if (!result.getString(3).contains("null")) {
-                                product.image = result.getString(3);
-                            } else {
-                                product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
-                            }
+                            product.image = result.getString(3);
                             product.description = result.getString(4);
                             product.division = result.getInt(5);
                             product.isActive = result.getBoolean(6);
-                            product.createDate = new java.sql.Date(result.getTimestamp(7).getTime());
+                            product.createDate = new SimpleDateFormat("dd-MM-yyyy")
+                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
+                                            .format(new java.sql.Date(result.getTimestamp(7).getTime())));
                             product.createBy = result.getInt(8);
-                            product.updateDate = new java.sql.Date(result.getTimestamp(9).getTime());
+                            product.updateDate = new SimpleDateFormat("dd-MM-yyyy")
+                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
+                                            .format(new java.sql.Date(result.getTimestamp(9).getTime())));
                             product.updateBy = result.getInt(10);
                             product.addLine1 = result.getString(11);
                             product.addLine2 = result.getString(12);
@@ -272,17 +273,15 @@ public class Product {
                         product = new Product();
                         product.id = result.getInt(1);
                         product.name = result.getString(2);
-                        if (!result.getString(3).contains("null")) {
-                            product.image = result.getString(3);
-                        } else {
-                            product.image = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
-                        }
+                        product.image = result.getString(3);
                         product.description = result.getString(4);
                         product.division = result.getInt(5);
                         product.isActive = result.getBoolean(6);
-                        product.createDate = new java.sql.Date(result.getTimestamp(7).getTime());
+                        product.createDate = new SimpleDateFormat("dd-MM-yyyy")
+                                .parse(new SimpleDateFormat("dd-MM-yyyy")
+                                        .format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         product.createBy = result.getInt(8);
-                        product.updateDate = new java.sql.Date(result.getTimestamp(9).getTime());
+                        product.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
                         product.updateBy = result.getInt(10);
                         product.addLine1 = result.getString(11);
                         product.addLine2 = result.getString(12);
@@ -450,7 +449,7 @@ public class Product {
                     else
                         stmt.setString(3, null);
 
-                                       // Checks isActive empty or not
+                    // Checks isActive empty or not
                     if (isActive != null)
                         stmt.setBoolean(4, isActive);
                     else

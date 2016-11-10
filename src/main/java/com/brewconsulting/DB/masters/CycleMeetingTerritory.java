@@ -58,7 +58,7 @@ public class CycleMeetingTerritory {
      * @return
      * @throws Exception
      */
-    public static List<CycleMeetingTerritory> getAllCycleMeetingTerr(int id,LoggedInUser loggedInUser)
+    public static List<CycleMeetingTerritory> getAllCycleMeetingTerr(int id, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -77,16 +77,16 @@ public class CycleMeetingTerritory {
                 if (con != null) {
                     stmt = con
                             .prepareStatement(" SELECT c.id, cyclemeetingid, territoryid ,t.name ,u.username," +
-                                              " (uf.address).addLine1 addLine1,(uf.address).addLine2 addLine2," +
-                                              " (uf.address).addLine3 addLine3,(uf.address).city city,(uf.address).state state," +
-                                              " (uf.address).phone phones" +
-                                              " FROM "+schemaName+".cyclemeetingterritories c " +
-                                              " left join "+schemaName+".territories t on c.territoryid = t.id" +
-                                              " left join "+schemaName+".userterritorymap t1 on territoryid = t1.terrid" +
-                                              " left join master.users u on t1.userid = u.id" +
-                                              " left join "+schemaName+".userprofile uf on t1.userid = uf.userid " +
-                                               "where c.cyclemeetingid = ? ");
-                    stmt.setInt(1,id);
+                                    " (uf.address).addLine1 addLine1,(uf.address).addLine2 addLine2," +
+                                    " (uf.address).addLine3 addLine3,(uf.address).city city,(uf.address).state state," +
+                                    " (uf.address).phone phones" +
+                                    " FROM " + schemaName + ".cyclemeetingterritories c " +
+                                    " left join " + schemaName + ".territories t on c.territoryid = t.id" +
+                                    " left join " + schemaName + ".userterritorymap t1 on territoryid = t1.terrid" +
+                                    " left join master.users u on t1.userid = u.id" +
+                                    " left join " + schemaName + ".userprofile uf on t1.userid = uf.userid " +
+                                    "where c.cyclemeetingid = ? ");
+                    stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     System.out.print(result);
                     while (result.next()) {
@@ -129,7 +129,9 @@ public class CycleMeetingTerritory {
     }
 
     /***
-     * Insert Cyclemeeting Territory in database
+     *  Insert Cyclemeeting Territory in database
+     *  if Cyclemeeting id already exist then delete that records first
+     *  after insert new Cyclemeeting Territory record.
      *
      * @param node
      * @param loggedInUser
@@ -148,11 +150,24 @@ public class CycleMeetingTerritory {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
-            int result = 0;
+            int affectedRows = 0;
             int count = 0;
+            ResultSet result;
 
             try {
                 con.setAutoCommit(false);
+
+                stmt = con.prepareStatement("SELECT id from " + schemaName + ".cyclemeetingterritories WHERE cyclemeetingid = ?");
+                stmt.setInt(1, node.get("cycleMeetingId").asInt());
+                result = stmt.executeQuery();
+                if (result.next()) {
+                    System.out.println("If called..");
+                    stmt = con.prepareStatement(
+                            "DELETE FROM " + schemaName + ".cyclemeetingterritories WHERE cyclemeetingid = ?");
+
+                    stmt.setInt(1, node.get("cycleMeetingId").asInt());
+                    affectedRows = stmt.executeUpdate();
+                }
 
                 for (int i = 0; i < node.withArray("territoryId").size(); i++) {
 
@@ -163,12 +178,12 @@ public class CycleMeetingTerritory {
                                             + ".cyclemeetingterritories(cycleMeetingId,territoryId) values (?,?)");
 
                     stmt.setInt(1, node.get("cycleMeetingId").asInt());
-                    stmt.setInt(2,node.withArray("territoryId").get(i).asInt());
-                    result = stmt.executeUpdate();
+                    stmt.setInt(2, node.withArray("territoryId").get(i).asInt());
+                    affectedRows = stmt.executeUpdate();
                     count++;
                 }
 
-                if (result == 0)
+                if (affectedRows == 0)
                     throw new SQLException("Add CycleMeetingTerritory Failed.");
 
                 con.commit();
@@ -186,66 +201,5 @@ public class CycleMeetingTerritory {
         } else {
             throw new NotAuthorizedException("");
         }
-    }
-
-    /***
-     *  Method used to delete existing cyclemeeting territory and insert new requested cyclemeeting territory
-     *
-     * @param node
-     * @param loggedInUser
-     * @return
-     * @throws Exception
-     */
-    public static int updateMeetingTerritory(JsonNode node, LoggedInUser loggedInUser) throws Exception {
-        // TODO: check authorization of the user to Update data
-
-        int userRole = loggedInUser.roles.get(0).roleId;
-
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
-
-            String schemaName = loggedInUser.schemaName;
-            Connection con = DBConnectionProvider.getConn();
-            PreparedStatement stmt = null;
-            int affectedRow = 0;
-            int count=0;
-
-            try {
-                con.setAutoCommit(false);
-
-                stmt = con.prepareStatement(
-                            "DELETE FROM "+schemaName+".cyclemeetingterritories WHERE cyclemeetingid = ?");
-
-                stmt.setInt(1, node.get("cycleMeetingId").asInt());
-                affectedRow = stmt.executeUpdate();
-
-                // It Insert data in userTerritoryMap with new territoryId
-                for (int i = 0; i < node.withArray("territoryId").size(); i++) {
-
-                    stmt = con
-                            .prepareStatement(
-                                    "INSERT INTO "
-                                            + schemaName
-                                            + ".cyclemeetingterritories(cycleMeetingId,territoryId) values (?,?)");
-
-                    stmt.setInt(1, node.get("cycleMeetingId").asInt());
-                    stmt.setInt(2,node.withArray("territoryId").get(i).asInt());
-                    stmt.executeUpdate();
-                    count++;
-                }
-                con.commit();
-                return count;
-            } catch (Exception ex) {
-                if (con != null)
-                    con.rollback();
-                throw ex;
-            } finally {
-                con.setAutoCommit(false);
-                if (con != null)
-                    con.close();
-            }
-        } else {
-            throw new NotAuthorizedException("");
-        }
-
     }
 }

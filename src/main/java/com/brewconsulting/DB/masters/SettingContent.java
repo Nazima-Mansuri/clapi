@@ -17,6 +17,7 @@ import javax.ws.rs.NotAuthorizedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -44,7 +45,7 @@ public class SettingContent {
     @JsonProperty("createBy")
     public int createBy;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     @JsonProperty("createdOn")
     public Date createdOn;
 
@@ -97,7 +98,7 @@ public class SettingContent {
                                 content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
                             }
                             content.createBy = result.getInt(6);
-                            content.createdOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                            content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                             content.username = result.getString(8);
 
                             contents.add(content);
@@ -123,7 +124,7 @@ public class SettingContent {
                                 content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
                             }
                             content.createBy = result.getInt(6);
-                            content.createdOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                            content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                             content.username = result.getString(8);
 
                             contents.add(content);

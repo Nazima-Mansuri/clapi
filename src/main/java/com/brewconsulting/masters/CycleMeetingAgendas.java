@@ -4,6 +4,7 @@ import com.brewconsulting.DB.masters.CycleMeetingAgenda;
 import com.brewconsulting.DB.masters.Division;
 import com.brewconsulting.DB.masters.GroupAgenda;
 import com.brewconsulting.DB.masters.LoggedInUser;
+import com.brewconsulting.DB.utils;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,9 +17,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Date;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -221,14 +224,19 @@ public class CycleMeetingAgendas {
     @Secured
     @Produces("application/json")
     @Path("/date/{cycleMeetingId}/{date}")
-    public Response getAgendaByDate(@PathParam("cycleMeetingId") Integer cycleMeetingId, @PathParam("date") Date date,
+    public Response getAgendaByDate(@PathParam("cycleMeetingId") Integer cycleMeetingId, @PathParam("date") String date,
                                     @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
 
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+            Date parseDate = sdf.parse(date);
+
+            System.out.println("API : " + parseDate);
+
             resp = Response.ok(
                     mapper.writeValueAsString(CycleMeetingAgenda
-                            .getAgendaByDate(cycleMeetingId, date, (LoggedInUser) crc
+                            .getAgendaByDate(cycleMeetingId, parseDate, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {

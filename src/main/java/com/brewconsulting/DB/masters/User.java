@@ -135,6 +135,10 @@ public class User {
     @JsonProperty("clientName")
     public String clientName;
 
+    @JsonView(UserViews.authView.class)
+    @JsonProperty("isFirstLogin")
+    public boolean isFirstLogin;
+
     // make the constructor private.
     protected User() {
 
@@ -176,6 +180,51 @@ public class User {
         }
     }
 
+    /***
+     *  Method used to change password of user.
+     *
+     * @param id
+     * @param node
+     * @return
+     * @throws Exception
+     */
+    public static int changePassword(int id,JsonNode node) throws Exception
+    {
+
+
+        Connection con = DBConnectionProvider.getConn();
+        int affectedRows;
+
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(node.get("password").asText().getBytes());
+
+        byte byteData[] = md.digest();
+
+        //convert the byte to hex format method 1
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < byteData.length; i++) {
+            sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+        }
+
+        System.out.println("Digest(in hex format):: " + sb.toString());
+
+        try
+        {
+            PreparedStatement stmt = con.prepareStatement("Update master.users set password = ? where id = ?");
+            stmt.setString(1,sb.toString());
+            stmt.setInt(2,id);
+            affectedRows = stmt.executeUpdate();
+
+            stmt = con.prepareStatement("Update master.users set isfirstlogin = ? where id = ?");
+            stmt.setBoolean(1,false);
+            stmt.setInt(2,id);
+            affectedRows = stmt.executeUpdate();
+        } finally {
+            if (con != null)
+                con.close();
+        }
+        return affectedRows;
+    }
 
     /***
      * This method checks User is active or not and user's roles are changes or not.
@@ -190,6 +239,7 @@ public class User {
 
         Connection con = DBConnectionProvider.getConn();
         boolean isActive;
+        User user = null;
 
         try {
 
@@ -205,7 +255,7 @@ public class User {
                 isActive = resultSet.getBoolean(1);
 
                 if (isActive) {
-                    User user = null;
+
                     stmt = con.prepareStatement(
                             "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username "
                                     + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
@@ -233,7 +283,7 @@ public class User {
                             user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
                         }
                     }
-                    return user;
+
                 } else {
                     return null;
                 }
@@ -246,7 +296,7 @@ public class User {
                 con.close();
         }
 
-        return null;
+        return user;
     }
 
     /***
@@ -266,7 +316,7 @@ public class User {
         try {
 
             PreparedStatement stmt = con.prepareStatement(
-                    "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username "
+                    "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username ,a.isfirstlogin "
                             + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
                             + " where a.isActive and a.username = ? and a.password = ? and a.clientId = b.id and "
                             + " a.id = c.userId and c.roleId = d.id");
@@ -283,6 +333,7 @@ public class User {
                     user.lastName = masterUsers.getString(4);
                     user.schemaName = masterUsers.getString(5);
                     user.username = masterUsers.getString(8);
+                    user.isFirstLogin = masterUsers.getBoolean(9);
                     user.roles = new ArrayList<Role>();
                     user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
                     continue;
@@ -726,7 +777,7 @@ public class User {
      * @return
      * @throws Exception
      */
-    public static List<User> getDeassociateUser(LoggedInUser loggedInUser) throws Exception {
+    public static List<User> getDeassociateUser(int divId ,LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
 
@@ -744,8 +795,10 @@ public class User {
 
             stmt = con.prepareStatement("select a.userid id, (a.address).city city, c.username username " + "from "
                     + loggedInUser.schemaName + ".userProfile a left outer join " + loggedInUser.schemaName
-                    + ".userTerritoryMap b " + " on (a.userId = b.userId), master.users c "
-                    + "where b.terrId is null and c.id = a.userId AND c.isactive");
+                    + ".userTerritoryMap b " + " on (a.userId = b.userId) "
+                    + " left join client1.userdivmap e on a.userid = e.userid,master.users c "
+                    + " where b.terrId is null and c.id = a.userId AND c.isactive AND e.divid = ?");
+            stmt.setInt(1,divId);
 
             result = stmt.executeQuery();
             while (result.next()) {
@@ -1263,7 +1316,6 @@ public class User {
             return false;
         }
     }
-
 }
 
 

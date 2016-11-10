@@ -118,15 +118,15 @@ public class Users {
     @GET
     @Produces("application/json")
     @Secured
-    @Path("deassociateuser")
+    @Path("deassociateuser/{divId}")
 
-    public Response daassUser(@Context ContainerRequestContext crc) {
+    public Response daassUser(@PathParam("divId") int divId, @Context ContainerRequestContext crc) {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
             resp = Response.ok(
                     mapper.writerWithView(UserViews.deAssociateView.class).writeValueAsString(User
-                            .getDeassociateUser((LoggedInUser) crc
+                            .getDeassociateUser(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
@@ -334,6 +334,41 @@ public class Users {
         } catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity(e.getMessage()).build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Change password of User
+     * @param id
+     * @param input
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("{id}")
+    public Response updatePassword(@PathParam("id") int id, InputStream input) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode node = mapper.readTree(input);
+            User.changePassword(id,node);
+            resp = Response.ok("{\"Message\":" + "\" Password changed Successfully. \"}").build();
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to update Password")
+                    .build();
+        } catch (IOException e) {
+            if (resp == null)
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}")
+                        .type(MediaType.APPLICATION_JSON).build();
             e.printStackTrace();
         } catch (Exception e) {
             // TODO Auto-generated catch block

@@ -38,12 +38,12 @@ public class CycleMeeting {
 
     @JsonView(UserViews.authView.class)
     @JsonProperty("startDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date startDate;
 
     @JsonView(UserViews.authView.class)
     @JsonProperty("endDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date endDate;
 
     @JsonView(UserViews.authView.class)
@@ -51,14 +51,14 @@ public class CycleMeeting {
     public int organiser;
 
     @JsonProperty("createDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createDate;
 
     @JsonProperty("createBy")
     public int createBy;
 
     @JsonProperty("updateDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateDate;
 
     @JsonProperty("updateBy")
@@ -113,12 +113,12 @@ public class CycleMeeting {
                         subMeeting.title = result.getString(2);
                         subMeeting.groupId = result.getInt(3);
                         subMeeting.venue = result.getString(4);
-                        subMeeting.startDate = new java.sql.Date(result.getTimestamp(5).getTime());
-                        subMeeting.endDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                        subMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
+                        subMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         subMeeting.organiser = result.getInt(7);
-                        subMeeting.createDate = new java.sql.Date(result.getTimestamp(8).getTime());
+                        subMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         subMeeting.createBy = result.getInt(9);
-                        subMeeting.updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
+                        subMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         subMeeting.updateBy = result.getInt(11);
                         subMeeting.username = result.getString(12);
                         cycleMeetings.add(subMeeting);
@@ -184,12 +184,12 @@ public class CycleMeeting {
                         subMeeting.title = result.getString(2);
                         subMeeting.groupId = result.getInt(3);
                         subMeeting.venue = result.getString(4);
-                        subMeeting.startDate = new java.sql.Date(result.getTimestamp(5).getTime());
-                        subMeeting.endDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                        subMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
+                        subMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         subMeeting.organiser = result.getInt(7);
-                        subMeeting.createDate = new java.sql.Date(result.getTimestamp(8).getTime());
+                        subMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         subMeeting.createBy = result.getInt(9);
-                        subMeeting.updateDate = new java.sql.Date(result.getTimestamp(10).getTime());
+                        subMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         subMeeting.updateBy = result.getInt(11);
                         subMeeting.username = result.getString(12);
                         subMeeting.count = result.getInt(13);

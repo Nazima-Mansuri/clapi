@@ -109,9 +109,9 @@ public class Note
                     note.title = result.getString(3);
                     note.description = result.getString(4);
                     note.category = result.getString(5);
-                    note.createOn = new java.sql.Date(result.getTimestamp(6).getTime());
+                    note.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                     note.createBy = result.getInt(7);
-                    note.updateOn = new java.sql.Date(result.getTimestamp(8).getTime());
+                    note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                     note.updateBy = result.getInt(9);
 
                     groupNotes.add(note);
@@ -171,9 +171,9 @@ public class Note
                         groupNote.title = result.getString(3);
                         groupNote.description = result.getString(4);
                         groupNote.category = result.getString(5);
-                        groupNote.createOn = new java.sql.Date(result.getTimestamp(6).getTime());
+                        groupNote.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         groupNote.createBy = result.getInt(7);
-                        groupNote.updateOn = new java.sql.Date(result.getTimestamp(8).getTime());
+                        groupNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         groupNote.updateBy = result.getInt(9);
 
                     }
@@ -413,9 +413,9 @@ public class Note
                         childNote.title = result.getString(2);
                         childNote.description = result.getString(3);
                         childNote.category = result.getString(4);
-                        childNote.createOn = new java.sql.Date(result.getTimestamp(5).getTime());
+                        childNote.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
                         childNote.createBy = result.getInt(6);
-                        childNote.createOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                        childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         childNote.updateBy = result.getInt(8);
 
                     }
@@ -479,9 +479,9 @@ public class Note
                         childNote.title = result.getString(2);
                         childNote.description = result.getString(3);
                         childNote.category = result.getString(4);
-                        childNote.createOn = new java.sql.Date(result.getTimestamp(5).getTime());
+                        childNote.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
                         childNote.createBy = result.getInt(6);
-                        childNote.createOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                        childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         childNote.updateBy = result.getInt(8);
 
                         notes.add(childNote);

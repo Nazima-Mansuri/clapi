@@ -19,13 +19,16 @@ import net.spy.memcached.internal.OperationFuture;
 
 public class Mem {
 
+    static String configEndpoint = "rollacache.wvhp0d.cfg.use1.cache.amazonaws.com";
+    static Integer clusterPort = 11211;
     static String node1 = "localhost";
     static Integer port = 11211;
-    static MemcachedClient client;
+    static MemcachedClient client = null;
 
       public static boolean getToken(String key,String value) throws IOException {
 
-          client = new MemcachedClient(new InetSocketAddress(node1, port));
+          client = new MemcachedClient(new InetSocketAddress(configEndpoint, clusterPort));
+//          client = new MemcachedClient(new InetSocketAddress(node1, port));
 
 
           Object myObject = client.get(key);
@@ -42,7 +45,8 @@ public class Mem {
 
     public static boolean getData(String key) throws IOException {
 
-        client =  new MemcachedClient(new InetSocketAddress(node1, port));
+        client =  new MemcachedClient(new InetSocketAddress(configEndpoint, clusterPort));
+//        client =  new MemcachedClient(new InetSocketAddress(node1, port));
 
 
         Object myObject = client.get(key);
@@ -71,13 +75,15 @@ public class Mem {
     }
 
     public static void setData(String key, int time) throws IOException {
-        client =  new MemcachedClient(new InetSocketAddress(node1, port));
+        client =  new MemcachedClient(new InetSocketAddress(configEndpoint, clusterPort));
+//        client =  new MemcachedClient(new InetSocketAddress(node1, port));
         client.set(key, time, "");
         client.shutdown();
     }
 
     public static void deleteData(String key) throws IOException {
-        client =  new MemcachedClient(new InetSocketAddress(node1, port));
+        client =  new MemcachedClient(new InetSocketAddress(configEndpoint, clusterPort));
+//        client =  new MemcachedClient(new InetSocketAddress(node1, port));
         if(client.get(key)!=null) {
           client.delete(key);
         }

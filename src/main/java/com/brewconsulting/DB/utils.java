@@ -35,8 +35,8 @@ public class utils {
 	 * @throws ParseException
 	 */
 	public static Date stringToDate(String strDate) throws ParseException {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd");
-		java.util.Date date = sdf.parse(strDate);
+		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+		Date date = sdf.parse(strDate);
 		return date;
 	}
 }

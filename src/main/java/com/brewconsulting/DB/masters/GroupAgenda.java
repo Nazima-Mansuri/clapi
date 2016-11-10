@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.*;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -46,14 +47,14 @@ public class GroupAgenda {
     public String sessionConductor;
 
     @JsonProperty("createOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
 
     @JsonProperty("createBy")
     public int createBy;
 
     @JsonProperty("updateOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateOn;
 
     @JsonProperty("updateBy")
@@ -103,9 +104,9 @@ public class GroupAgenda {
                     groupAgenda.sessionStartTime = result.getTime(4);
                     groupAgenda.sessionEndTime = result.getTime(5);
                     groupAgenda.sessionConductor = result.getString(6);
-                    groupAgenda.createOn = new java.sql.Date(result.getTimestamp(7).getTime());
+                    groupAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                     groupAgenda.createBy = result.getInt(8);
-                    groupAgenda.updateOn = new java.sql.Date(result.getTimestamp(9).getTime());
+                    groupAgenda.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
                     groupAgenda.updateBy = result.getInt(10);
                     groupAgenda.groupId=groupId;
                     groupAgenda.dayNo=dayNo;

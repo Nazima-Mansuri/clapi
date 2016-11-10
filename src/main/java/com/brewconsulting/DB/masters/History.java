@@ -3,6 +3,7 @@ package com.brewconsulting.DB.masters;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -108,8 +109,8 @@ public class History {
 						history.phones = (String[]) result.getArray(9)
 								.getArray();
 					history.empnumber = result.getString(10);
-					history.effectDate = new java.sql.Date(result.getTimestamp(11).getTime());
-					history.endDate = new java.sql.Date(result.getTimestamp(12).getTime());
+					history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(11).getTime())));
+					history.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
 					history.isHistory = true;
 					histories.add(history);
 				}

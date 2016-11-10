@@ -138,7 +138,7 @@ public class Products {
                 // This method is used to store image in AWS bucket.
                 uploadFilePath = Product.writeToFile(fileInputStream, fileName);
             } else {
-                uploadFilePath = null;
+                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
             }
 
             int productId = Product.addProduct(name, uploadFilePath,
@@ -209,7 +209,7 @@ public class Products {
                     // This method is used to store image in AWS bucket.
                     uploadFilePath = Product.writeToFile(fileInputStream, fileName);
                 } else {
-                    uploadFilePath = null;
+                    uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
                 }
 
             }

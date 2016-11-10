@@ -49,7 +49,7 @@ public class Task {
 
     @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
     @JsonProperty("dueDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date dueDate;
 
     @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
@@ -66,7 +66,7 @@ public class Task {
 
     @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
     @JsonProperty("createdOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
 
     @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
@@ -75,7 +75,7 @@ public class Task {
 
     @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
     @JsonProperty("updateOn")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateOn;
 
     @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
@@ -132,13 +132,13 @@ public class Task {
                         task.title = result.getString(3);
                         task.description = result.getString(4);
                         task.status = result.getString(5);
-                        task.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                        task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         task.reminders = (Integer[]) result.getArray(7).getArray();
                         task.assignTo = result.getInt(8);
                         task.assignBy = result.getInt(9);
-                        task.createOn = new java.sql.Date(result.getTimestamp(10).getTime());
+                        task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         task.createBy = result.getInt(11);
-                        task.updateOn = new java.sql.Date(result.getTimestamp(12).getTime());
+                        task.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         task.updateBy = result.getInt(13);
 
                         groupTasks.add(task);
@@ -199,13 +199,13 @@ public class Task {
                         groupTask.title = result.getString(3);
                         groupTask.description = result.getString(4);
                         groupTask.status = result.getString(5);
-                        groupTask.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                        groupTask.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         groupTask.reminders = (Integer[]) result.getArray(7).getArray();
                         groupTask.assignTo = result.getInt(8);
                         groupTask.assignBy = result.getInt(9);
-                        groupTask.createOn =  new java.sql.Date(result.getTimestamp(10).getTime());
+                        groupTask.createOn =  new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         groupTask.createBy = result.getInt(11);
-                        groupTask.updateOn = new java.sql.Date(result.getTimestamp(12).getTime());
+                        groupTask.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         groupTask.updateBy = result.getInt(13);
 
                     }
@@ -472,13 +472,13 @@ public class Task {
                     task.title = result.getString(3);
                     task.description = result.getString(4);
                     task.status = result.getString(5);
-                    task.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                    task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                     task.reminders = (Integer[]) result.getArray(7).getArray();
                     task.assignTo = result.getInt(8);
                     task.assignBy = result.getInt(9);
-                    task.createOn = new java.sql.Date(result.getTimestamp(10).getTime());
+                    task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                     task.createBy = result.getInt(11);
-                    task.updateOn =  new java.sql.Date(result.getTimestamp(12).getTime());
+                    task.updateOn =  new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                     task.updateBy = result.getInt(13);
 
                     groupTasks.add(task);
@@ -539,13 +539,13 @@ public class Task {
                         groupTask.title = result.getString(3);
                         groupTask.description = result.getString(4);
                         groupTask.status = result.getString(5);
-                        groupTask.dueDate = new java.sql.Date(result.getTimestamp(6).getTime());
+                        groupTask.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         groupTask.reminders = (Integer[]) result.getArray(7).getArray();
                         groupTask.assignTo = result.getInt(8);
                         groupTask.assignBy = result.getInt(9);
-                        groupTask.createOn = new java.sql.Date(result.getTimestamp(10).getTime());
+                        groupTask.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         groupTask.createBy = result.getInt(11);
-                        groupTask.updateOn = new java.sql.Date(result.getTimestamp(12).getTime());
+                        groupTask.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         groupTask.updateBy = result.getInt(13);
 
                     }

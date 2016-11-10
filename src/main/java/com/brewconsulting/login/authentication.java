@@ -130,6 +130,9 @@ public class authentication {
             bldr.claim("tokenType", "REFRESH");
             node.put("refreshToken", bldr.compact());
 
+            node.put("isFirstLogin",user.isFirstLogin);
+            node.put("userId",user.id);
+
             resp = Response.ok("" + node.toString() + "").type(MediaType.APPLICATION_JSON).build();
         } catch (Exception ex) {
             if (resp == null)
@@ -164,6 +167,7 @@ public class authentication {
 
             String refreshToken = credentials.getRefreshToken();
             System.out.println("TOKEN : " + refreshToken + "\n");
+            System.out.println(" \n ************ TOKEN CALLED *********** \n");
 
             if(refreshToken == null || refreshToken == "")
             {
@@ -209,6 +213,7 @@ public class authentication {
                                     .setSubject(user.username).setId(UUID.randomUUID().toString())
                                     .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
                                     .signWith(SignatureAlgorithm.HS256, salt);
+                            System.out.println("\n ACCESS TOKEN GENERATED..... \n");
 
                             bldr.claim("user", mapper.writerWithView(UserViews.authView.class).writeValueAsString(user));
                             bldr.claim("tokenType", "ACCESS");
@@ -234,9 +239,8 @@ public class authentication {
                 catch (Exception ex) {
                     context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
                     servletContext.log("Invalid token", ex);
-                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" Authentication Failed \"}")
+                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ ex.toString() +" \" }")
                             .type(MediaType.APPLICATION_JSON).build();
-
                 }
             }
         return resp;
