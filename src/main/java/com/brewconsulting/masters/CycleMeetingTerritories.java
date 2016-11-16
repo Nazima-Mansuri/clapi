@@ -47,10 +47,10 @@ public class CycleMeetingTerritories {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meetings").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cycle meeting Territories\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
-
         catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -79,8 +79,8 @@ public class CycleMeetingTerritories {
             resp = Response.ok("{\"Count\":" + count + "}").build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create division")
+                    .entity("{\"Message\":" + "\"You are not authorized to create Cyclemeeting Territory\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             if (resp == null) {

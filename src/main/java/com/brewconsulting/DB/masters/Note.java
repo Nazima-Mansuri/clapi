@@ -63,6 +63,10 @@ public class Note
     @JsonProperty("updateBy")
     public int updateBy;
 
+    @JsonProperty("username")
+    public String username;
+
+    public static final int Note = 12;
     // make default constructor to visible package
     public Note() {
     }
@@ -86,50 +90,57 @@ public class Note
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Note).equals("Read") ||
+                Permissions.isAuthorised(userRole,Note).equals("Write")) {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<Note> groupNotes = new ArrayList<Note>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
 
-        String schemaName = loggedInUser.schemaName;
-        Connection con = DBConnectionProvider.getConn();
-        ArrayList<Note> groupNotes = new ArrayList<Note>();
-        PreparedStatement stmt = null;
-        ResultSet result = null;
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement(" SELECT g.id,groupid,(note).title title,(note).description description , " +
+                                    " (note).category category, g.createdon ," +
+                                    " g.createdby, g.updateon, g.updateby , username FROM " +
+                                    schemaName + ".groupNotes g left join master.users u on u.id = createdby where groupid = ? ORDER BY id ASC");
+                    stmt.setInt(1, id);
+                    result = stmt.executeQuery();
+                    while (result.next()) {
+                        Note note = new Note();
+                        note.id = result.getInt(1);
+                        note.groupId = result.getInt(2);
+                        note.title = result.getString(3);
+                        note.description = result.getString(4);
+                        note.category = result.getString(5);
+                        note.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        note.createBy = result.getInt(7);
+                        note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        note.updateBy = result.getInt(9);
+                        note.username = result.getString(10);
 
-        try {
-            if (con != null) {
-                stmt = con
-                        .prepareStatement(" SELECT id,groupid,(note).title title,(note).description description , " +
-                                " (note).category category, createdon ," +
-                                " createdby, updateon, updateby FROM " +
-                                schemaName + ".groupNotes where groupid = ? ORDER BY id ASC");
-                stmt.setInt(1,id);
-                result = stmt.executeQuery();
-                while (result.next()) {
-                    Note note = new Note();
-                    note.id = result.getInt(1);
-                    note.groupId = result.getInt(2);
-                    note.title = result.getString(3);
-                    note.description = result.getString(4);
-                    note.category = result.getString(5);
-                    note.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
-                    note.createBy = result.getInt(7);
-                    note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
-                    note.updateBy = result.getInt(9);
-
-                    groupNotes.add(note);
+                        groupNotes.add(note);
+                    }
                 }
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
             }
-        } finally {
-            if (result != null)
-                if (!result.isClosed())
-                    result.close();
-            if (stmt != null)
-                if (!stmt.isClosed())
-                    stmt.close();
-            if (con != null)
-                if (!con.isClosed())
-                    con.close();
-        }
 
-        return groupNotes;
+            return groupNotes;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
     }
 
     /***
@@ -145,8 +156,8 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Read") ||
+                Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             Note groupNote = null;
             // TODO check authorization
@@ -158,10 +169,10 @@ public class Note
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("SELECT id,groupid,(note).title title,(note).description description ," +
-                                    " (note).category category, createdon ," +
+                            .prepareStatement("SELECT g.id,groupid,(note).title title,(note).description description ," +
+                                    " (note).category category, createdon , username" +
                                     " createdby, updateon, updateby FROM " +
-                                    schemaName +".groupNotes where id = ? ");
+                                    schemaName +".groupNotes g left join master.users u on u.id = createdby where id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -175,6 +186,7 @@ public class Note
                         groupNote.createBy = result.getInt(7);
                         groupNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         groupNote.updateBy = result.getInt(9);
+                        groupNote.username = result.getString(10);
 
                     }
                 } else
@@ -211,8 +223,7 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -283,8 +294,7 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -340,8 +350,7 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -387,8 +396,8 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Read") ||
+                Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             Note childNote = null;
             // TODO check authorization
@@ -402,8 +411,8 @@ public class Note
                     stmt = con
                             .prepareStatement("SELECT cycleMeetingId,(note).title title,(note).description description ," +
                                     " (note).category category, createdon ," +
-                                    " createdby, updateon, updateby FROM " +
-                                    schemaName + ".cycleMeetingNotes where id = ? ");
+                                    " createdby, updateon, updateby , username FROM " +
+                                    schemaName + ".cycleMeetingNotes left join master.users u on u.id = createdby where id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -417,6 +426,7 @@ public class Note
                         childNote.createBy = result.getInt(6);
                         childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         childNote.updateBy = result.getInt(8);
+                        childNote.username = result.getString(9);
 
                     }
                 } else
@@ -452,8 +462,8 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Read") ||
+                Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             Note childNote = null;
             // TODO check authorization
@@ -469,7 +479,7 @@ public class Note
                             .prepareStatement("SELECT id,(note).title title,(note).description description ," +
                                     " (note).category category, createdon ," +
                                     " createdby, updateon, updateby FROM " +
-                                    schemaName + ".cycleMeetingNotes where cycleMeetingId = ? ");
+                                    schemaName + ".cycleMeetingNotes left join master.users u on u.id = createdby  where cycleMeetingId = ? ");
                     stmt.setInt(1, cycleMeetingId);
                     result = stmt.executeQuery();
                     while (result.next()) {
@@ -483,6 +493,7 @@ public class Note
                         childNote.createBy = result.getInt(6);
                         childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         childNote.updateBy = result.getInt(8);
+                        childNote.username = result.getString(9);
 
                         notes.add(childNote);
 
@@ -522,8 +533,7 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -595,8 +605,7 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -652,9 +661,7 @@ public class Note
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
-
+        if (Permissions.isAuthorised(userRole, Note).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;

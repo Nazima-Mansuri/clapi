@@ -27,11 +27,11 @@ public class History {
 	public String lastname;
 
 	@JsonProperty("effectDate")
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
 	public Date effectDate;
 
 	@JsonProperty("endDate")
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy'T'hh:mm:ss.Z")
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
 	public Date endDate;
 
 	@JsonProperty("addLine1")
@@ -69,7 +69,7 @@ public class History {
 			throws Exception {
 		// TODO: check authorization of the user to see this data
 		
-		
+
 		String schemaName = loggedInUser.schemaName;
 		Connection con = DBConnectionProvider.getConn();
 		PreparedStatement stmt = null;

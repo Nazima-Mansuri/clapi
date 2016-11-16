@@ -52,8 +52,9 @@ public class CycleMeetingAgendas {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get cycle meeting agenda").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Agenda\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -85,8 +86,8 @@ public class CycleMeetingAgendas {
             resp = Response.ok("{\"id\":" + id + "}").build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create cycle meeting agenda")
+                    .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Agenda\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             if (resp == null) {
@@ -125,6 +126,12 @@ public class CycleMeetingAgendas {
                 resp = Response.ok("{\"id\":" + list+ "}").build();
             }
         }
+        catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("{\"Message\":" + "\"You are not authorized to clone Cyclemeeting Agenda\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
         catch (Exception e)
         {
             if (resp == null) {
@@ -155,10 +162,10 @@ public class CycleMeetingAgendas {
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update cycle meeting agenda")
+                    .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Agenda\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -196,8 +203,8 @@ public class CycleMeetingAgendas {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete cycle meeting agenda")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Agenda\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
             resp = Response
@@ -241,8 +248,8 @@ public class CycleMeetingAgendas {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get cycle meeting agenda")
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Agenda by specific date.\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             if (resp == null) {

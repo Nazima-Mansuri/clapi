@@ -81,34 +81,45 @@ public class ForgotPassword {
      */
     public static int updatePassword(String username, String password) throws SQLException, NamingException, ClassNotFoundException {
         Connection con = DBConnectionProvider.getConn();
-        PreparedStatement stmt;
-
-        MessageDigest md = null;
+        PreparedStatement stmt = null;
         try
         {
-            md = MessageDigest.getInstance("MD5");
+            MessageDigest md = null;
+            try
+            {
+                md = MessageDigest.getInstance("MD5");
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+                e.printStackTrace();
+            }
+            md.update(password.getBytes());
+
+            byte byteData[] = md.digest();
+
+            //convert the byte to hex format method 1
+            StringBuffer sb = new StringBuffer();
+            for (int i = 0; i < byteData.length; i++) {
+                sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+            }
+
+            System.out.println("Digest(in hex format):: " + sb.toString());
+
+            stmt = con.prepareStatement("UPDATE master.users SET password = ? where username = ? ");
+            stmt.setString(1, sb.toString());
+            stmt.setString(2, username);
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows;
         }
-        catch (NoSuchAlgorithmException e)
-        {
-            e.printStackTrace();
-        }
-        md.update(password.getBytes());
-
-        byte byteData[] = md.digest();
-
-        //convert the byte to hex format method 1
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < byteData.length; i++) {
-            sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+        finally {
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
         }
 
-        System.out.println("Digest(in hex format):: " + sb.toString());
-
-        stmt = con.prepareStatement("UPDATE master.users SET password = ? where username = ? ");
-        stmt.setString(1, sb.toString());
-        stmt.setString(2, username);
-        int affectedRows = stmt.executeUpdate();
-        return affectedRows;
     }
     /***
      * Thios method used to send Email with random generated alphanumeric characters

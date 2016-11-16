@@ -46,6 +46,9 @@ public class GroupAgenda {
     @JsonProperty("sessionConductor")
     public String sessionConductor;
 
+    @JsonProperty("contentType")
+    public String contentType;
+
     @JsonProperty("createOn")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
@@ -60,10 +63,14 @@ public class GroupAgenda {
     @JsonProperty("updateBy")
     public int updateBy;
 
-
+    public static final int GroupAgenda = 9;
     // MAKE THE DEFAULT CONSTRUCTOR VISIBLE TO PACKAGE ONLY.
     GroupAgenda() {
 
+    }
+
+    public enum ContentType {
+        ACTIVITY, INFO, TEST, MIXED;
     }
 
     /**
@@ -78,56 +85,66 @@ public class GroupAgenda {
     public static List<GroupAgenda> getAgendaByDay(int groupId, int dayNo, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
-        String schemaName = loggedInUser.schemaName;
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Read") ||
+                Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
+        {
+            String schemaName = loggedInUser.schemaName;
 
-        Connection con = DBConnectionProvider.getConn();
-        ArrayList<GroupAgenda> groupAgendas = new ArrayList<GroupAgenda>();
-        PreparedStatement stmt = null;
-        ResultSet result = null;
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<GroupAgenda> groupAgendas = new ArrayList<GroupAgenda>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
 
-        try {
-            if (con != null) {
-                stmt = con
-                        .prepareStatement("SELECT id, sessionname, sessiondesc, sessionstarttime," +
-                                "sessionendtime, sessionconductor,createdon, createdby, updateon, updatedby" +
-                                " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?");
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement("SELECT id, sessionname, sessiondesc, sessionstarttime," +
+                                    "sessionendtime, sessionconductor,createdon, createdby, updateon, updatedby,contenttype " +
+                                    " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?");
 
-                stmt.setInt(1, groupId);
-                stmt.setInt(2, dayNo);
-                result = stmt.executeQuery();
+                    stmt.setInt(1, groupId);
+                    stmt.setInt(2, dayNo);
+                    result = stmt.executeQuery();
 
-                while (result.next()) {
-                    GroupAgenda groupAgenda = new GroupAgenda();
-                    groupAgenda.id = result.getInt(1);
-                    groupAgenda.sessionName = result.getString(2);
-                    groupAgenda.sessionDesc = result.getString(3);
-                    groupAgenda.sessionStartTime = result.getTime(4);
-                    groupAgenda.sessionEndTime = result.getTime(5);
-                    groupAgenda.sessionConductor = result.getString(6);
-                    groupAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
-                    groupAgenda.createBy = result.getInt(8);
-                    groupAgenda.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
-                    groupAgenda.updateBy = result.getInt(10);
-                    groupAgenda.groupId=groupId;
-                    groupAgenda.dayNo=dayNo;
+                    while (result.next()) {
+                        GroupAgenda groupAgenda = new GroupAgenda();
+                        groupAgenda.id = result.getInt(1);
+                        groupAgenda.sessionName = result.getString(2);
+                        groupAgenda.sessionDesc = result.getString(3);
+                        groupAgenda.sessionStartTime = result.getTime(4);
+                        groupAgenda.sessionEndTime = result.getTime(5);
+                        groupAgenda.sessionConductor = result.getString(6);
+                        groupAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                        groupAgenda.createBy = result.getInt(8);
+                        groupAgenda.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
+                        groupAgenda.updateBy = result.getInt(10);
+                        groupAgenda.contentType = result.getString(11);
+                        groupAgenda.groupId=groupId;
+                        groupAgenda.dayNo=dayNo;
 
-                    groupAgendas.add(groupAgenda);
-                }
-            } else
-                throw new Exception("DB connection is null");
+                        groupAgendas.add(groupAgenda);
+                    }
+                } else
+                    throw new Exception("DB connection is null");
 
-        } finally {
-            if (result != null)
-                if (!result.isClosed())
-                    result.close();
-            if (stmt != null)
-                if (!stmt.isClosed())
-                    stmt.close();
-            if (con != null)
-                if (!con.isClosed())
-                    con.close();
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return groupAgendas;
         }
-        return groupAgendas;
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
     }
 
     /**
@@ -141,57 +158,87 @@ public class GroupAgenda {
     public static int addGroupAgenda(JsonNode node, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to Insert data
+        int userRole = loggedInUser.roles.get(0).roleId;
 
-        String schemaName = loggedInUser.schemaName;
-        Connection con = DBConnectionProvider.getConn();
-        PreparedStatement stmt = null;
-        int result;
+        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
+        {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result;
+            ResultSet resultSet;
+            int id = 0;
 
-        try {
-            con.setAutoCommit(false);
+            try {
+                con.setAutoCommit(false);
 
-            stmt = con
-                    .prepareStatement(
-                            "INSERT INTO "
-                                    + schemaName
-                                    + ".groupAgenda(groupId,dayNo,sessionName,sessionDesc,sessionStartTime,sessionEndTime,sessionConductor,"
-                                    + "createdOn,createdBy,updateOn,updatedBy) values (?,?,?,?,?,?,?,?,?,?,?)",
-                            Statement.RETURN_GENERATED_KEYS);
-            stmt.setInt(1, node.get("groupId").asInt());
-            stmt.setInt(2, node.get("dayNo").asInt());
-            stmt.setString(3, node.get("sessionName").asText());
-            stmt.setString(4, node.get("sessionDesc").asText());
-            stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
-            stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
-            stmt.setString(7, node.get("sessionConductor").asText());
-            stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
-            stmt.setInt(9, loggedInUser.id);
-            stmt.setTimestamp(10, new Timestamp((new Date()).getTime()));
-            stmt.setInt(11, loggedInUser.id);
-            result = stmt.executeUpdate();
+                ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
 
-            if (result == 0)
-                throw new SQLException("Add Agenda Failed.");
+                stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
+                        " where groupid = ? AND  dayno = ? AND  " +
+                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?)");
+                stmt.setInt(1,node.get("groupId").asInt());
+                stmt.setInt(2,node.get("dayNo").asInt());
+                stmt.setTime(3,Time.valueOf(node.get("sessionStartTime").asText()));
+                stmt.setTime(4,Time.valueOf(node.get("sessionStartTime").asText()));
+                resultSet = stmt.executeQuery();
 
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
-            int id;
-            if (generatedKeys.next())
-                // It gives last inserted Id in divisionId
-                id = generatedKeys.getInt(1);
-            else
-                throw new SQLException("No ID obtained");
+                if(!resultSet.next())
+                {
+                    stmt = con
+                            .prepareStatement(
+                                    "INSERT INTO "
+                                            + schemaName
+                                            + ".groupAgenda(groupId,dayNo,sessionName,sessionDesc,sessionStartTime,sessionEndTime, sessionConductor ,"
+                                            + " createdOn,createdBy,updateOn,updatedBy,contenttype ) values (?,?,?,?,?,?,?,?,?,?,?,CAST(? AS master.contentType))",
+                                    Statement.RETURN_GENERATED_KEYS);
+                    stmt.setInt(1, node.get("groupId").asInt());
+                    stmt.setInt(2, node.get("dayNo").asInt());
+                    stmt.setString(3, node.get("sessionName").asText());
+                    stmt.setString(4, node.get("sessionDesc").asText());
+                    stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
+                    stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
+                    stmt.setString(7, node.get("sessionConductor").asText());
+                    stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(9, loggedInUser.id);
+                    stmt.setTimestamp(10, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(11, loggedInUser.id);
+                    stmt.setString(12,contentType.name());
+                    result = stmt.executeUpdate();
 
-            con.commit();
-            return id;
+                    if (result == 0)
+                        throw new SQLException("Add Agenda Failed.");
 
-        } catch (Exception ex) {
-            if (con != null)
-                con.rollback();
-            throw ex;
-        } finally {
-            con.setAutoCommit(false);
-            if (con != null)
-                con.close();
+                    ResultSet generatedKeys = stmt.getGeneratedKeys();
+
+                    if (generatedKeys.next())
+                        // It gives last inserted Id in divisionId
+                        id = generatedKeys.getInt(1);
+                    else
+                        throw new SQLException("No ID obtained");
+
+                    con.commit();
+
+                }
+                else
+                {
+                    throw new BadRequestException("");
+                }
+                return id;
+
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
         }
     }
 
@@ -205,46 +252,57 @@ public class GroupAgenda {
     public static int updateGroupAgenda(JsonNode node, LoggedInUser loggedInUser)
             throws Exception {
 
-        String schemaName = loggedInUser.schemaName;
-        Connection con = DBConnectionProvider.getConn();
-        PreparedStatement stmt = null;
-        int result;
+        int userRole = loggedInUser.roles.get(0).roleId;
 
-        try {
-            con.setAutoCommit(false);
+        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
+        {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result;
 
-            stmt = con
-                    .prepareStatement(
-                            "UPDATE "
-                                    + schemaName
-                                    + ".groupAgenda SET groupId =? ,dayNo=?,sessionName=?,sessionDesc=?,sessionStartTime=?,sessionEndTime=?,sessionConductor=?,"
-                                    + "updateOn=?,updatedBy=? where id=?",
-                            Statement.RETURN_GENERATED_KEYS);
-            stmt.setInt(1, node.get("groupId").asInt());
-            stmt.setInt(2, node.get("dayNo").asInt());
-            stmt.setString(3, node.get("sessionName").asText());
-            stmt.setString(4, node.get("sessionDesc").asText());
-            stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
-            stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
-            stmt.setString(7, node.get("sessionConductor").asText());
-            stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
-            stmt.setInt(9, loggedInUser.id);
-            stmt.setInt(10, node.get("id").asInt());
+            try {
+                con.setAutoCommit(false);
 
-            result = stmt.executeUpdate();
-            con.commit();
+                ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
+                stmt = con
+                        .prepareStatement(
+                                "UPDATE "
+                                        + schemaName
+                                        + ".groupAgenda SET groupId =? ,dayNo=?,sessionName=?,sessionDesc=?,sessionStartTime=?,sessionEndTime=?,sessionConductor=?,"
+                                        + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) where id=?",
+                                Statement.RETURN_GENERATED_KEYS);
+                stmt.setInt(1, node.get("groupId").asInt());
+                stmt.setInt(2, node.get("dayNo").asInt());
+                stmt.setString(3, node.get("sessionName").asText());
+                stmt.setString(4, node.get("sessionDesc").asText());
+                stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
+                stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
+                stmt.setString(7, node.get("sessionConductor").asText());
+                stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                stmt.setInt(9, loggedInUser.id);
+                stmt.setString(10,contentType.name());
+                stmt.setInt(11, node.get("id").asInt());
 
-        } catch (Exception ex) {
-            if (con != null)
-                con.rollback();
-            throw ex;
-        } finally {
-            con.setAutoCommit(false);
-            if (con != null)
-                con.close();
+                result = stmt.executeUpdate();
+                con.commit();
+
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+            return result;
+
         }
-        return result;
-
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
     }
 
     /**
@@ -259,31 +317,39 @@ public class GroupAgenda {
             throws Exception {
         // TODO: check authorization of the user to Delete data
 
-        String schemaName = loggedInUser.schemaName;
-        Connection con = DBConnectionProvider.getConn();
-        PreparedStatement stmt = null;
-        int result = 0;
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
+        {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result = 0;
 
-        try {
-            // If connection is not null then perform delete operation.
-            if (con != null) {
-                stmt = con.prepareStatement("DELETE FROM " + schemaName
-                        + ".groupAgenda WHERE id = ?");
+            try {
+                // If connection is not null then perform delete operation.
+                if (con != null) {
+                    stmt = con.prepareStatement("DELETE FROM " + schemaName
+                            + ".groupAgenda WHERE id = ?");
 
-                stmt.setInt(1, id);
-                result = stmt.executeUpdate();
-            } else
-                throw new Exception("DB connection is null");
-        } finally {
+                    stmt.setInt(1, id);
+                    result = stmt.executeUpdate();
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
 
-            if (stmt != null)
-                if (!stmt.isClosed())
-                    stmt.close();
-            if (con != null)
-                if (!con.isClosed())
-                    con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return result;
+
         }
-        return result;
-
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
     }
 }

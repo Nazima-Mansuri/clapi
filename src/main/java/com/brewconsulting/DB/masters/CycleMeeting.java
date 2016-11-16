@@ -74,6 +74,7 @@ public class CycleMeeting {
     public CycleMeeting() {
     }
 
+    public static final int CycleMeeting = 6;
 
     /***
      * Method is used to get all meetings.
@@ -87,8 +88,8 @@ public class CycleMeeting {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeeting).equals("Write") ) {
 
             String schemaName = loggedInUser.schemaName;
 
@@ -157,8 +158,8 @@ public class CycleMeeting {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeeting).equals("Write") ) {
 
             CycleMeeting subMeeting = null;
             // TODO check authorization
@@ -227,8 +228,7 @@ public class CycleMeeting {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -310,8 +310,7 @@ public class CycleMeeting {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -374,8 +373,7 @@ public class CycleMeeting {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

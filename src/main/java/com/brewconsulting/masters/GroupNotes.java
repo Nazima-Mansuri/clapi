@@ -48,8 +48,9 @@ public class GroupNotes {
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Notes").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get group notes\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -85,8 +86,9 @@ public class GroupNotes {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Note").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get particular group note\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -122,8 +124,9 @@ public class GroupNotes {
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Group Note").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add group note\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -156,8 +159,8 @@ public class GroupNotes {
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Group Note")
+                    .entity("{\"Message\":" + "\"You are not authorized to update group note\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             if (resp == null)
@@ -197,8 +200,8 @@ public class GroupNotes {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Group Note")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete group note\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
             resp = Response

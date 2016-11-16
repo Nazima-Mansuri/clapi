@@ -100,6 +100,7 @@ public class Product {
 
     }
 
+    public static final int Product = 4;
     /***
      * Method allows user to get All Details of Products.
      *
@@ -114,8 +115,8 @@ public class Product {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Product).equals("Read") ||
+                Permissions.isAuthorised(userRole, Product).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -247,9 +248,8 @@ public class Product {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
-
+        if (Permissions.isAuthorised(userRole, Product).equals("Read") ||
+                Permissions.isAuthorised(userRole, Product).equals("Write")) {
             Product product = null;
             // TODO check authorization
             String schemaName = loggedInUser.schemaName;
@@ -334,8 +334,7 @@ public class Product {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole ,Product).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -425,8 +424,7 @@ public class Product {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Product).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -492,8 +490,7 @@ public class Product {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Product).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

@@ -40,7 +40,7 @@ public class Questions {
         Response resp = null;
         try {
             JsonNode node = mapper.readTree(input);
-            int questionId = Question.addMCQQurstion(node,
+            int questionId = Question.addQuestion(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + questionId + "}").build();
         } catch (NotAuthorizedException na) {

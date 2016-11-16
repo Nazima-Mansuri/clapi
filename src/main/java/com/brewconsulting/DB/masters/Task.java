@@ -23,75 +23,78 @@ import static com.brewconsulting.DB.utils.stringToDate;
  */
 public class Task {
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("id")
     public int id;
 
-    @JsonView({ UserViews.groupTaskView.class })
+    @JsonView({UserViews.groupTaskView.class})
     @JsonProperty("groupId")
     public int groupId;
 
-    @JsonView({ UserViews.childTaskView.class })
+    @JsonView({UserViews.childTaskView.class})
     @JsonProperty("cycleMeetingId")
     public int cycleMeetingId;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("title")
     public String title;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("description")
     public String description;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("status")
-    public String  status;
+    public String status;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("dueDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date dueDate;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("reminders")
     public Integer[] reminders;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("assignTo")
     public int assignTo;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("assignBy")
     public int assignBy;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("createdOn")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("createdBy")
     public int createBy;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("updateOn")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateOn;
 
-    @JsonView({ UserViews.childTaskView.class, UserViews.groupTaskView.class })
+    @JsonView({UserViews.childTaskView.class, UserViews.groupTaskView.class})
     @JsonProperty("updateBy")
     public int updateBy;
 
+    @JsonProperty("username")
+    public String username;
 
-    public enum taskStatus
-    {
-        New,Started,Mid_Way,Almost_Done,Awaiting_Clarification,Done
+    public static final int Task = 13;
+
+    public enum taskStatus {
+        New, Started, Mid_Way, Almost_Done, Awaiting_Clarification, Done
     }
 
-    public enum taskCategory
-    {
-        Prepare_Edit_Content, Venue_Arrangements,Travel_Arrangement,Misc
+    public enum taskCategory {
+        Prepare_Edit_Content, Venue_Arrangements, Travel_Arrangement, Misc
     }
+
     // make default constructor to visible package
     public Task() {
     }
@@ -103,12 +106,13 @@ public class Task {
      * @return
      * @throws Exception
      */
-    public static List<Task> getAllGroupTasks(int id ,LoggedInUser loggedInUser)
+    public static List<Task> getAllGroupTasks(int id, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
-
+        if (Permissions.isAuthorised(userRole, Task).equals("Read") ||
+                Permissions.isAuthorised(userRole, Task).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             ArrayList<Task> groupTasks = new ArrayList<Task>();
@@ -118,12 +122,12 @@ public class Task {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement(" SELECT id,groupid,(task).title title,(task).description description , " +
+                            .prepareStatement(" SELECT g.id,groupid,(task).title title,(task).description description , " +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
-                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, createdon ," +
-                                    " createdby, updateon, updateby FROM " +
-                                     schemaName + ".grouptasks where groupid = ? ORDER BY id ASC");
-                    stmt.setInt(1,id);
+                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, g.createdon ," +
+                                    " g.createdby, g.updateon, g.updateby, u.username FROM " +
+                                    schemaName + ".grouptasks g , master.users u where u.id = (task).assignedto AND  groupid = ? ORDER BY id ASC");
+                    stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Task task = new Task();
@@ -140,6 +144,7 @@ public class Task {
                         task.createBy = result.getInt(11);
                         task.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         task.updateBy = result.getInt(13);
+                        task.username = result.getString(14);
 
                         groupTasks.add(task);
                     }
@@ -157,6 +162,9 @@ public class Task {
             }
 
             return groupTasks;
+        } else {
+            throw new NotAuthorizedException("");
+        }
     }
 
     /***
@@ -171,10 +179,8 @@ public class Task {
             throws Exception {
 
         int userRole = loggedInUser.roles.get(0).roleId;
-
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
-
+        if (Permissions.isAuthorised(userRole, Task).equals("Read") ||
+                Permissions.isAuthorised(userRole, Task).equals("Write")) {
             Task groupTask = null;
             // TODO check authorization
             String schemaName = loggedInUser.schemaName;
@@ -185,11 +191,11 @@ public class Task {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("SELECT id,groupid,(task).title title,(task).description description ," +
+                            .prepareStatement("SELECT g.id,groupid,(task).title title,(task).description description ," +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
-                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, createdon ," +
-                                    " createdby, updateon, updateby FROM " +
-                                    schemaName +".grouptasks where id = ? ");
+                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, g.createdon ," +
+                                    " g.createdby, g.updateon, g.updateby , u.username FROM " +
+                                    schemaName + ".grouptasks g, master.users u  where u.id = assignedto AND id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -203,10 +209,11 @@ public class Task {
                         groupTask.reminders = (Integer[]) result.getArray(7).getArray();
                         groupTask.assignTo = result.getInt(8);
                         groupTask.assignBy = result.getInt(9);
-                        groupTask.createOn =  new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
+                        groupTask.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         groupTask.createBy = result.getInt(11);
                         groupTask.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         groupTask.updateBy = result.getInt(13);
+                        groupTask.username = result.getString(14);
 
                     }
                 } else
@@ -243,8 +250,7 @@ public class Task {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Task).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -275,13 +281,13 @@ public class Task {
                                 Statement.RETURN_GENERATED_KEYS);
 
                 stmt.setInt(1, node.get("groupId").asInt());
-                stmt.setString(2,categoryType.name());
-                stmt.setString(3,node.get("description").asText());
+                stmt.setString(2, categoryType.name());
+                stmt.setString(3, node.get("description").asText());
                 stmt.setString(4, statusType.name());
                 stmt.setTimestamp(5, new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
                 stmt.setArray(6, remind);
-                stmt.setInt(7,node.get("assignedTo").asInt());
-                stmt.setInt(8,loggedInUser.id);
+                stmt.setInt(7, node.get("assignedTo").asInt());
+                stmt.setInt(8, loggedInUser.id);
                 stmt.setTimestamp(9, new Timestamp((new Date()).getTime()));
                 stmt.setInt(10, loggedInUser.id);
                 stmt.setTimestamp(11, new Timestamp((new Date()).getTime()));
@@ -323,13 +329,12 @@ public class Task {
      * @return
      * @throws Exception
      */
-    public static int updateGroupTask(JsonNode node,LoggedInUser loggedInUser) throws Exception {
+    public static int updateGroupTask(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to Update data
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Task).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -353,17 +358,17 @@ public class Task {
                     stmt = con
                             .prepareStatement("UPDATE "
                                     + schemaName
-                                    +".groupTasks SET task = ROW(CAST(? AS master.taskCategory),?,"
-                                    +" CAST(? AS master.taskStatus),?,?,?,?) ," +
+                                    + ".groupTasks SET task = ROW(CAST(? AS master.taskCategory),?,"
+                                    + " CAST(? AS master.taskStatus),?,?,?,?) ," +
                                     "  updateOn = ?, updateBy = ?"
-                                    +" WHERE id = ?");
+                                    + " WHERE id = ?");
                     stmt.setString(1, categoryType.name());
-                    stmt.setString(2,node.get("description").asText());
-                    stmt.setString(3,statusType.name());
-                    stmt.setTimestamp(4,new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
-                    stmt.setArray(5,remind);
-                    stmt.setInt(6,node.get("assignedTo").asInt());
-                    stmt.setInt(7,node.get("assignBy").asInt());
+                    stmt.setString(2, node.get("description").asText());
+                    stmt.setString(3, statusType.name());
+                    stmt.setTimestamp(4, new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
+                    stmt.setArray(5, remind);
+                    stmt.setInt(6, node.get("assignedTo").asInt());
+                    stmt.setInt(7, node.get("assignBy").asInt());
                     stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                     stmt.setInt(9, loggedInUser.id);
                     stmt.setInt(10, node.get("id").asInt());
@@ -401,8 +406,7 @@ public class Task {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Task).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -433,7 +437,7 @@ public class Task {
         }
     }
 
-  // ===========================================================================================
+    // ===========================================================================================
     // These all methods for CycleMeetingTask.
 
     /***
@@ -443,60 +447,65 @@ public class Task {
      * @return
      * @throws Exception
      */
-    public static List<Task> getCycleMeetingTasks(int id , LoggedInUser loggedInUser)
+    public static List<Task> getCycleMeetingTasks(int id, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
-        //int userRole = loggedInUser.roles.get(0).roleId;
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if (Permissions.isAuthorised(userRole, Task).equals("Read") ||
+                Permissions.isAuthorised(userRole, Task).equals("Write")) {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<Task> groupTasks = new ArrayList<Task>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
 
-        String schemaName = loggedInUser.schemaName;
-        Connection con = DBConnectionProvider.getConn();
-        ArrayList<Task> groupTasks = new ArrayList<Task>();
-        PreparedStatement stmt = null;
-        ResultSet result = null;
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement(" SELECT c.id,cycleMeetingId,(task).title title,(task).description description , " +
+                                    " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
+                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, c.createdon ," +
+                                    " c.createdby, c.updateon, c.updateby , u.username FROM " +
+                                    schemaName + ".cycleMeetingTasks c , master.users u WHERE u.id = assignedto AND cycleMeetingId = ? ORDER BY id ASC");
+                    stmt.setInt(1, id);
+                    result = stmt.executeQuery();
+                    while (result.next()) {
+                        Task task = new Task();
+                        task.id = result.getInt(1);
+                        task.cycleMeetingId = result.getInt(2);
+                        task.title = result.getString(3);
+                        task.description = result.getString(4);
+                        task.status = result.getString(5);
+                        task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        task.reminders = (Integer[]) result.getArray(7).getArray();
+                        task.assignTo = result.getInt(8);
+                        task.assignBy = result.getInt(9);
+                        task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
+                        task.createBy = result.getInt(11);
+                        task.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
+                        task.updateBy = result.getInt(13);
+                        task.username = result.getString(14);
 
-        try {
-            if (con != null) {
-                stmt = con
-                        .prepareStatement(" SELECT id,cycleMeetingId,(task).title title,(task).description description , " +
-                                " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
-                                " (task).assignedTo assignedTo , (task).assignedBy assignedBy, createdon ," +
-                                " createdby, updateon, updateby FROM " +
-                                schemaName + ".cycleMeetingTasks WHERE cycleMeetingId = ? ORDER BY id ASC");
-                stmt.setInt(1,id);
-                result = stmt.executeQuery();
-                while (result.next()) {
-                    Task task = new Task();
-                    task.id = result.getInt(1);
-                    task.cycleMeetingId = result.getInt(2);
-                    task.title = result.getString(3);
-                    task.description = result.getString(4);
-                    task.status = result.getString(5);
-                    task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
-                    task.reminders = (Integer[]) result.getArray(7).getArray();
-                    task.assignTo = result.getInt(8);
-                    task.assignBy = result.getInt(9);
-                    task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
-                    task.createBy = result.getInt(11);
-                    task.updateOn =  new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
-                    task.updateBy = result.getInt(13);
-
-                    groupTasks.add(task);
+                        groupTasks.add(task);
+                    }
                 }
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
             }
-        } finally {
-            if (result != null)
-                if (!result.isClosed())
-                    result.close();
-            if (stmt != null)
-                if (!stmt.isClosed())
-                    stmt.close();
-            if (con != null)
-                if (!con.isClosed())
-                    con.close();
-        }
 
-        return groupTasks;
+            return groupTasks;
+        } else {
+            throw new NotAuthorizedException("");
+        }
     }
 
     /***
@@ -512,8 +521,8 @@ public class Task {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Task).equals("Read") ||
+                Permissions.isAuthorised(userRole, Task).equals("Write")) {
 
             Task groupTask = null;
             // TODO check authorization
@@ -525,11 +534,11 @@ public class Task {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("SELECT id,cycleMeetingId,(task).title title,(task).description description ," +
+                            .prepareStatement("SELECT c.id,cycleMeetingId,(task).title title,(task).description description ," +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
-                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, createdon ," +
-                                    " createdby, updateon, updateby FROM " +
-                                    schemaName +".cycleMeetingTasks where id = ? ");
+                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, c.createdon ," +
+                                    " c.createdby, c.updateon, c.updateby FROM " +
+                                    schemaName + ".cycleMeetingTasks c , master.users u where u.id = assignedto AND id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -547,6 +556,7 @@ public class Task {
                         groupTask.createBy = result.getInt(11);
                         groupTask.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         groupTask.updateBy = result.getInt(13);
+                        groupTask.username = result.getString(14);
 
                     }
                 } else
@@ -570,7 +580,6 @@ public class Task {
     }
 
 
-
     /***
      * Method used to insert CycleMeeting task
      *
@@ -585,8 +594,7 @@ public class Task {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Task).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -617,13 +625,13 @@ public class Task {
                                 Statement.RETURN_GENERATED_KEYS);
 
                 stmt.setInt(1, node.get("cycleMeetingId").asInt());
-                stmt.setString(2,categoryType.name());
-                stmt.setString(3,node.get("description").asText());
+                stmt.setString(2, categoryType.name());
+                stmt.setString(3, node.get("description").asText());
                 stmt.setString(4, statusType.name());
                 stmt.setTimestamp(5, new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
                 stmt.setArray(6, remind);
-                stmt.setInt(7,node.get("assignedTo").asInt());
-                stmt.setInt(8,loggedInUser.id);
+                stmt.setInt(7, node.get("assignedTo").asInt());
+                stmt.setInt(8, loggedInUser.id);
                 stmt.setTimestamp(9, new Timestamp((new Date()).getTime()));
                 stmt.setInt(10, loggedInUser.id);
                 stmt.setTimestamp(11, new Timestamp((new Date()).getTime()));
@@ -665,13 +673,12 @@ public class Task {
      * @return
      * @throws Exception
      */
-    public static int updateCycleMeetingTask(JsonNode node,LoggedInUser loggedInUser) throws Exception {
+    public static int updateCycleMeetingTask(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to Update data
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, Task).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -695,17 +702,17 @@ public class Task {
                     stmt = con
                             .prepareStatement("UPDATE "
                                     + schemaName
-                                    +".cycleMeetingTasks SET task = ROW(CAST(? AS master.taskCategory),?,"
-                                    +" CAST(? AS master.taskStatus),?,?,?,?) ," +
+                                    + ".cycleMeetingTasks SET task = ROW(CAST(? AS master.taskCategory),?,"
+                                    + " CAST(? AS master.taskStatus),?,?,?,?) ," +
                                     "  updateOn = ?, updateBy = ?"
-                                    +" WHERE id = ?");
+                                    + " WHERE id = ?");
                     stmt.setString(1, categoryType.name());
-                    stmt.setString(2,node.get("description").asText());
-                    stmt.setString(3,statusType.name());
-                    stmt.setTimestamp(4,new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
-                    stmt.setArray(5,remind);
-                    stmt.setInt(6,node.get("assignedTo").asInt());
-                    stmt.setInt(7,node.get("assignBy").asInt());
+                    stmt.setString(2, node.get("description").asText());
+                    stmt.setString(3, statusType.name());
+                    stmt.setTimestamp(4, new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
+                    stmt.setArray(5, remind);
+                    stmt.setInt(6, node.get("assignedTo").asInt());
+                    stmt.setInt(7, node.get("assignBy").asInt());
                     stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                     stmt.setInt(9, loggedInUser.id);
                     stmt.setInt(10, node.get("id").asInt());
@@ -742,7 +749,7 @@ public class Task {
         // TODO: check authorization of the user to Delete data
 
         int userRole = loggedInUser.roles.get(0).roleId;
-
+        if (Permissions.isAuthorised(userRole, Task).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
@@ -767,5 +774,9 @@ public class Task {
                         con.close();
             }
             return result;
+
+        } else {
+            throw new NotAuthorizedException("");
         }
     }
+}

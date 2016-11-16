@@ -45,8 +45,9 @@ public class GroupTasks {
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Tasks").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get group tasks\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -82,8 +83,9 @@ public class GroupTasks {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Task").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get particular group task\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -119,8 +121,9 @@ public class GroupTasks {
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Group Task").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add group task\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -154,8 +157,8 @@ public class GroupTasks {
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Group Task")
+                    .entity("{\"Message\":" + "\"You are not authorized to update group task\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             if (resp == null)
@@ -195,8 +198,8 @@ public class GroupTasks {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Group Task")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete group task\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
             resp = Response

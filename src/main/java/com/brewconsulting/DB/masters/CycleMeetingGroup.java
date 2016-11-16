@@ -67,7 +67,7 @@ public class CycleMeetingGroup {
     // make the default constructor visible to package only.
     public CycleMeetingGroup() {
     }
-
+    public static final int CycleMeetingGroup = 7;
 
     /**
      * Method used to get all group meeting with sub meetings.
@@ -79,7 +79,9 @@ public class CycleMeetingGroup {
      */
     public static List<CycleMeetingGroup> getMeetingByDivisionId(int id, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,CycleMeetingGroup).equals("Read") ||
+                Permissions.isAuthorised(userRole,CycleMeetingGroup).equals("Write") ) {
+
             CycleMeetingGroup meetingGroup = null;
             CycleMeeting cycleMeeting = null;
             // TODO check authorization
@@ -97,8 +99,8 @@ public class CycleMeetingGroup {
                                     " c2.id, c2.title, c2.groupid, c2.venue, c2.startdate, c2.enddate, " +
                                     "c2.organiser, c2.createdon, " +
                                     " c2.createdby, c2.updatedon, c2.updatedby, c4.username " +
-                                    " FROM client1.cyclemeetinggroup c1 " +
-                                    " left join client1.cyclemeeting c2 on c1.id = c2.groupid  " +
+                                    " FROM "+schemaName+".cyclemeetinggroup c1 " +
+                                    " left join "+schemaName+".cyclemeeting c2 on c1.id = c2.groupid  " +
                                     " left join master.users c3 on c1.leadorganiser = c3.id  " +
                                     " left join master.users c4 on c2.organiser = c4.id" +
                                     " where c1.division = ? ORDER BY c1.createdon DESC ");
@@ -178,8 +180,8 @@ public class CycleMeetingGroup {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,CycleMeetingGroup).equals("Read") ||
+                Permissions.isAuthorised(userRole,CycleMeetingGroup).equals("Write")) {
 
             CycleMeetingGroup meetingGroup = null;
             // TODO check authorization
@@ -250,8 +252,7 @@ public class CycleMeetingGroup {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeetingGroup).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -343,8 +344,7 @@ public class CycleMeetingGroup {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeetingGroup).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -419,8 +419,7 @@ public class CycleMeetingGroup {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,CycleMeetingGroup).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

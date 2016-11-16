@@ -61,20 +61,10 @@ public class Territory {
     @JsonProperty("isHistory")
     public boolean isHistory;
 
-    // effectDate and createDate propertirs are not used anywhere in territory.
-/*    @JsonProperty("effectDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
-    public Date effectDate;
-
-    @JsonProperty("createDate")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
-    public Date createDate;*/
-
     @JsonProperty("createBy")
     public int createBy;
 
-//    @JsonProperty("children")
-//    public ArrayList<terrWrapper> children = new ArrayList<terrWrapper>();
+    public static final int Territory = 3;
 
     // make the default constructor visible to package only.
     public Territory() {
@@ -104,7 +94,8 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,Territory).equals("Read") ||
+                Permissions.isAuthorised(userRole,Territory).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
 
             Connection con = DBConnectionProvider.getConn();
@@ -204,7 +195,8 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,Territory).equals("Read") ||
+                Permissions.isAuthorised(userRole,Territory).equals("Write")) {
 
             Territory territory = null;
             // TODO check authorization
@@ -279,7 +271,8 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,Territory).equals("Read") ||
+                Permissions.isAuthorised(userRole,Territory).equals("Write")) {
 
             Territory territory = null;
             // TODO check authorization
@@ -379,7 +372,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -521,7 +514,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole , Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -623,7 +616,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -670,7 +663,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.TERRITORY, Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole , Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

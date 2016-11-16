@@ -52,10 +52,11 @@ public class Products {
                     mapper.writeValueAsString(Product
                             .getAllProducts(divid,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get products").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get products \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -89,10 +90,11 @@ public class Products {
             } else
                 resp = Response.ok(mapper.writeValueAsString(product)).build();
 
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get product").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get product\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -127,7 +129,7 @@ public class Products {
         Response resp = null;
         // local variables
         String fileName = null;
-        String uploadFilePath = null;
+        String uploadFilePath = "";
         ObjectMapper mapper = new ObjectMapper();
 
         try {
@@ -137,8 +139,11 @@ public class Products {
                         + fileFormDataContentDisposition.getFileName();
                 // This method is used to store image in AWS bucket.
                 uploadFilePath = Product.writeToFile(fileInputStream, fileName);
+                System.out.println("IF : " + uploadFilePath);
             } else {
                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                System.out.println("ELSE : " + uploadFilePath);
+
             }
 
             int productId = Product.addProduct(name, uploadFilePath,
@@ -153,10 +158,11 @@ public class Products {
                         .entity(new NoDataFound("Unable to Insert Product")
                                 .getJsonString()).build();
 
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create product").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add product\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -197,13 +203,14 @@ public class Products {
 
         Response resp = null;
         String fileName = null;
-        String uploadFilePath = null;
+        String uploadFilePath = "";
         ObjectMapper mapper = new ObjectMapper();
         try {
 
             if(isUpdated)
             {
-                if (fileFormDataContentDisposition != null) {
+                System.out.println("Update : " + isUpdated);
+                if (fileFormDataContentDisposition != null || fileFormDataContentDisposition.getName()!=null) {
                     fileName = System.currentTimeMillis() + "_"
                             + fileFormDataContentDisposition.getFileName();
                     // This method is used to store image in AWS bucket.
@@ -215,6 +222,7 @@ public class Products {
             }
             else
             {
+                System.out.println("Update : " + isUpdated);
                 uploadFilePath = url;
             }
 
@@ -225,10 +233,11 @@ public class Products {
                 resp = Response.ok().build();
             else
                 resp = Response.status(204).build();
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update product").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to update product\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -264,10 +273,11 @@ public class Products {
                 // 204(NO_CONTENT).
                 resp = Response.status(204).build();
 
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete product").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to delete product\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (PSQLException ex) {
             resp = Response
                     .status(Response.Status.CONFLICT)

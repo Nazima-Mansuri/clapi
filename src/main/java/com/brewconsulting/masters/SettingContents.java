@@ -37,7 +37,7 @@ public class SettingContents {
     @Produces("application/json")
     @Path("{divId}")
     @Secured
-    public Response products(@PathParam("divId") int divId,@Context ContainerRequestContext crc) {
+    public Response setcontents(@PathParam("divId") int divId,@Context ContainerRequestContext crc) {
         Response resp = null;
 
         try {
@@ -45,10 +45,11 @@ public class SettingContents {
                     mapper.writeValueAsString(SettingContent
                             .getAllContent(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get contents").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get Contents\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -68,7 +69,7 @@ public class SettingContents {
      @POST
     @Secured
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response createPro(
+    public Response createCont(
             @FormDataParam("uploadFile") InputStream fileInputStream,
             @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
             @FormDataParam("contentName") String contentName,
@@ -89,7 +90,7 @@ public class SettingContents {
                 // This method is used to store image in AWS bucket.
                 uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
             } else {
-                uploadFilePath = null;
+                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
             }
 
             int contentid = SettingContent.addSettingContent(contentName, contentDesc,
@@ -103,10 +104,11 @@ public class SettingContents {
                         .entity(new NoDataFound("Unable to Insert Content")
                                 .getJsonString()).build();
 
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create Content").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add Contents \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -150,7 +152,6 @@ public class SettingContents {
         String uploadFilePath = null;
 
         try {
-            System.out.println("isUpdated : " + isUpdated);
             if (isUpdated) {
                 if (fileFormDataContentDisposition != null) {
                     fileName = System.currentTimeMillis() + "_"
@@ -169,10 +170,11 @@ public class SettingContents {
 
             resp = Response.ok().build();
 
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update content").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to update contents\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -210,10 +212,11 @@ public class SettingContents {
                 // 204(NO_CONTENT).
                 resp = Response.status(204).build();
 
-        } catch (NotAuthorizedException na) {
+        }   catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete content").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to delete contents\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (PSQLException ex) {
             resp = Response
                     .status(Response.Status.CONFLICT)

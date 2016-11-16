@@ -52,6 +52,7 @@ public class SettingContent {
     @JsonProperty("username")
     public String username;
 
+    public static final int SettingContent = 5;
 
     /**
      * method to get all setting content by specific division
@@ -66,8 +67,8 @@ public class SettingContent {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,SettingContent).equals("Read") ||
+                Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -171,8 +172,7 @@ public class SettingContent {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -251,8 +251,7 @@ public class SettingContent {
 // It checks that description is empty or not
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -308,8 +307,7 @@ public class SettingContent {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.PRODUCT,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, SettingContent).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

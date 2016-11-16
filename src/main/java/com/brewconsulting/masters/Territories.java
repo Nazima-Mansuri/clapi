@@ -48,10 +48,10 @@ public class Territories {
 					mapper.writeValueAsString(Territory
 							.getAllTerritories((LoggedInUser) crc
 									.getProperty("userObject"),3))).build();
-		} catch (NotAuthorizedException na) {
+		}   catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get territories")
+					.entity("{\"Message\":" + "\"You are not authorized to get Territories\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -84,10 +84,11 @@ public class Territories {
 								.getJsonString()).build();
 			} else
 				resp = Response.ok(mapper.writeValueAsString(terr)).build();
-		} catch (NotAuthorizedException na) {
+		}   catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get territory").build();
+					.entity("{\"Message\":" + "\"You are not authorized to get Territory.\"}")
+					.type(MediaType.APPLICATION_JSON)
+					.build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
@@ -115,13 +116,12 @@ public class Territories {
 					mapper.writeValueAsString(Territory
 							.getTerritorieByDivisionId(id, ((LoggedInUser) crc
 									.getProperty("userObject"))))).build();
-		} catch (NotAuthorizedException na) {
-			resp = Response
-					.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get divison by territory")
+		}   catch (NotAuthorizedException na) {
+			resp = Response.status(Response.Status.UNAUTHORIZED)
+					.entity("{\"Message\":" + "\"You are not authorized to get division specific Territories.\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
-		} catch (Exception e) {
+		}catch (Exception e) {
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
@@ -153,10 +153,11 @@ public class Territories {
 						.noContent()
 						.entity(new NoDataFound("Unable to Insert Territory")
 								.getJsonString()).build();
-		} catch (NotAuthorizedException na) {
+		}   catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to add Territory").build();
+					.entity("{\"Message\":" + "\"You are not authorized to add Territory\"}")
+					.type(MediaType.APPLICATION_JSON)
+					.build();
 		} catch (IOException e) {
 			if (resp == null) {
 				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -195,10 +196,10 @@ public class Territories {
 						.noContent()
 						.entity(new NoDataFound("Unable to update Territory")
 								.getJsonString()).build();
-		} catch (NotAuthorizedException na) {
+		}   catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to update Territory")
+					.entity("{\"Message\":" + "\"You are not authorized to update Territory\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} catch (IOException e) {
 			if (resp == null)
@@ -239,10 +240,10 @@ public class Territories {
 								"This Territory Id does not exist")
 								.getJsonString()).build();
 
-		} catch (NotAuthorizedException na) {
+		}   catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to delete Territory")
+					.entity("{\"Message\":" + "\"You are not authorized to delete Territory. \"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} catch (PSQLException ex) {
 			resp = Response
@@ -288,10 +289,10 @@ public class Territories {
 						.entity(new NoDataFound(
 								"This Territory Id does not exist")
 								.getJsonString()).build();
-		} catch (NotAuthorizedException na) {
+		}   catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to deassociate User")
+					.entity("{\"Message\":" + "\"You are not authorized to get Deassociate Users.\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} catch (IOException e) {
 			if (resp == null) {

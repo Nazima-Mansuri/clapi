@@ -51,8 +51,42 @@ public class GroupContents {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get division").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get group meeting contents \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (Exception e) {
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+    /***
+     *  Produces List of Group Contents By Specific Agenda
+     *
+     * @param agendaId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("{agendaId}")
+    public Response groupContents(@PathParam("agendaId") int agendaId , @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(Content
+                            .getGroupContentByAgenda(agendaId,(LoggedInUser) crc
+                                    .getProperty("userObject")) )).build();
+
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group content\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
 
         catch (Exception e) {
@@ -73,7 +107,6 @@ public class GroupContents {
      * @param contentDesc
      * @param contentType
      * @param divId
-     * @param contentSeq
      * @param agendaId
      * @param crc
      * @return
@@ -88,7 +121,6 @@ public class GroupContents {
             @FormDataParam("contentDesc") String contentDesc,
             @FormDataParam("contentType") String contentType,
             @FormDataParam("divid") int divId,
-            @FormDataParam("contentSeq") int contentSeq,
             @FormDataParam("agendaId") int agendaId,
             @Context ContainerRequestContext crc) {
 
@@ -109,7 +141,7 @@ public class GroupContents {
             }
 
             int contentId = Content.addGroupContent(contentName, contentDesc, contentType,
-                    divId,uploadFilePath,contentSeq,agendaId,(LoggedInUser) crc.getProperty("userObject"));
+                    divId,uploadFilePath,agendaId,(LoggedInUser) crc.getProperty("userObject"));
 
             if (contentId != 0)
                 resp = Response.ok("{\"id\":" + contentId + "}").build();
@@ -121,9 +153,10 @@ public class GroupContents {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create product").build();
-        } catch (IOException e) {
+                    .entity("{\"Message\":" + "\"You are not authorized to add group meeting content\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
@@ -156,8 +189,8 @@ public class GroupContents {
             resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create division")
+                    .entity("{\"Message\":" + "\"You are not authorized to add Content from Existing content \"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             if (resp == null) {
@@ -224,8 +257,9 @@ public class GroupContents {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to create product").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to update group meeting content\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();

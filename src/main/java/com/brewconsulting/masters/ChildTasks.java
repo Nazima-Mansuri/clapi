@@ -47,9 +47,10 @@ public class ChildTasks {
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meeting Tasks").build();
-        } catch (Exception e) {
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Tasks\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }  catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -85,9 +86,10 @@ public class ChildTasks {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meeting Task").build();
-        } catch (Exception e) {
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Task\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }  catch (Exception e) {
 
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -123,9 +125,10 @@ public class ChildTasks {
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Cycle Meeting Task").build();
-        } catch (IOException e) {
+                    .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Task\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }  catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
@@ -158,10 +161,10 @@ public class ChildTasks {
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Cycle Meeting Task")
+                    .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Task\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }  catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -199,8 +202,8 @@ public class ChildTasks {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Cycle Meeting Task")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Task\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
             resp = Response

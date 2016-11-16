@@ -49,10 +49,9 @@ public class CycleMeetingGroups {
                             .getMeetingByDivisionId(id, ((LoggedInUser) crc
                                     .getProperty("userObject"))))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response
-                    .status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle meeting group ")
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group Meetings\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -82,10 +81,9 @@ public class CycleMeetingGroups {
                             .getGroupById(id, ((LoggedInUser) crc
                                     .getProperty("userObject"))))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response
-                    .status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Particular meeting")
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("{\"Message\":" + "\"You are not authorized to get particular Group meeting\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -121,8 +119,9 @@ public class CycleMeetingGroups {
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Group Meeting").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add Group meeting \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -156,8 +155,8 @@ public class CycleMeetingGroups {
             resp = Response.ok().build();
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update group meeting")
+                    .entity("{\"Message\":" + "\"You are not authorized to update group meeting\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (IOException e) {
@@ -198,8 +197,8 @@ public class CycleMeetingGroups {
 
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Meeting")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete group meeting\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (PSQLException ex) {

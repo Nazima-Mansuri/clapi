@@ -26,7 +26,7 @@ public class Role {
 		this.roleName = name;
 	}
 
-
+public static final int Role = 14;
 	/***
 	 *  Method used to give all roles from database.
 	 *
@@ -39,8 +39,8 @@ public class Role {
 		// TODO: check authorization of the user to see this data
 		int userRole = loggedInUser.roles.get(0).roleId;
 
-		if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-				Permissions.getAccessLevel(userRole))) {
+		if (Permissions.isAuthorised(userRole, Role).equals("Read") ||
+				Permissions.isAuthorised(userRole, Role).equals("Write")) {
 
 			String schemaName = loggedInUser.schemaName;
 

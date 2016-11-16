@@ -47,8 +47,9 @@ public class CycleMeetings {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meetings").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeetings\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
 
         catch (Exception e) {
@@ -72,8 +73,9 @@ public class CycleMeetings {
 
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meeting").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get particular Cyclemeeting\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
 
         catch (Exception e) {
@@ -110,8 +112,9 @@ public class CycleMeetings {
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Cycle Meeting").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -146,8 +149,8 @@ public class CycleMeetings {
             resp = Response.ok().build();
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Cycle Meeting")
+                    .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting \"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (IOException e) {
@@ -188,8 +191,8 @@ public class CycleMeetings {
 
         }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Cycle Meeting")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting \"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (PSQLException ex) {

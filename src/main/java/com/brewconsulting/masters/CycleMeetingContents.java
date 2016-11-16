@@ -61,6 +61,40 @@ public class CycleMeetingContents {
     }
 
     /***
+     *  Produces List of Group Contents By Specific Agenda
+     *
+     * @param agendaId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("{agendaId}")
+    public Response cyclemeetingContents(@PathParam("agendaId") int agendaId , @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(Content
+                            .getChildContentByAgenda(agendaId,(LoggedInUser) crc
+                                    .getProperty("userObject")) )).build();
+
+        } catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.UNAUTHORIZED)
+                    .header("content-type", MediaType.TEXT_PLAIN)
+                    .entity("You are not authorized to get division").build();
+        }
+
+        catch (Exception e) {
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+
+    /***
      *  Add New CycleMeeting Content
      *
      * @param fileInputStream
@@ -105,7 +139,7 @@ public class CycleMeetingContents {
             }
 
             int contentId = Content.addCycleMeetingContent(contentName, contentDesc, contentType,
-                    divId,uploadFilePath,contentSeq,agendaId,(LoggedInUser) crc.getProperty("userObject"));
+                    divId,uploadFilePath,agendaId,(LoggedInUser) crc.getProperty("userObject"));
 
             if (contentId != 0)
                 resp = Response.ok("{\"id\":" + contentId + "}").build();

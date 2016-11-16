@@ -78,6 +78,8 @@ public class Division {
     Division() {
 
     }
+    public static final int DIVISION = 2;
+
 
     /***
      * Method used to get all Divisions.
@@ -90,9 +92,10 @@ public class Division {
             throws Exception {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
+        System.out.println("User Role : " + userRole);
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,DIVISION).equals("Read") ||
+                Permissions.isAuthorised(userRole,DIVISION).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
 
@@ -168,8 +171,8 @@ public class Division {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,DIVISION).equals("Read") ||
+                Permissions.isAuthorised(userRole,DIVISION).equals("Write")) {
 
             Division division = null;
             // TODO check authorization
@@ -243,8 +246,7 @@ public class Division {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, DIVISION).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -317,8 +319,7 @@ public class Division {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, DIVISION).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -376,8 +377,7 @@ public class Division {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole,DIVISION).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

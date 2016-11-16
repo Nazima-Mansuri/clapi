@@ -47,8 +47,9 @@ public class ChildNotes {
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Cycle Meeting Notes").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Notes\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity(e.getMessage()).build();
             e.printStackTrace();
@@ -76,8 +77,9 @@ public class ChildNotes {
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to get Group Tasks").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Note\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (Exception e) {
             resp = Response.serverError().entity(e.getMessage()).build();
             e.printStackTrace();
@@ -112,8 +114,9 @@ public class ChildNotes {
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to Insert Cycle Meeting Note").build();
+                    .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Note\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         } catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
@@ -145,12 +148,12 @@ public class ChildNotes {
             Note.updateChildNote(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
-        } catch (NotAuthorizedException na) {
+        }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to update Cycle Meeting Note")
+                    .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Note\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }  catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -186,12 +189,12 @@ public class ChildNotes {
                 // 204(NO_CONTENT).
                 resp = Response.status(204).build();
 
-        } catch (NotAuthorizedException na) {
+        }catch (NotAuthorizedException na) {
             resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .header("content-type", MediaType.TEXT_PLAIN)
-                    .entity("You are not authorized to delete Cycle Meeting Note")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Note\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (PSQLException ex) {
+        }  catch (PSQLException ex) {
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")

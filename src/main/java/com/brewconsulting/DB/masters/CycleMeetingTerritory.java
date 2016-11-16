@@ -32,6 +32,9 @@ public class CycleMeetingTerritory {
     @JsonProperty("username")
     public String username;
 
+    @JsonProperty("fullname")
+    public String fullname;
+
     @JsonProperty("addLine1")
     public String addLine1;
 
@@ -50,6 +53,10 @@ public class CycleMeetingTerritory {
     @JsonProperty("phones")
     public String[] phones;
 
+    @JsonProperty("profileImage")
+    public String profileImage;
+
+    public static final int CycleMeetingTerritory=8;
     /***
      * Method used to give all cyclemeeting and territory details.
      *
@@ -63,8 +70,8 @@ public class CycleMeetingTerritory {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
 
@@ -76,10 +83,10 @@ public class CycleMeetingTerritory {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement(" SELECT c.id, cyclemeetingid, territoryid ,t.name ,u.username," +
+                            .prepareStatement(" SELECT c.id, cyclemeetingid, territoryid ,t.name ,u.username,u.firstname,u.lastname, " +
                                     " (uf.address).addLine1 addLine1,(uf.address).addLine2 addLine2," +
                                     " (uf.address).addLine3 addLine3,(uf.address).city city,(uf.address).state state," +
-                                    " (uf.address).phone phones" +
+                                    " (uf.address).phone phones , uf.profileimage " +
                                     " FROM " + schemaName + ".cyclemeetingterritories c " +
                                     " left join " + schemaName + ".territories t on c.territoryid = t.id" +
                                     " left join " + schemaName + ".userterritorymap t1 on territoryid = t1.terrid" +
@@ -96,15 +103,16 @@ public class CycleMeetingTerritory {
                         meetingTerritory.territoryId = result.getInt(3);
                         meetingTerritory.terrName = result.getString(4);
                         meetingTerritory.username = result.getString(5);
-                        meetingTerritory.addLine1 = result.getString(6);
-                        meetingTerritory.addLine2 = result.getString(7);
-                        meetingTerritory.addLine3 = result.getString(8);
-                        meetingTerritory.city = result.getString(9);
-                        meetingTerritory.state = result.getString(10);
-                        if (result.getArray(11) != null)
-                            meetingTerritory.phones = (String[]) result.getArray(11)
+                        meetingTerritory.fullname = result.getString(6) + " " + result.getString(7);
+                        meetingTerritory.addLine1 = result.getString(8);
+                        meetingTerritory.addLine2 = result.getString(9);
+                        meetingTerritory.addLine3 = result.getString(10);
+                        meetingTerritory.city = result.getString(11);
+                        meetingTerritory.state = result.getString(12);
+                        if (result.getArray(13) != null)
+                            meetingTerritory.phones = (String[]) result.getArray(13)
                                     .getArray();
-
+                        meetingTerritory.profileImage = result.getString(14);
                         cycleMeetingTerritories.add(meetingTerritory);
                     }
                 } else
@@ -144,8 +152,7 @@ public class CycleMeetingTerritory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole, Permissions.DIVISION,
-                Permissions.getAccessLevel(userRole))) {
+        if (Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

@@ -51,8 +51,9 @@ public class Divisions {
 
 		} catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get division").build();
+					.entity("{\"Message\":" + "\"You are not authorized to get Divisions\"}")
+					.type(MediaType.APPLICATION_JSON)
+					.build();
 		}
 
 		catch (Exception e) {
@@ -91,8 +92,9 @@ public class Divisions {
 
 		} catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to get division").build();
+					.entity("{\"Message\":" + "\"You are not authorized to get Division\"}")
+					.type(MediaType.APPLICATION_JSON)
+					.build();
 		} catch (Exception e) {
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
@@ -121,8 +123,8 @@ public class Divisions {
 			resp = Response.ok("{\"id\":" + divisionId + "}").build();
 		} catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to create division")
+					.entity("{\"Message\":" + "\"You are not authorized to create Division\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} catch (IOException e) {
 			if (resp == null) {
@@ -159,8 +161,8 @@ public class Divisions {
 			resp = Response.ok().build();
 		}catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to update division")
+					.entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} 
 		catch (IOException e) {
@@ -202,8 +204,8 @@ public class Divisions {
 
 		}catch (NotAuthorizedException na) {
 			resp = Response.status(Response.Status.UNAUTHORIZED)
-					.header("content-type", MediaType.TEXT_PLAIN)
-					.entity("You are not authorized to delete division")
+					.entity("{\"Message\":" + "\"You are not authorized to Delete Division\"}")
+					.type(MediaType.APPLICATION_JSON)
 					.build();
 		}
 		catch (PSQLException ex) {

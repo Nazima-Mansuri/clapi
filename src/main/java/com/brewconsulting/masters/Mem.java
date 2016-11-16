@@ -21,8 +21,8 @@ public class Mem {
 
     static String configEndpoint = "rollacache.wvhp0d.cfg.use1.cache.amazonaws.com";
     static Integer clusterPort = 11211;
-    static String node1 = "localhost";
-    static Integer port = 11211;
+//    static String node1 = "localhost";
+//    static Integer port = 11211;
     static MemcachedClient client = null;
 
       public static boolean getToken(String key,String value) throws IOException {
