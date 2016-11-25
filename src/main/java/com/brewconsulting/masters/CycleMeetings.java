@@ -46,7 +46,7 @@ public class CycleMeetings {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeetings\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -72,7 +72,7 @@ public class CycleMeetings {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get particular Cyclemeeting\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -111,7 +111,7 @@ public class CycleMeetings {
                         .entity(new NoDataFound("Unable to Insert Cycle Meeting")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -148,7 +148,7 @@ public class CycleMeetings {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         }catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -190,7 +190,7 @@ public class CycleMeetings {
                 resp = Response.status(204).build();
 
         }catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

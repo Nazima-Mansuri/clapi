@@ -53,7 +53,7 @@ public class Products {
                             .getAllProducts(divid,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get products \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -91,7 +91,7 @@ public class Products {
                 resp = Response.ok(mapper.writeValueAsString(product)).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -139,10 +139,8 @@ public class Products {
                         + fileFormDataContentDisposition.getFileName();
                 // This method is used to store image in AWS bucket.
                 uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-                System.out.println("IF : " + uploadFilePath);
             } else {
                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
-                System.out.println("ELSE : " + uploadFilePath);
 
             }
 
@@ -159,7 +157,7 @@ public class Products {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -209,7 +207,6 @@ public class Products {
 
             if(isUpdated)
             {
-                System.out.println("Update : " + isUpdated);
                 if (fileFormDataContentDisposition != null || fileFormDataContentDisposition.getName()!=null) {
                     fileName = System.currentTimeMillis() + "_"
                             + fileFormDataContentDisposition.getFileName();
@@ -234,7 +231,7 @@ public class Products {
             else
                 resp = Response.status(204).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -274,7 +271,7 @@ public class Products {
                 resp = Response.status(204).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

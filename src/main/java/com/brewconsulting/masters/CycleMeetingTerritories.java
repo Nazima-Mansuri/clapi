@@ -46,7 +46,7 @@ public class CycleMeetingTerritories {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cycle meeting Territories\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -78,7 +78,7 @@ public class CycleMeetingTerritories {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"Count\":" + count + "}").build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to create Cyclemeeting Territory\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

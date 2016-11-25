@@ -10,25 +10,10 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
-import com.brewconsulting.exceptions.RequiredDataMissing;
-import com.brewconsulting.login.Credentials;
 import com.brewconsulting.masters.Mem;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.*;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -38,7 +23,15 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.*;
+import java.util.*;
+import java.util.Date;
 
 public class User {
 
@@ -58,11 +51,11 @@ public class User {
     @JsonProperty("schemaName")
     public String schemaName;
 
-    @JsonView(UserViews.authView.class)
+    @JsonView({UserViews.authView.class, UserViews.deAssociateView.class})
     @JsonProperty("firstName")
     public String firstName;
 
-    @JsonView(UserViews.authView.class)
+    @JsonView({UserViews.authView.class, UserViews.deAssociateView.class})
     @JsonProperty("lastName")
     public String lastName;
 
@@ -139,8 +132,8 @@ public class User {
     public String designation;
 
     @JsonView(UserViews.profileView.class)
-    @JsonProperty("updatedName")
-    public String updatedName;
+    @JsonProperty("userDetails")
+    public ArrayList<UserDetail> userDetails;
 
     @JsonView({UserViews.profileView.class, UserViews.clientView.class})
     @JsonProperty("clientName")
@@ -699,25 +692,13 @@ public class User {
                     else
                         throw new SQLException("Create user failed. No ID obtained");
 
-                    // TODO: set up the phones string array
-//                    String[] phoneArr = new String[phones.size()];
-
-                    // Convert JsonArray into String Array
-                  /*  for (int i = 0; i < phones.size(); i++) {
-                        phoneArr[i] = phones.get(i);
-                        System.out.println("Phones : " + phones.get(i));
-                    }
-                    System.out.println("Phones : " + phones.get(0));*/
-//                    phones = "1236547890,7896541230,852235635";
                     phones = phones.replace('"', ' ');
                     phones = phones.replace('[', ' ');
                     phones = phones.replace(']', ' ');
                     phones = phones.replace('"', ' ');
                     phones = phones.replaceAll("^\\s+", "").replaceAll("\\s+$", "");
-                    System.out.println(phones);
                     String phoneArr[] = phones.split(",");
                     Array pharr = con.createArrayOf("text", phoneArr);
-                    System.out.println(pharr);
 
                     stmt = con.prepareStatement("insert into " + loggedInUser.schemaName + ".userProfile(userId,"
                             + "address, designation, empNumber, createBy, updateDate, updateBy,profileimage) values (?, "
@@ -798,11 +779,11 @@ public class User {
                     stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
                     stmt.setInt(4, loggedInUser.id);
                     stmt.executeUpdate();
-                    generateAndSendEmail(username, "testrolla@gmail.com", "Rolla@test", password);
+                    generateAndSendEmail(username, "testrolla@gmail.com", "Rolla@test",firstname,lastname,password);
                     con.commit();
                     return userid;
                 } else {
-                    return 0;
+                    throw new BadRequestException("Email Id is already Exist");
                 }
             }
             catch (Exception ex) {
@@ -850,7 +831,8 @@ public class User {
                 // TODO: we need to check the div. the div also needs to be passed
                 // as a parameter here. Territory active?
 
-                stmt = con.prepareStatement("select a.userid id, (a.address).city city, c.username username " + "from "
+                stmt = con.prepareStatement("select a.userid id, (a.address).city city, c.username username , c.firstname firstname ," +
+                        " c.lastname lastname " + "from "
                         + loggedInUser.schemaName + ".userProfile a left outer join " + loggedInUser.schemaName
                         + ".userTerritoryMap b " + " on (a.userId = b.userId) "
                         + " left join client1.userdivmap e on a.userid = e.userid,master.users c "
@@ -863,6 +845,8 @@ public class User {
                     user.id = result.getInt(1);
                     user.username = result.getString(3);
                     user.city = result.getString(2);
+                    user.firstName = result.getString(4);
+                    user.lastName = result.getString(5);
                     userList.add(user);
                 }
             } finally {
@@ -911,15 +895,19 @@ public class User {
                                 " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                                 " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
                                 " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
-                                " b.updateDate  udate,  b.updateBy uby,b.profileimage profileimage,(select a1.username from master.users a1," +
-                                " client1.userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename " +
+                                " b.updateDate  udate,  b.updateBy uby,b.profileimage profileimage, (b1.address).city updatecity ," +
+                                " (b1.address).state updatestate, (b1.address).phone updatephone ," +
+                                "(select a1.username from master.users a1," +
+                                " client1.userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename ,a1.firstname fname,a1.lastname lname " +
                                 " from master.users a left join " +
                                 loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
                                 " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
                                 loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
                                 " e.userid = a.id left join master.roles f on f.id = e.roleid " +
                                 " left join master.clients h on h.id = a.clientId " +
-                                "order by b.createDate DESC ");
+                                " left join "+loggedInUser.schemaName+".userprofile b1 on b1.userid = b.updateby " +
+                                " left join master.users a1 on a1.id = b1.updateby "+
+                                " order by b.createDate DESC ");
                 result = stmt.executeQuery();
                 while (result.next()) {
 
@@ -952,7 +940,8 @@ public class User {
                     user.updateDate = result.getDate("cdate");
                     user.updateBy = result.getInt("cby");
                     user.designation = result.getString("designation");
-                    user.updatedName = result.getString("updatename");
+                    user.userDetails = new ArrayList<>();
+                    user.userDetails.add(new UserDetail(result.getInt("uby") , result.getString("updatename") , result.getString("fname"),result.getString("lname"),result.getString("updatecity"),result.getString("updatestate"), (String[]) result.getArray("updatephone").getArray()));
                     user.profileImage = result.getString("profileimage");
                     userList.add(user);
                 }
@@ -1005,14 +994,20 @@ public class User {
                                     " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                                     " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
                                     " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
-                                    " b.updateDate  udate,  b.updateBy uby, b.profileimage profileimage ,(select a1.username from master.users a1," +
-                                    " client1.userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename " +
+                                    " b.updateDate  udate,  b.updateBy uby, b.profileimage profileimage , (b1.address).city updatecity," +
+                                    " (b1.address).state updatestate, (b1.address).phone updatephone , " +
+                                    " (select a1.username  " +
+                                    " from master.users a1," +
+                                    " "+loggedInUser.schemaName+".userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename ," +
+                                    " a1.firstname fname ,a1.lastname lname " +
                                     " from master.users a left join " +
                                     loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
                                     " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
                                     loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
                                     " e.userid = a.id left join master.roles f on f.id = e.roleid  " +
                                     " left join master.clients h on h.id = a.clientId " +
+                                    " left join "+loggedInUser.schemaName+".userprofile b1 on b1.userid = b.updateby " +
+                                    " left join master.users a1 on a1.id = b1.updateby "+
                                     " where c.divid = ? order by b.createDate DESC ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
@@ -1043,7 +1038,8 @@ public class User {
                         user.updateDate = result.getDate("cdate");
                         user.updateBy = result.getInt("cby");
                         user.designation = result.getString("designation");
-                        user.updatedName = result.getString("updatename");
+                        user.userDetails = new ArrayList<>();
+                        user.userDetails.add(new UserDetail(result.getInt("uby") , result.getString("updatename") ,result.getString("fname"),result.getString("lname"), result.getString("updatecity"),result.getString("updatestate"), (String[]) result.getArray("updatephone").getArray()));
                         user.profileImage = result.getString("profileimage");
                         userList.add(user);
                     }
@@ -1129,14 +1125,30 @@ public class User {
     }
 
 
-    /**
-     * Method allows to update user Details
+    /***
+     *  Method allows to update user details.
      *
+     * @param firstname
+     * @param lastname
+     * @param username
+     * @param clientId
+     * @param isActive
+     * @param addLine1
+     * @param addLine2
+     * @param addLine3
+     * @param city
+     * @param state
+     * @param phones
+     * @param designation
+     * @param empNumber
+     * @param profileImage
+     * @param roleid
+     * @param divid
+     * @param userid
+     * @param isPublic
      * @param loggedInUser
-     * @throws ClassNotFoundException
-     * @throws SQLException
-     * @throws RequiredDataMissing
-     * @throws NamingException
+     * @return
+     * @throws Exception
      */
     public static int updateUserDetails(String firstname, String lastname,String username,int clientId , boolean isActive,
                                          String addLine1, String addLine2, String addLine3, String city, String state,String phones,
@@ -1167,7 +1179,6 @@ public class User {
                 stmt.setInt(6, userid);
 
                 affectedRows = stmt.executeUpdate();
-                System.out.println(affectedRows);
 
                 if (affectedRows == 0)
                     throw new SQLException("Update user failed.");
@@ -1178,14 +1189,11 @@ public class User {
                     phones = phones.replace(']', ' ');
                     phones = phones.replace('"', ' ');
                     phones = phones.replaceAll("^\\s+", "").replaceAll("\\s+$", "");
-                    System.out.println(phones);
                     String phoneArr[] = phones.split(",");
                     Array pharr = con.createArrayOf("text", phoneArr);
-                    System.out.println(pharr);
-
 
                     stmt = con.prepareStatement("UPDATE " + loggedInUser.schemaName + ".userProfile SET"
-                            + " address = ROW(?,?,?,?,?,?), designation = ?, empNumber = ?, updateDate= ?, updateBy= ? where userid = ?");
+                            + " address = ROW(?,?,?,?,?,?), designation = ?, empNumber = ?, updateDate= ?, updateBy= ? , profileimage = ? where userid = ?");
 
                     System.out.println(stmt.toString());
 
@@ -1199,7 +1207,8 @@ public class User {
                     stmt.setString(8, empNumber);
                     stmt.setTimestamp(9, new Timestamp((new Date()).getTime()));
                     stmt.setInt(10, loggedInUser.id);
-                    stmt.setInt(11, userid);
+                    stmt.setString(11,profileImage);
+                    stmt.setInt(12, userid);
 
                     stmt.executeUpdate();
 
@@ -1217,9 +1226,7 @@ public class User {
                     if (result.next()) {
                         stmt.setInt(1, roleid);
                         stmt.setInt(2, userid);
-                        System.out.println("NEW ID : " + roleid);
                         if (result.getInt("roleid") != roleid) {
-                            System.out.println("OLD ID : " + result.getInt("roleid"));
                             stmt.executeUpdate();
 
                             if (isPublic) {
@@ -1241,7 +1248,6 @@ public class User {
                             stmt.setInt(5, loggedInUser.id);
 
                             affectedRows = stmt.executeUpdate();
-                            System.out.println(affectedRows);
 
 //                        throw new Exception(new NotAuthorizedException("You Must Login Again..."));
                         }
@@ -1324,19 +1330,21 @@ public class User {
     }
 
     /***
-     * Method used to send mail to user.
+     *  Method used to send Mail to User
      *
      * @param username
      * @param from
-     * @param password
-     * @param emailBody
+     * @param fromPassword
+     * @param firstname
+     * @param lastname
+     * @param newPassword
      * @return
      * @throws MessagingException
      * @throws SQLException
      * @throws NamingException
      * @throws ClassNotFoundException
      */
-    public static boolean generateAndSendEmail(String username, String from, String password, String emailBody) throws MessagingException, SQLException, NamingException, ClassNotFoundException {
+    public static boolean generateAndSendEmail(String username, String from, String fromPassword,String firstname,String lastname, String newPassword) throws MessagingException, SQLException, NamingException, ClassNotFoundException {
         Properties mailServerProperties;
         Session getMailSession;
         MimeMessage generateMailMessage;
@@ -1356,6 +1364,7 @@ public class User {
         generateMailMessage.setSubject("Rolla Password..");
 //        String emailBody = generateRandomString();
 //        System.out.println(generateRandomString());
+        String emailBody = "<h3> Hi "+firstname +" "+lastname+", </h3>"+" <h4> New Rolla account is registered with "+username+" </h4>"+"<h4> Please Use this password for first time login </h4>" + "<h3> Password : "+newPassword+" </h3>";
         generateMailMessage.setContent(emailBody, "text/html");
         System.out.println("Mail Session has been created successfully..");
 
@@ -1363,7 +1372,7 @@ public class User {
 //        System.out.println("\n\n 3rd ===> Get Session and Send mail");
         Transport transport = getMailSession.getTransport("smtp");
 
-        transport.connect("smtp.gmail.com", from, password);
+        transport.connect("smtp.gmail.com", from, fromPassword);
         if (transport.isConnected()) {
             transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
             transport.close();

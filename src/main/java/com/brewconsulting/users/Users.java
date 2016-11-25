@@ -50,7 +50,7 @@ public class Users {
                             (LoggedInUser) crc.getProperty("userObject"), id))).build();
         }
         catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to view other's profile\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -85,7 +85,7 @@ public class Users {
                             .getDeassociateUser(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Deassociate User\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -116,7 +116,7 @@ public class Users {
                             .getAllUsers((LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Users. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -148,7 +148,7 @@ public class Users {
                             .getAllUsersByDivId(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Users. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -178,7 +178,7 @@ public class Users {
                     mapper.writeValueAsString(Role.getAllRoles(
                             (LoggedInUser) crc.getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Roles\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -210,7 +210,7 @@ public class Users {
                             .getAllClients((LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Clients. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -248,7 +248,7 @@ public class Users {
                 resp = Response.status(204).build();
 
         }  catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Deactivate User \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -367,11 +367,18 @@ public class Users {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add User\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }
+        catch (BadRequestException b) {
+            resp = Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"Message\":" + "\"" + b.getMessage()  +"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
@@ -474,7 +481,7 @@ public class Users {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Update User Details\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

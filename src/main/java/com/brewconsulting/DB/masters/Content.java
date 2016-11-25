@@ -58,8 +58,8 @@ public class Content {
     @JsonProperty("contentId")
     public int contentId;
 
-    @JsonProperty("username")
-    public String username;
+    @JsonProperty("userDetails")
+    public ArrayList<UserDetail> userDetails;
 
     @JsonProperty("dayNo")
     public int dayNo;
@@ -80,12 +80,12 @@ public class Content {
      * Method to get all GroupContents for specific division and GroupMeetingId
      *
      * @param meetingId
-     * @param divid
+
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Content> getAllGroupContents(int meetingId, int divid, LoggedInUser loggedInUser) throws Exception {
+    public static List<Content> getAllGroupContents(int meetingId,int divId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if(Permissions.isAuthorised(userRole,Content).equals("Read") ||
                 Permissions.isAuthorised(userRole,Content).equals("Write"))
@@ -101,16 +101,19 @@ public class Content {
 
                     stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby," +
                             " c1.updateon, c1.updatedby , c1.contentid, c2.contentname, c2.contentdesc, c2.divid, c2.url , " +
-                            " c5.username , c3.dayNo " +
+                            " c5.username ,c5.firstname,c5.lastname,(c6.address).city city,(c6.address).state state, " +
+                            " (c6.address).phone phone, c3.dayNo " +
                             " FROM " + schemaName + ".groupsessioncontentinfo as c1 " +
                             " inner join " + schemaName + ".content as c2 on c2.id = c1.contentid " +
                             " inner join " + schemaName + ".groupagenda c3 on c3.id = c1.agendaid " +
                             " inner join " + schemaName + ".cyclemeetinggroup c4 on c4.id = c3.groupid " +
-                            " inner join master.users as c5 on c5.id = c1.createdby" +
-                            " where c4.division = c2.divid and c4.id = ? and c4.division = ?");
+                            " inner join master.users as c5 on c5.id = c1.createdby " +
+                            " inner join "+schemaName+".userprofile c6 on c6.userid = c1.createdby " +
+                            " where (c4.division = c2.divid OR c2.divid IS NULL ) AND c3.groupid = ? AND c4.division = ? " +
+                            " ORDER BY c1.contentseq");
 
                     stmt.setInt(1, meetingId);
-                    stmt.setInt(2, divid);
+                    stmt.setInt(2,divId);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         content = new Content();
@@ -127,8 +130,9 @@ public class Content {
                         content.contentDesc = result.getString(11);
                         content.divId = result.getInt(12);
                         content.url = result.getString(13);
-                        content.username = result.getString(14);
-                        content.dayNo = result.getInt(15);
+                        content.userDetails = new ArrayList<>();
+                        content.userDetails.add(new UserDetail(result.getInt(6),result.getString(14),result.getString(15),result.getString(16),result.getString(17),result.getString(18), (String[]) result.getArray(19).getArray()));
+                        content.dayNo = result.getInt(20);
                         contentList.add(content);
                     }
                 }
@@ -201,7 +205,11 @@ public class Content {
                 else
                     stmt.setString(2, null);
 
-                stmt.setInt(3, divId);
+                if(divId > 0)
+                    stmt.setInt(3, divId);
+                else
+                    stmt.setNull(3,0);
+
                 stmt.setString(4, url);
                 stmt.setInt(5, loggedInUser.id);
                 stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
@@ -221,13 +229,13 @@ public class Content {
 
                 ContentType typeContent = ContentType.valueOf(contentType);
 
-                stmt = con.prepareStatement("SELECT max(contentseq) from "+schemaName+".groupsessioncontent where agendaid = ? ");
+                stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from "+schemaName+".groupsessioncontent where agendaid = ? ");
                 stmt.setInt(1,agendaId);
                 resultSet = stmt.executeQuery();
                 if (resultSet.next())
                 {
-                    if(resultSet.getInt(1) > 0) {
-                        sequenceNo = resultSet.getInt(1);
+                    if(resultSet.getInt("sequenceNo") > 0) {
+                        sequenceNo = resultSet.getInt("sequenceNo");
                         sequenceNo++;
                     }
                     else {
@@ -299,13 +307,13 @@ public class Content {
                     contentArr[i] = node.withArray("contentId").get(i).asInt();
                     ContentType typeContent = ContentType.valueOf(node.get("contentType").asText());
 
-                    stmt = con.prepareStatement("SELECT max(contentseq) from "+schemaName+".groupsessioncontent where agendaid = ? ");
+                    stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from "+schemaName+".groupsessioncontent where agendaid = ? ");
                     stmt.setInt(1,node.get("agendaId").asInt());
                     resultSet = stmt.executeQuery();
                     if (resultSet.next())
                     {
-                        if(resultSet.getInt(1) > 0) {
-                            sequenceNo = resultSet.getInt(1);
+                        if(resultSet.getInt("sequenceNo") > 0) {
+                            sequenceNo = resultSet.getInt("sequenceNo");
                             sequenceNo++;
                         }
                         else {
@@ -320,20 +328,29 @@ public class Content {
                     }
                     System.out.println("Sequence No . : " + sequenceNo);
 
-                    stmt = con.prepareStatement("INSERT INTO " + schemaName + ".groupSessionContentInfo" +
-                            " (agendaid,contenttype,contentseq,createdon,createdby , updateon, updatedby,contentid) " +
-                            " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+                    stmt = con.prepareStatement("SELECT contentid from "+ schemaName + ".groupSessionContentInfo " +
+                            " WHERE contentid = ? AND agendaid = ? ");
+                    stmt.setInt(1,contentArr[i]);
+                    stmt.setInt(2,node.get("agendaId").asInt());
+                    resultSet = stmt.executeQuery();
 
-                    stmt.setInt(1, node.get("agendaId").asInt());
-                    stmt.setString(2, typeContent.name());
-                    stmt.setInt(3, 1);
-                    stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(5, loggedInUser.id);
-                    stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(7, loggedInUser.id);
-                    stmt.setInt(8, contentArr[i]);
-                    affectedRow = stmt.executeUpdate();
-                    affectedRow++;
+                    if(!resultSet.next()) {
+                        stmt = con.prepareStatement("INSERT INTO " + schemaName + ".groupSessionContentInfo" +
+                                " (agendaid,contenttype,contentseq,createdon,createdby , updateon, updatedby,contentid) " +
+                                " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+
+                        stmt.setInt(1, node.get("agendaId").asInt());
+                        stmt.setString(2, typeContent.name());
+                        stmt.setInt(3, sequenceNo);
+                        System.out.println("No . : " + sequenceNo);
+                        stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(5, loggedInUser.id);
+                        stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(7, loggedInUser.id);
+                        stmt.setInt(8, contentArr[i]);
+                        affectedRow = stmt.executeUpdate();
+                        affectedRow++;
+                    }
                 }
                 con.commit();
                 return affectedRow;
@@ -351,7 +368,99 @@ public class Content {
         }
     }
 
+    /***
+     *  Method used to update Sequence Number of Group Content
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int updateGroupSeqNumber(JsonNode node , LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole , Content).equals("Write"))
+        {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result = 0;
 
+            try {
+                con.setAutoCommit(false);
+
+                for (int i = 0; i < node.withArray("contentIDs").size(); i++)
+                {
+                    stmt = con.prepareStatement("UPDATE "+schemaName+".groupsessioncontent SET contentseq = ? WHERE id = ? AND agendaid = ?");
+                    stmt.setInt(1,i+1);
+                    stmt.setInt(2,node.withArray("contentIDs").get(i).asInt());
+                    stmt.setInt(3,node.get("agendaSessionId").asInt());
+                    result = stmt.executeUpdate();
+                    result++;
+                }
+                con.commit();
+                return result+1;
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     * Method used to Group Content
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int deleteGroupContent(int id, LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to Delete data
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, Content).equals("Write")) {
+
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result;
+
+            try {
+                if (con != null) {
+                    stmt = con.prepareStatement("DELETE FROM " + schemaName
+                            + ".groupSessionContent WHERE id = ?");
+                    stmt.setInt(1, id);
+                    result = stmt.executeUpdate();
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
+
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return result;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+   // ========================================================================================
+//      Methods of Cyclemeeting Contents
     /***
      * Method used to get all Cycle Meeting Content with spacific division and MeetingId
      *
@@ -375,15 +484,18 @@ public class Content {
                 if (con != null) {
 
                     stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby," +
-                            " c1.updateon, c1.updatedby , c1.contentid, c2.contentname, c2.contentdesc, c2.divid, c2.url, c6.username " +
-                            " c3.meetingdate " +
+                            " c1.updateon, c1.updatedby , c1.contentid, c2.contentname, c2.contentdesc, c2.divid, c2.url, c6.username , " +
+                            " c6.firstname,c6.lastname,(c7.address).city city,(c7.address).state state,(c7.address).phone phone,c3.meetingdate " +
                             " FROM " + schemaName + ".cyclemeetingsessioncontentinfo as c1 " +
                             " inner join " + schemaName + ".content  as c2 on c2.id = c1.contentid " +
                             " inner join " + schemaName + ".cyclemeetingagenda as c3 on c3.id = c1.agendaid " +
                             " inner join " + schemaName + ".cyclemeeting as c4 on c4.id = c3.cyclemeetingid " +
                             " inner join " + schemaName + ".cyclemeetinggroup as c5 on c5.id = c4.groupid " +
-                            " inner join master.users as c6 on c6.id = c1.createdby" +
-                            " where c2.divid = c5.division and c3.cyclemeetingid = ?  and c2.divid = ?");
+                            " inner join master.users as c6 on c6.id = c1.createdby " +
+                            " inner join "+schemaName+".userprofile c7 on c7.userid = c1.createdby " +
+                            " where (c2.divid = c5.division OR c2.divid IS NULL) and c3.cyclemeetingid = ?  and c5.division = ?" +
+                            " ORDER BY c1.contentseq ");
+
                     stmt.setInt(1, meetingId);
                     stmt.setInt(2, divid);
                     result = stmt.executeQuery();
@@ -402,8 +514,9 @@ public class Content {
                         content.contentDesc = result.getString(11);
                         content.divId = result.getInt(12);
                         content.url = result.getString(13);
-                        content.username = result.getString(14);
-                        content.meetingDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(15).getTime())));
+                        content.userDetails = new ArrayList<>();
+                        content.userDetails.add(new UserDetail(result.getInt(6),result.getString(14),result.getString(15),result.getString(16),result.getString(17),result.getString(18), (String[]) result.getArray(19).getArray()));
+                        content.meetingDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(20).getTime())));
                         contentList.add(content);
                     }
                 }
@@ -475,7 +588,10 @@ public class Content {
                 else
                     stmt.setString(2, null);
 
-                stmt.setInt(3, divId);
+                if(divId > 0)
+                    stmt.setInt(3, divId);
+                else
+                    stmt.setNull(3,0);
                 stmt.setString(4, url);
                 stmt.setInt(5, loggedInUser.id);
                 stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
@@ -495,13 +611,13 @@ public class Content {
 
                 ContentType typeContent = ContentType.valueOf(contentType);
 
-                stmt = con.prepareStatement("SELECT max(contentseq) from "+schemaName+".cyclemeetingsessioncontent where agendaid = ? ");
+                stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from "+schemaName+".cyclemeetingsessioncontent where agendaid = ? ");
                 stmt.setInt(1,agendaId);
                 resultSet = stmt.executeQuery();
                 if (resultSet.next())
                 {
-                    if(resultSet.getInt(1) > 0) {
-                        sequenceNo = resultSet.getInt(1);
+                    if(resultSet.getInt("sequenceNo") > 0) {
+                        sequenceNo = resultSet.getInt("sequenceNo");
                         sequenceNo++;
                     }
                     else {
@@ -573,43 +689,47 @@ public class Content {
                 for (int i = 0; i < node.withArray("contentId").size(); i++) {
                     contentArr[i] = node.withArray("contentId").get(i).asInt();
                     ContentType typeContent = ContentType.valueOf(node.get("contentType").asText());
-
-                    stmt = con.prepareStatement("SELECT max(contentseq) from "+schemaName+".cyclemeetingsessioncontent where agendaid = ? ");
-                    stmt.setInt(1,node.get("agendaId").asInt());
+                    stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".cyclemeetingsessioncontent where agendaid = ? ");
+                    stmt.setInt(1, node.get("agendaId").asInt());
                     resultSet = stmt.executeQuery();
-                    if (resultSet.next())
-                    {
-                        if(resultSet.getInt(1) > 0) {
-                            sequenceNo = resultSet.getInt(1);
+                    if (resultSet.next()) {
+                        if (resultSet.getInt("sequenceNo") > 0) {
+                            sequenceNo = resultSet.getInt("sequenceNo");
                             sequenceNo++;
-                        }
-                        else {
+                        } else {
                             sequenceNo = 0;
                             sequenceNo++;
                         }
 
-                    }
-                    else {
+                    } else {
                         sequenceNo = 0;
                         sequenceNo++;
                     }
+
                     System.out.println("sequenceNo : " + sequenceNo);
 
-                    stmt = con.prepareStatement("INSERT INTO " + schemaName + ".cyclemeetingsessioncontentinfo" +
-                            " (agendaid,contenttype,contentseq,createdon,createdby , updateon, updatedby,contentid) " +
-                            " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+                    stmt = con.prepareStatement("SELECT contentid from " + schemaName + ".cyclemeetingsessioncontentinfo " +
+                            " WHERE contentid = ? AND agendaid = ? ");
+                    stmt.setInt(1, contentArr[i]);
+                    stmt.setInt(2, node.get("agendaId").asInt());
+                    resultSet = stmt.executeQuery();
+                    if (!resultSet.next()) {
+                        stmt = con.prepareStatement("INSERT INTO " + schemaName + ".cyclemeetingsessioncontentinfo" +
+                                " (agendaid,contenttype,contentseq,createdon,createdby , updateon, updatedby,contentid) " +
+                                " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?)");
 
-                    stmt.setInt(1, node.get("agendaId").asInt());
-                    stmt.setString(2, typeContent.name());
-                    stmt.setInt(3, sequenceNo);
-                    stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(5, loggedInUser.id);
-                    stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(7, loggedInUser.id);
-                    stmt.setInt(8, contentArr[i]);
-                    affectedRow = stmt.executeUpdate();
-                    affectedRow++;
+                        stmt.setInt(1, node.get("agendaId").asInt());
+                        stmt.setString(2, typeContent.name());
+                        stmt.setInt(3, sequenceNo);
+                        stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(5, loggedInUser.id);
+                        stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(7, loggedInUser.id);
+                        stmt.setInt(8, contentArr[i]);
+                        affectedRow = stmt.executeUpdate();
+                        affectedRow++;
 
+                    }
                 }
                 con.commit();
                 return affectedRow;
@@ -627,27 +747,18 @@ public class Content {
         }
     }
 
-    /**
-     * @param contentName
-     * @param contentDesc
-     * @param contentType
-     * @param divId
-     * @param url
-     * @param contentSeq
-     * @param agendaId
+    /***
+     * Method used to update Sequence Number of Cyclemeeting Content
+     *
+     * @param node
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int updateGroupContent(String contentName, String contentDesc, String contentType, int divId,
-                                         String url, int contentSeq, int agendaId, LoggedInUser loggedInUser, int id)
-            throws Exception {
-        // TODO: check authorization of the user to Insert data
-
+    public static int updateMeetingSeqNumber(JsonNode node , LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-
-        if (Permissions.isAuthorised(userRole, Content).equals("Write")) {
-
+        if(Permissions.isAuthorised(userRole , Content).equals("Write"))
+        {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
@@ -656,81 +767,17 @@ public class Content {
             try {
                 con.setAutoCommit(false);
 
-                stmt = con
-                        .prepareStatement("UPDATE "
-                                + schemaName
-                                + ".content SET contentName = ?,contentDesc = ?,divId = ?,url=?"
-                                + " WHERE id = ?");
-
-                stmt.setString(1, contentName);
-                if (contentDesc != null)
-                    stmt.setString(2, contentDesc);
-                else
-                    stmt.setString(2, null);
-
-                stmt.setInt(3, divId);
-                stmt.setString(4, url);
-                stmt.setInt(5, id);
-                result = stmt.executeUpdate();
-
-                if (result == 0)
-                    throw new SQLException("update content Failed.");
-
-                ResultSet generatedKeys = stmt.getGeneratedKeys();
-                int contentId;
-                if (generatedKeys.next())
-                    // It gives last inserted Id in divisionId
-                    contentId = generatedKeys.getInt(1);
-                else
-                    throw new SQLException("No ID obtained");
-
-                ContentType typeContent = ContentType.valueOf(contentType);
-                stmt = con
-                        .prepareStatement("UPDATE " + schemaName + ".groupsessioncontent" +
-                                " SET agendaid=?, contenttype=?, contentseq=?," +
-                                " updateon=?, updatedby=?" +
-                                " WHERE id=?"
-                        );
-
-                stmt.setInt(1, agendaId);
-                stmt.setString(2, typeContent.name());
-                stmt.setInt(3, contentSeq);
-                stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-                stmt.setInt(5, loggedInUser.id);
-                stmt.setInt(6, id);
-
-                result = stmt.executeUpdate();
-
-                if (result == 0)
-                    throw new SQLException("update content Failed.");
-
-                generatedKeys = stmt.getGeneratedKeys();
-                int groupContentId;
-                if (generatedKeys.next())
-                    // It gives last inserted Id in divisionId
-                    groupContentId = generatedKeys.getInt(1);
-                else
-                    throw new SQLException("No ID obtained");
-
-                if (typeContent.equals("INFO")) {
-
-                    stmt = con
-                            .prepareStatement("UPDATE " + schemaName + ".groupsessioncontent" +
-                                    " SET agendaid=?, contenttype=?, contentseq=?," +
-                                    " updateon=?, updatedby=?,contentid=?" +
-                                    " WHERE id=?"
-                            );
-                    stmt.setInt(1, agendaId);
-                    stmt.setString(2, typeContent.name());
-                    stmt.setInt(3, contentSeq);
-                    stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(5, loggedInUser.id);
-                    stmt.setInt(6, contentId);
-                    stmt.setInt(7, id);
+                for (int i = 0; i < node.withArray("contentIDs").size(); i++)
+                {
+                    stmt = con.prepareStatement("UPDATE "+schemaName+".cyclemeetingsessioncontent SET contentseq = ? WHERE id = ? AND agendaid = ?");
+                    stmt.setInt(1,i+1);
+                    stmt.setInt(2,node.withArray("contentIDs").get(i).asInt());
+                    stmt.setInt(3,node.get("agendaSessionId").asInt());
+                    result = stmt.executeUpdate();
+                    result++;
                 }
-
                 con.commit();
-                return result;
+                return result+1;
             } catch (Exception ex) {
                 if (con != null)
                     con.rollback();
@@ -746,14 +793,14 @@ public class Content {
     }
 
     /***
-     * Method used to Group Content
+     *  Method used to delete Cyclemeeting Content
      *
      * @param id
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int deleteGroupContent(int id, LoggedInUser loggedInUser)
+    public static int deleteCycleMeetingContent(int id, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to Delete data
 
@@ -769,14 +816,9 @@ public class Content {
             try {
                 if (con != null) {
                     stmt = con.prepareStatement("DELETE FROM " + schemaName
-                            + ".content WHERE id = ?");
-
+                            + ".cyclemeetingsessioncontent WHERE id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeUpdate();
-
-                    stmt = con.prepareStatement("DELETE FROM " + schemaName
-                            + ".groupSessionContentInfo WHERE contentid = ?");
-                    stmt.setInt(1, id);
                 } else
                     throw new Exception("DB connection is null");
             } finally {
@@ -822,7 +864,7 @@ public class Content {
                             " FROM "+schemaName+".groupsessioncontentinfo as c1 " +
                             " inner join "+schemaName+".content as c2 on c2.id = c1.contentid " +
                             " inner join "+schemaName+".groupagenda as c3 on c3.id = c1.agendaid " +
-                            " where  agendaid = ?");
+                            " where  agendaid = ? ORDER BY c1.contentseq ASC");
                     stmt.setInt(1,agendaId);
                     result = stmt.executeQuery();
                     while (result.next())
@@ -895,7 +937,7 @@ public class Content {
                             " FROM " + schemaName + ".cyclemeetingsessioncontentinfo as c1 " +
                             " inner join client1.content as c2 on c2.id = c1.contentid " +
                             " inner join client1.cyclemeetingagenda as c3 on c3.id = c1.agendaid " +
-                            " where  agendaid = ?");
+                            " where  agendaid = ? ORDER BY c1.contentseq ASC");
                     stmt.setInt(1, agendaId);
                     result = stmt.executeQuery();
                     while (result.next()) {

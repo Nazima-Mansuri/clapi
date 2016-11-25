@@ -47,7 +47,7 @@ public class GroupNotes {
                             .getAllGroupNotes(id,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get group notes\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -85,7 +85,7 @@ public class GroupNotes {
             }
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get particular group note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -123,7 +123,7 @@ public class GroupNotes {
                         .entity(new NoDataFound("Unable to Insert Group Note")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add group note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -158,7 +158,7 @@ public class GroupNotes {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update group note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -199,7 +199,7 @@ public class GroupNotes {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete group note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

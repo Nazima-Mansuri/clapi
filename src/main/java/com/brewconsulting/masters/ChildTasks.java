@@ -46,7 +46,7 @@ public class ChildTasks {
                             .getCycleMeetingTasks(id,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Tasks\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -85,7 +85,7 @@ public class ChildTasks {
             }
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -124,7 +124,7 @@ public class ChildTasks {
                         .entity(new NoDataFound("Unable to Insert Cycle Meeting Task")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -160,7 +160,7 @@ public class ChildTasks {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -201,7 +201,7 @@ public class ChildTasks {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

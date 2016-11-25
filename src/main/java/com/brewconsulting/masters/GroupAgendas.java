@@ -43,7 +43,7 @@ public class GroupAgendas {
                             .getAgendaByDay(groupId, dayNo, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Group meeting agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -75,7 +75,7 @@ public class GroupAgendas {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + id + "}").build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add group meeting agenda \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -121,11 +121,18 @@ public class GroupAgendas {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update group meeting agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }
+        catch (BadRequestException b) {
+            resp = Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"Message\":" + "\"Agenda already Exist with same Time. \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -162,7 +169,7 @@ public class GroupAgendas {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete group agenda \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

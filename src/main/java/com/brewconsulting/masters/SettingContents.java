@@ -46,7 +46,40 @@ public class SettingContents {
                             .getAllContent(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Contents\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+    /***
+     *  Produces content for specific division with null division And
+     *  these contents not exist as specific agenda content.
+     *
+     * @param divId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Path("{divId}/{agendaId}")
+    @Secured
+    public Response getcontents(@PathParam("divId") int divId,@PathParam("agendaId") int agendaId,@Context ContainerRequestContext crc) {
+        Response resp = null;
+
+        try {
+            resp = Response.ok(
+                    mapper.writeValueAsString(SettingContent
+                            .getDivisionSpecificContent(divId,agendaId,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        }   catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -105,7 +138,7 @@ public class SettingContents {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Contents \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -171,7 +204,7 @@ public class SettingContents {
             resp = Response.ok().build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -213,7 +246,7 @@ public class SettingContents {
                 resp = Response.status(204).build();
 
         }   catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

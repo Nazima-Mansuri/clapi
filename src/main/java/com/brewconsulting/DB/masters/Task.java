@@ -82,8 +82,9 @@ public class Task {
     @JsonProperty("updateBy")
     public int updateBy;
 
-    @JsonProperty("username")
-    public String username;
+    @JsonProperty("userDetails")
+    public ArrayList<UserDetail> userDetails;
+
 
     public static final int Task = 13;
 
@@ -125,8 +126,13 @@ public class Task {
                             .prepareStatement(" SELECT g.id,groupid,(task).title title,(task).description description , " +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
                                     " (task).assignedTo assignedTo , (task).assignedBy assignedBy, g.createdon ," +
-                                    " g.createdby, g.updateon, g.updateby, u.username FROM " +
-                                    schemaName + ".grouptasks g , master.users u where u.id = (task).assignedto AND  groupid = ? ORDER BY id ASC");
+                                    " g.createdby, g.updateon, g.updateby, u.username,u.firstname,u.lastname," +
+                                    " (uf.address).city city, (uf.address).state state," +
+                                    " (uf.address).phone phone FROM " +
+                                    schemaName + ".grouptasks g " +
+                                    " left join master.users u on u.id = (task).assignedto "+
+                                    " left join "+schemaName+".userprofile uf on uf.userid = (g.task).assignedto "+
+                                    " where  groupid = ? ORDER BY g.createdon DESC");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     while (result.next()) {
@@ -144,7 +150,8 @@ public class Task {
                         task.createBy = result.getInt(11);
                         task.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         task.updateBy = result.getInt(13);
-                        task.username = result.getString(14);
+                        task.userDetails = new ArrayList<>();
+                        task.userDetails.add(new UserDetail(result.getInt(8),result.getString(14),result.getString(15),result.getString(16),result.getString(17),result.getString(18), (String[]) result.getArray(19).getArray()));
 
                         groupTasks.add(task);
                     }
@@ -194,8 +201,12 @@ public class Task {
                             .prepareStatement("SELECT g.id,groupid,(task).title title,(task).description description ," +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
                                     " (task).assignedTo assignedTo , (task).assignedBy assignedBy, g.createdon ," +
-                                    " g.createdby, g.updateon, g.updateby , u.username FROM " +
-                                    schemaName + ".grouptasks g, master.users u  where u.id = assignedto AND id = ? ");
+                                    " g.createdby, g.updateon, g.updateby , u.username ,u.firstname,u.lastname,(uf.address).city city," +
+                                    " (uf.address).state state, (uf.address).phone phone FROM " +
+                                      schemaName + ".grouptasks g " +
+                                    " left join master.users u on u.id = (task).assignedto " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = (task).assignedto " +
+                                    " where g.id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -213,8 +224,8 @@ public class Task {
                         groupTask.createBy = result.getInt(11);
                         groupTask.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         groupTask.updateBy = result.getInt(13);
-                        groupTask.username = result.getString(14);
-
+                        groupTask.userDetails = new ArrayList<>();
+                        groupTask.userDetails.add(new UserDetail(result.getInt(8),result.getString(14),result.getString(15),result.getString(16),result.getString(17),result.getString(18), (String[]) result.getArray(19).getArray()));
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -466,8 +477,11 @@ public class Task {
                             .prepareStatement(" SELECT c.id,cycleMeetingId,(task).title title,(task).description description , " +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
                                     " (task).assignedTo assignedTo , (task).assignedBy assignedBy, c.createdon ," +
-                                    " c.createdby, c.updateon, c.updateby , u.username FROM " +
-                                    schemaName + ".cycleMeetingTasks c , master.users u WHERE u.id = assignedto AND cycleMeetingId = ? ORDER BY id ASC");
+                                    " c.createdby, c.updateon, c.updateby , u.username ,u.firstname,u.lastname," +
+                                    " (uf.address).city city, (uf.address).state state," +
+                                    " (uf.address).phone phone FROM " +
+                                    schemaName + ".cycleMeetingTasks c , master.users u , "+schemaName+".userprofile uf " +
+                                    " WHERE u.id = (task).assignedto AND uf.userid = (task).assignedto AND cycleMeetingId = ? ORDER BY c.createdon DESC ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     while (result.next()) {
@@ -485,7 +499,8 @@ public class Task {
                         task.createBy = result.getInt(11);
                         task.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         task.updateBy = result.getInt(13);
-                        task.username = result.getString(14);
+                        task.userDetails = new ArrayList<>();
+                        task.userDetails.add(new UserDetail(result.getInt(8),result.getString(14),result.getString(15),result.getString(16),result.getString(17),result.getString(18), (String[]) result.getArray(19).getArray()));
 
                         groupTasks.add(task);
                     }
@@ -536,9 +551,11 @@ public class Task {
                     stmt = con
                             .prepareStatement("SELECT c.id,cycleMeetingId,(task).title title,(task).description description ," +
                                     " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
-                                    " (task).assignedTo assignedTo , (task).assignedBy assignedBy, c.createdon ," +
-                                    " c.createdby, c.updateon, c.updateby FROM " +
-                                    schemaName + ".cycleMeetingTasks c , master.users u where u.id = assignedto AND id = ? ");
+                                    " (task).assignedto assignedto , (task).assignedby assignedby, c.createdon ," +
+                                    " c.createdby, c.updateon, c.updateby , u.username,u.firstname,u.lastname, (uf.address).city city," +
+                                    " (uf.address).state state, (uf.address).phone phone FROM " +
+                                    schemaName + ".cycleMeetingTasks c , master.users u , "+schemaName+".userprofile uf " +
+                                    " where u.id = (task).assignedto AND uf.userid = (task).assignedto AND c.id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -556,7 +573,9 @@ public class Task {
                         groupTask.createBy = result.getInt(11);
                         groupTask.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
                         groupTask.updateBy = result.getInt(13);
-                        groupTask.username = result.getString(14);
+                        groupTask.userDetails = new ArrayList<>();
+                        groupTask.userDetails.add(new UserDetail(result.getInt(8),result.getString(14),result.getString(15),result.getString(16),result.getString(17),result.getString(18), (String[]) result.getArray(19).getArray()));
+
 
                     }
                 } else

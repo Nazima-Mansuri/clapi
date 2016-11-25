@@ -103,7 +103,14 @@ public class CycleMeetingTerritory {
                         meetingTerritory.territoryId = result.getInt(3);
                         meetingTerritory.terrName = result.getString(4);
                         meetingTerritory.username = result.getString(5);
-                        meetingTerritory.fullname = result.getString(6) + " " + result.getString(7);
+                        if(result.getString(6) != null && result.getString(7) != null)
+                            meetingTerritory.fullname = result.getString(6) + " " + result.getString(7);
+                        else if(result.getString(6) != null && result.getString(7) == null)
+                            meetingTerritory.fullname = result.getString(6) + " ";
+                        else if(result.getString(6) == null && result.getString(7) != null)
+                            meetingTerritory.fullname = result.getString(7);
+                        else
+                            meetingTerritory.fullname = "";
                         meetingTerritory.addLine1 = result.getString(8);
                         meetingTerritory.addLine2 = result.getString(9);
                         meetingTerritory.addLine3 = result.getString(10);

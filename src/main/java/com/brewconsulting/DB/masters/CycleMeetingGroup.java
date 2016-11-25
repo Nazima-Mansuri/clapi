@@ -54,11 +54,17 @@ public class CycleMeetingGroup {
     @JsonProperty("updatedBy")
     public int updatedBy;
 
-    @JsonProperty("conductedBy")
-    public String conductedBy;
-
     @JsonProperty("divName")
     public String divName;
+
+    @JsonProperty("userDetails")
+    public ArrayList<UserDetail> userDetails;
+
+    @JsonProperty("profileImage")
+    public String profileImage;
+
+    @JsonProperty("status")
+    public String status;
 
     @JsonProperty("children")
     public ArrayList<CycleMeeting> cycleMeetings;
@@ -95,15 +101,22 @@ public class CycleMeetingGroup {
                     stmt = con
                             .prepareStatement("SELECT c1.id, c1.division, c1.noofdays, c1.leadorganiser, " +
                                     " c1.keywords, c1.title, c1.description, " +
-                                    " c1.createdon, c1.createdby, c1.updateon, c1.updatedby, c3.username, " +
+                                    " c1.createdon, c1.createdby, c1.updateon, c1.updatedby, c3.username,c3.firstname,c3.lastname,  " +
+                                    " (c5.address).city city,(c5.address).state state , (c5.address).phone phone, c5.profileimage , " +
                                     " c2.id, c2.title, c2.groupid, c2.venue, c2.startdate, c2.enddate, " +
-                                    "c2.organiser, c2.createdon, " +
-                                    " c2.createdby, c2.updatedon, c2.updatedby, c4.username " +
+                                    " c2.organiser, c2.createdon, " +
+                                    " c2.createdby, c2.updatedon, c2.updatedby, c4.username,c4.firstname,c4.lastname,(c7.address).city city," +
+                                    " (c7.address).state state , (c7.address).phone phone ,count(c6.cyclemeetingid) "+
                                     " FROM "+schemaName+".cyclemeetinggroup c1 " +
                                     " left join "+schemaName+".cyclemeeting c2 on c1.id = c2.groupid  " +
                                     " left join master.users c3 on c1.leadorganiser = c3.id  " +
                                     " left join master.users c4 on c2.organiser = c4.id" +
-                                    " where c1.division = ? ORDER BY c1.createdon DESC ");
+                                    " left join "+schemaName+".userprofile c5 on c5.userid = c1.leadorganiser" +
+                                    " left join "+schemaName+".userprofile c7 on c7.userid = c2.organiser" +
+                                    " left join "+ schemaName +".cyclemeetingterritories c6 on c2.id = c6.cyclemeetingid " +
+                                    " where c1.division = ? GROUP BY c1.id,c3.username,c5.address,c5.profileimage,c2.id,c4.username,c7.address," +
+                                    " c3.firstname,c3.lastname,c4.firstname,c4.lastname " +
+                                    " ORDER BY c1.createdon DESC ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
 
@@ -122,26 +135,41 @@ public class CycleMeetingGroup {
                         meetingGroup.createdBy = result.getInt(9);
                         meetingGroup.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         meetingGroup.updatedBy = result.getInt(11);
-                        meetingGroup.conductedBy = result.getString(12);
+                        meetingGroup.userDetails = new ArrayList<>();
+                        meetingGroup.userDetails.add(new UserDetail(result.getInt(4),result.getString(12),result.getString(13),result.getString(14),result.getString(15),result.getString(16),(String[]) result.getArray(17).getArray()));
+                        meetingGroup.profileImage = result.getString(18);
 
-                        cycleMeeting.id = result.getInt(13);
+                        cycleMeeting.id = result.getInt(19);
                         if (cycleMeeting.id != 0) {
-                            cycleMeeting.title = result.getString(14);
-                            cycleMeeting.groupId = result.getInt(15);
-                            cycleMeeting.venue = result.getString(16);
-                            cycleMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(17).getTime())));
-                            cycleMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(18).getTime())));
-                            cycleMeeting.organiser = result.getInt(19);
-                            cycleMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(20).getTime())));
-                            cycleMeeting.createBy = result.getInt(21);
-                            cycleMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(22).getTime())));
-                            cycleMeeting.updateBy = result.getInt(23);
-                            cycleMeeting.username = result.getString(24);
+                            cycleMeeting.title = result.getString(20);
+                            cycleMeeting.groupId = result.getInt(21);
+                            cycleMeeting.venue = result.getString(22);
+                            cycleMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(23).getTime())));
+                            cycleMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(24).getTime())));
+                            cycleMeeting.organiser = result.getInt(25);
+                            cycleMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(26).getTime())));
+                            cycleMeeting.createBy = result.getInt(27);
+                            cycleMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(28).getTime())));
+                            cycleMeeting.updateBy = result.getInt(29);
+                            cycleMeeting.userDetails = new ArrayList<>();
+                            cycleMeeting.userDetails.add(new UserDetail(result.getInt(25),result.getString(30),result.getString(31),result.getString(32),result.getString(33),result.getString(34), (String[]) result.getArray(35).getArray()));
+                            cycleMeeting.count = result.getInt(36);
+                            if(cycleMeeting.endDate.before(new Date()) && !cycleMeeting.endDate.equals(new Date()))
+                            {
+                                cycleMeeting.status = "Past";
+                            }
+                            else if(cycleMeeting.startDate.after(new Date()) && cycleMeeting.endDate.after(new Date()) && !cycleMeeting.endDate.equals(new Date())) {
+                                cycleMeeting.status = "Future";
+                            }
+                            else {
+                                cycleMeeting.status = "Current";
+                            }
                         }
 
                         int index = findMeeting(meetingGroup.id, groMeetingWrappers);
                         if (index !=-1) {
                             groMeetingWrappers.get(index).cycleMeetings.add(cycleMeeting);
+
                         } else {
                             groMeetingWrappers.add(meetingGroup);
                             if(cycleMeeting.id!=0)
@@ -194,11 +222,12 @@ public class CycleMeetingGroup {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT c1.id, division, noofdays, leadorganiser, keywords,  " +
-                                    " title, c1.description, createdon, createdby, updateon, updatedby , u.username , " +
-                                    " d.name as divName" +
+                                    " title, c1.description, createdon, createdby, updateon, updatedby , u.username ,u.firstname , u.lastname, " +
+                                    " d.name as divName , (uf.address).city city, (uf.address).state state, (uf.address).phone phone " +
                                     "  FROM "+schemaName+".cyclemeetinggroup c1 left join master.users u " +
                                     "  on c1.leadorganiser = u.id " +
-                                    " left join client1.divisions d on d.id = division " +
+                                    " left join "+schemaName+".divisions d on d.id = division " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = leadorganiser " +
                                     " where c1.id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
@@ -215,8 +244,9 @@ public class CycleMeetingGroup {
                         meetingGroup.createdBy = result.getInt(9);
                         meetingGroup.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         meetingGroup.updatedBy = result.getInt(11);
-                        meetingGroup.conductedBy = result.getString(12);
-                        meetingGroup.divName = result.getString(13);
+                        meetingGroup.userDetails = new ArrayList<>();
+                        meetingGroup.userDetails.add(new UserDetail(result.getInt(4),result.getString(12),result.getString(13),result.getString(14),result.getString(16),result.getString(17), (String[]) result.getArray(18).getArray()));
+                        meetingGroup.divName = result.getString(15);
                     }
                 } else
                     throw new Exception("DB connection is null");

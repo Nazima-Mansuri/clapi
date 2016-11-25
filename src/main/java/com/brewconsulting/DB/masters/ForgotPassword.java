@@ -2,6 +2,7 @@ package com.brewconsulting.DB.masters;
 
 import com.brewconsulting.DB.common.DBConnectionProvider;
 
+import javax.jws.soap.SOAPBinding;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -10,12 +11,14 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.naming.NamingException;
+import java.awt.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
@@ -121,6 +124,47 @@ public class ForgotPassword {
         }
 
     }
+
+    public static String getUserDetail(String username) throws Exception
+    {
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
+        ResultSet result;
+        User user = null;
+        String firstName = null, lastName = null;
+        try
+        {
+            stmt = con.prepareStatement("SELECT username from master.users where username = ?");
+            stmt.setString(1,username);
+            result = stmt.executeQuery();
+            if(result.next())
+            {
+                stmt = con.prepareStatement("SELECT firstname , lastname from master.users where username = ?");
+                stmt.setString(1,username);
+                result = stmt.executeQuery();
+
+                if(result.next())
+                {
+                    firstName = result.getString(1);
+                    lastName = result.getString(2);
+                }
+            }
+            else
+            {
+                throw new SQLException("");
+            }
+
+        }
+        finally {
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+        return firstName + " " + lastName;
+    }
     /***
      * Thios method used to send Email with random generated alphanumeric characters
      *
@@ -130,8 +174,9 @@ public class ForgotPassword {
      * @return
      * @throws MessagingException
      */
-    public static boolean generateAndSendEmail(String username,String from, String password) throws MessagingException, SQLException, NamingException, ClassNotFoundException {
+    public static boolean generateAndSendEmail(String username,String from, String password) throws Exception {
 
+        String firstname = null;
         // Step1
 //        System.out.println("\n 1st ===> setup Mail Server Properties..");
         mailServerProperties = System.getProperties();
@@ -142,11 +187,12 @@ public class ForgotPassword {
 
         // Step2
 //        System.out.println("\n\n 2nd ===> get Mail Session..");
+        String name = getUserDetail(username);
         getMailSession = Session.getDefaultInstance(mailServerProperties, null);
         generateMailMessage = new MimeMessage(getMailSession);
         generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(username));
-        generateMailMessage.setSubject("Rolla/ Forgot Password..");
-        String emailBody = generateRandomString();
+        generateMailMessage.setSubject("Rolla > Forgot Password");
+        String emailBody = "<h3> Hi "+name+", </h3>"+" <h4> We got your request for new password. </h4>"+"<h4>Your New Password : "+generateRandomString()+"</h4>";
         System.out.println(generateRandomString());
         generateMailMessage.setContent(emailBody, "text/html");
         System.out.println("Mail Session has been created successfully..");

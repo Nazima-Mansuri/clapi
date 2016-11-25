@@ -64,11 +64,14 @@ public class CycleMeeting {
     @JsonProperty("updateBy")
     public int updateBy;
 
-    @JsonProperty("username")
-    public String username;
+    @JsonProperty("userDetails")
+    ArrayList<UserDetail> userDetails;
 
     @JsonProperty("count")
     public int count;
+
+    @JsonProperty("status")
+    public String status;
 
     // make the default constructor visible to package only.
     public CycleMeeting() {
@@ -102,9 +105,13 @@ public class CycleMeeting {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, "
-                                    +" organiser, createdon, createdby, updatedon, updatedby, u.username"
-                                    +"  FROM "+ schemaName+".cyclemeeting c left join master.users u ON " +
-                                    " u.id = organiser where groupId = ? ORDER BY createdon DESC ");
+                                    +" organiser, c.createdon, c.createdby, c.updatedon, c.updatedby, u.username,u.firstname , u.lastname , "
+                                    +" (uf.address).city city, (uf.address).state state, (uf.address).phone phone , count(ct.cyclemeetingid) "
+                                    +" FROM "+ schemaName+".cyclemeeting c "
+                                    +" left join master.users u ON u.id = organiser"
+                                    +" left join "+schemaName+".userprofile uf on uf.userid = organiser"
+                                    +" left join "+ schemaName +".cyclemeetingterritories ct on c.id = ct.cyclemeetingid "
+                                    +" where groupId = ? GROUP BY c.id,u.username,u.firstname,u.lastname,uf.address ORDER BY createdon DESC ");
                     stmt.setInt(1,id);
                     result = stmt.executeQuery();
                     System.out.print(result);
@@ -121,7 +128,15 @@ public class CycleMeeting {
                         subMeeting.createBy = result.getInt(9);
                         subMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         subMeeting.updateBy = result.getInt(11);
-                        subMeeting.username = result.getString(12);
+                        subMeeting.userDetails = new ArrayList<>();
+                        subMeeting.userDetails.add(new UserDetail(result.getInt(11),result.getString(12),result.getString(13),result.getString(14),result.getString(15),result.getString(16), (String[]) result.getArray(17).getArray()));
+                        subMeeting.count = result.getInt(18);
+                        if(subMeeting.endDate.before(new Date()) && !subMeeting.endDate.equals(new Date()))
+                            subMeeting.status = "Past";
+                        else if(subMeeting.startDate.after(new Date()) && subMeeting.endDate.after(new Date()) && !subMeeting.endDate.equals(new Date()))
+                            subMeeting.status = "Future";
+                        else
+                            subMeeting.status = "Current";
                         cycleMeetings.add(subMeeting);
                     }
                 } else
@@ -172,11 +187,13 @@ public class CycleMeeting {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, " +
-                                    " organiser, createdon, createdby,updatedon, updatedby, u.username, count(t.cyclemeetingid) " +
-                                    "  FROM "+ schemaName+".cyclemeeting c " +
-                                    "  left join master.users u ON u.id = organiser" +
+                                    " organiser, c.createdon, c.createdby,c.updatedon, c.updatedby, u.username,u.firstname,u.lastname, " +
+                                    "(uf.address).city city, (uf.address).state state, (uf.address).phone phone ,count(t.cyclemeetingid) " +
+                                    " FROM "+ schemaName+".cyclemeeting c " +
+                                    " left join master.users u ON u.id = organiser" +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = organiser"+
                                     " left join "+ schemaName +".cyclemeetingterritories t on c.id = t.cyclemeetingid " +
-                                    " where c.id = ? GROUP BY c.id,u.username ");
+                                    " where c.id = ? GROUP BY c.id,u.username,uf.address,u.firstname,u.lastname ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -192,8 +209,9 @@ public class CycleMeeting {
                         subMeeting.createBy = result.getInt(9);
                         subMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
                         subMeeting.updateBy = result.getInt(11);
-                        subMeeting.username = result.getString(12);
-                        subMeeting.count = result.getInt(13);
+                        subMeeting.userDetails = new ArrayList<>();
+                        subMeeting.userDetails.add(new UserDetail(result.getInt(7),result.getString(12),result.getString(13),result.getString(14),result.getString(15),result.getString(16) ,(String[]) result.getArray(17).getArray()));
+                        subMeeting.count = result.getInt(18);
                     }
                 } else
                     throw new Exception("DB connection is null");

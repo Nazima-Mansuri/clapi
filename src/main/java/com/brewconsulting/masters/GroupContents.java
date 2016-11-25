@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.postgresql.util.PSQLException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -17,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 
 /**
  * Created by lcom53 on 18/10/16.
@@ -50,7 +52,7 @@ public class GroupContents {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get group meeting contents \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -83,7 +85,7 @@ public class GroupContents {
                                     .getProperty("userObject")) )).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get group content\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -137,7 +139,7 @@ public class GroupContents {
                 // This method is used to store content in AWS bucket.
                 uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
             } else {
-                uploadFilePath = null;
+                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
             }
 
             int contentId = Content.addGroupContent(contentName, contentDesc, contentType,
@@ -152,7 +154,7 @@ public class GroupContents {
                                 .getJsonString()).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add group meeting content\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -188,79 +190,19 @@ public class GroupContents {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Content from Existing content \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
-            if (resp == null) {
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-                e.printStackTrace();
-            }
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
-        return resp;
-    }
-
-    /***
-     * update Group content
-     *
-     * @param fileInputStream
-     * @param fileFormDataContentDisposition
-     * @param contentName
-     * @param contentDesc
-     * @param contentType
-     * @param divId
-     * @param contentSeq
-     * @param agendaId
-     * @param id
-     * @param crc
-     * @return
-     */
-    @PUT
-    @Secured
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response updateGroupContent(
-            @FormDataParam("uploadFile") InputStream fileInputStream,
-            @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
-            @FormDataParam("contentName") String contentName,
-            @FormDataParam("contentDesc") String contentDesc,
-            @FormDataParam("contentType") String contentType,
-            @FormDataParam("divId") int divId,
-            @FormDataParam("contentSeq") int contentSeq,
-            @FormDataParam("agendaId") int agendaId,
-            @FormDataParam("id") int id,
-            @Context ContainerRequestContext crc) {
-
-        Response resp = null;
-        // local variables
-        String fileName = null;
-        String uploadFilePath = null;
-
-        try {
-
-            if (fileFormDataContentDisposition != null) {
-                fileName = System.currentTimeMillis() + "_"
-                        + fileFormDataContentDisposition.getFileName();
-                // This method is used to store content in AWS bucket.
-                uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
-            } else {
-                uploadFilePath = null;
-            }
-
-            Content.updateGroupContent(contentName, contentDesc, contentType,
-                    divId,uploadFilePath,contentSeq,agendaId,(LoggedInUser) crc.getProperty("userObject"),id);
-
-            resp = Response.ok().build();
-
-        } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
-                    .entity("{\"Message\":" + "\"You are not authorized to update group meeting content\"}")
+        catch (SQLException s)
+        {
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
@@ -272,4 +214,69 @@ public class GroupContents {
         return resp;
     }
 
+    @DELETE
+    @Produces("application/json")
+    @Secured
+    @Path("{id}")
+    public Response deleteGrpContent(@PathParam("id") Integer id,
+                              @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            // affectedRow given how many rows deleted from database.
+            int affectedRow = Content.deleteGroupContent(id,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            if (affectedRow > 0)
+                resp = Response.ok().build();
+            else
+                // If no rows affected in database. It gives server status
+                // 204(NO_CONTENT).
+                resp = Response.status(204).build();
+                 }catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Delete Group Content\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (PSQLException ex) {
+            resp = Response
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
+            ex.printStackTrace();
+        } catch (Exception e) {
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    public Response updateGrpSeq(InputStream input,
+                              @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            JsonNode node = mapper.readTree(input);
+            int result = Content.updateGroupSeqNumber(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"result\":" + result + "}").build();
+        }catch (NotAuthorizedException na) {
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
 }

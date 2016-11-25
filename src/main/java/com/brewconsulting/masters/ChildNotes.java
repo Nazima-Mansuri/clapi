@@ -46,7 +46,7 @@ public class ChildNotes {
                             .getAllChildNote(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Notes\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -76,7 +76,7 @@ public class ChildNotes {
                             .getChildNoteById(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -113,7 +113,7 @@ public class ChildNotes {
                         .entity(new NoDataFound("Unable to Insert Cycle Meeting Note")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -149,7 +149,7 @@ public class ChildNotes {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         }catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -190,7 +190,7 @@ public class ChildNotes {
                 resp = Response.status(204).build();
 
         }catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Note\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

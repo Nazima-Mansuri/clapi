@@ -49,8 +49,8 @@ public class SettingContent {
     @JsonProperty("createdOn")
     public Date createdOn;
 
-    @JsonProperty("username")
-    public String username;
+    @JsonProperty("userDetails")
+    public List<UserDetail> userDetails;
 
     public static final int SettingContent = 5;
 
@@ -81,8 +81,11 @@ public class SettingContent {
                     if(divId != -1)
                     {
                         stmt = con
-                                .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
-                                        "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby" +
+                                .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, c.createby, createdon ," +
+                                        "  u.username ,u.firstname,u.lastname,(uf.address).city city , (uf.address).state state,(uf.address).phone phone " +
+                                        " FROM " + schemaName + ".content c " +
+                                        " left join master.users u on u.id = c.createby " +
+                                        " left join "+schemaName+".userprofile uf on c.createby = uf.userid" +
                                         " where divid = ? ORDER BY createdon DESC");
                         stmt.setInt(1,divId);
                         result = stmt.executeQuery();
@@ -100,7 +103,8 @@ public class SettingContent {
                             }
                             content.createBy = result.getInt(6);
                             content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
-                            content.username = result.getString(8);
+                            content.userDetails = new ArrayList<>();
+                            content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
 
                             contents.add(content);
                         }
@@ -108,8 +112,10 @@ public class SettingContent {
                     else
                     {
                         stmt = con
-                                .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, createby, createdon ," +
-                                        "  username FROM " + schemaName + ".content c left join master.users u on u.id = createby" +
+                                .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, c.createby, createdon ," +
+                                        "  u.username ,u.firstname,u.lastname,(uf.address).city city , (uf.address).state state,(uf.address).phone phone " +
+                                        " FROM " + schemaName + ".content c left join master.users u on u.id = c.createby " +
+                                        " left join "+schemaName+".userprofile uf on c.createby = uf.userid" +
                                         " ORDER BY createdon DESC");
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -126,7 +132,8 @@ public class SettingContent {
                             }
                             content.createBy = result.getInt(6);
                             content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
-                            content.username = result.getString(8);
+                            content.userDetails = new ArrayList<>();
+                            content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
 
                             contents.add(content);
                         }
@@ -153,7 +160,75 @@ public class SettingContent {
         }
     }
 
+    /***
+     *  Method used to give contents by specific division as well null division
+     *
+     * @param divId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<SettingContent> getDivisionSpecificContent(int divId,int agendaId,LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
 
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole,SettingContent).equals("Read") ||
+                Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
+
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<SettingContent> contents = new ArrayList<SettingContent>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+            try {
+
+                stmt = con
+                        .prepareStatement("SELECT c.id, contentname, contentdesc, divid, url, c.createby, c.createdon," +
+                                " u.username,u.firstname,u.lastname,(uf.address).city city,(uf.address).state state,(uf.address).phone phone"+
+                                " FROM " + schemaName + ".content c " +
+                                " left join master.users u on u.id = c.createby " +
+                                " left join "+schemaName+".userprofile uf on uf.userid = c.createby " +
+                                " where (divid = ? OR divid IS NULL) AND " +
+                                " c.id NOT IN (SELECT contentid from "+schemaName+".groupsessioncontentinfo WHERE agendaid = ? ) " +
+                                " ORDER BY c.createdon DESC");
+                stmt.setInt(1, divId);
+                stmt.setInt(2,agendaId);
+                result = stmt.executeQuery();
+                while (result.next()) {
+                    SettingContent content = new SettingContent();
+                    content.id = result.getInt(1);
+                    content.contentName = result.getString(2);
+                    content.contentDesc = result.getString(3);
+                    content.divId = result.getInt(4);
+                    content.url = result.getString(5);
+                    content.createBy = result.getInt(6);
+                    content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                    content.userDetails = new ArrayList<>();
+                    content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
+
+                    contents.add(content);
+                }
+            }
+            finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return contents;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
     /**
      * Method allow user to add content from setting.
      *
@@ -197,7 +272,10 @@ public class SettingContent {
                 else
                     stmt.setString(2, null);
 
-                stmt.setInt(3, divId);
+                if(divId > 0)
+                    stmt.setInt(3, divId);
+                else
+                    stmt.setNull(3,0);
                 stmt.setString(4, url);
                 stmt.setInt(5, loggedInUser.id);
                 stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
@@ -271,7 +349,10 @@ public class SettingContent {
                     else
                         stmt.setString(2, null);
 
-                    stmt.setInt(3, divId);
+                    if(divId > 0)
+                        stmt.setInt(3, divId);
+                    else
+                        stmt.setNull(3,0);
                     stmt.setString(4, url);
                     stmt.setInt(5, id);
 

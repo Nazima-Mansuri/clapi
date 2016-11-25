@@ -1,6 +1,7 @@
 package com.brewconsulting.DB.masters;
 
 import java.nio.file.AccessDeniedException;
+import java.nio.file.NoSuchFileException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,9 +16,11 @@ import java.util.Date;
 import java.util.List;
 
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.core.NoContentException;
 
 import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
+import com.brewconsulting.exceptions.NoDataFound;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -263,7 +266,11 @@ public class Division {
                                         + ".divisions(name,description,createDate,createBy,updateDate,"
                                         + "updateBy) values (?,?,?,?,?,?)",
                                 Statement.RETURN_GENERATED_KEYS);
-                stmt.setString(1, node.get("name").asText());
+
+                if(node.has("name"))
+                    stmt.setString(1, node.get("name").asText());
+                else
+                    throw new Exception("Division Name is not defined.");
 
                 // It checks if Description is given or not
                 if (node.has("description"))
@@ -335,14 +342,21 @@ public class Division {
                                     + schemaName
                                     + ".divisions SET name = ?,description = ?,updateDate = ?,"
                                     + "updateBy = ? WHERE id = ?");
-                    stmt.setString(1, node.get("name").asText());
+                    if(node.has("name"))
+                        stmt.setString(1, node.get("name").asText());
+                    else
+                        throw new Exception("Division Name is Not Defined.");
 
                     // It checks if Description is given or not
                     if (node.has("description"))
                         stmt.setString(2, node.get("description").asText());
                     stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
                     stmt.setInt(4, loggedInUser.id);
-                    stmt.setInt(5, node.get("divisionId").asInt());
+
+                    if(node.has("divisionId"))
+                        stmt.setInt(5, node.get("divisionId").asInt());
+                    else
+                        throw new Exception("Division ID is not Defined for update Division.");
 
                     result = stmt.executeUpdate();
                 } else

@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.*;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -38,10 +39,10 @@ public class GroupAgenda {
     public String sessionDesc;
 
     @JsonProperty("sessionStartTime")
-    public Time sessionStartTime;
+    public String sessionStartTime;
 
     @JsonProperty("sessionEndTime")
-    public Time sessionEndTime;
+    public String sessionEndTime;
 
     @JsonProperty("sessionConductor")
     public String sessionConductor;
@@ -98,10 +99,11 @@ public class GroupAgenda {
 
             try {
                 if (con != null) {
+
                     stmt = con
-                            .prepareStatement("SELECT id, sessionname, sessiondesc, sessionstarttime," +
-                                    "sessionendtime, sessionconductor,createdon, createdby, updateon, updatedby,contenttype " +
-                                    " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?");
+                            .prepareStatement("SELECT id, sessionname, sessiondesc, to_char(sessionstarttime::Time, 'HH12:MI AM')," +
+                                    "to_char(sessionendtime::Time, 'HH12:MI AM'), sessionconductor,createdon, createdby, updateon, updatedby,contenttype " +
+                                    " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?  ORDER BY sessionstarttime ASC");
 
                     stmt.setInt(1, groupId);
                     stmt.setInt(2, dayNo);
@@ -112,8 +114,8 @@ public class GroupAgenda {
                         groupAgenda.id = result.getInt(1);
                         groupAgenda.sessionName = result.getString(2);
                         groupAgenda.sessionDesc = result.getString(3);
-                        groupAgenda.sessionStartTime = result.getTime(4);
-                        groupAgenda.sessionEndTime = result.getTime(5);
+                        groupAgenda.sessionStartTime = result.getString(4);
+                        groupAgenda.sessionEndTime = result.getString(5);
                         groupAgenda.sessionConductor = result.getString(6);
                         groupAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         groupAgenda.createBy = result.getInt(8);
@@ -176,11 +178,14 @@ public class GroupAgenda {
 
                 stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
                         " where groupid = ? AND  dayno = ? AND  " +
-                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?)");
+                        " ((CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR " +
+                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?))");
                 stmt.setInt(1,node.get("groupId").asInt());
                 stmt.setInt(2,node.get("dayNo").asInt());
-                stmt.setTime(3,Time.valueOf(node.get("sessionStartTime").asText()));
-                stmt.setTime(4,Time.valueOf(node.get("sessionStartTime").asText()));
+                stmt.setTime(3,Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(4,Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(5,Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                stmt.setTime(6,Time.valueOf(node.get("sessionEndTime").asText().trim()));
                 resultSet = stmt.executeQuery();
 
                 if(!resultSet.next())
@@ -196,9 +201,12 @@ public class GroupAgenda {
                     stmt.setInt(2, node.get("dayNo").asInt());
                     stmt.setString(3, node.get("sessionName").asText());
                     stmt.setString(4, node.get("sessionDesc").asText());
-                    stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
-                    stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
-                    stmt.setString(7, node.get("sessionConductor").asText());
+                    stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                    stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                    if(node.has("sessionConductor"))
+                        stmt.setString(7, node.get("sessionConductor").asText());
+                    else
+                        stmt.setString(7,null);
                     stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                     stmt.setInt(9, loggedInUser.id);
                     stmt.setTimestamp(10, new Timestamp((new Date()).getTime()));
@@ -259,33 +267,66 @@ public class GroupAgenda {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
-            int result;
+            int result =0;
+            ResultSet resultSet;
+            int groupId = 0,dayNo = 0;
 
             try {
                 con.setAutoCommit(false);
 
-                ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
-                stmt = con
-                        .prepareStatement(
-                                "UPDATE "
-                                        + schemaName
-                                        + ".groupAgenda SET groupId =? ,dayNo=?,sessionName=?,sessionDesc=?,sessionStartTime=?,sessionEndTime=?,sessionConductor=?,"
-                                        + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) where id=?",
-                                Statement.RETURN_GENERATED_KEYS);
-                stmt.setInt(1, node.get("groupId").asInt());
-                stmt.setInt(2, node.get("dayNo").asInt());
-                stmt.setString(3, node.get("sessionName").asText());
-                stmt.setString(4, node.get("sessionDesc").asText());
-                stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText()));
-                stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText()));
-                stmt.setString(7, node.get("sessionConductor").asText());
-                stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
-                stmt.setInt(9, loggedInUser.id);
-                stmt.setString(10,contentType.name());
-                stmt.setInt(11, node.get("id").asInt());
+                stmt = con.prepareStatement("SELECT groupid , dayNo FROM "+schemaName+".groupagenda WHERE id = ?");
+                stmt.setInt(1,node.get("id").asInt());
+                resultSet = stmt.executeQuery();
 
-                result = stmt.executeUpdate();
-                con.commit();
+                if(resultSet.next())
+                {
+                    groupId = resultSet.getInt(1);
+                    dayNo = resultSet.getInt(2);
+                }
+
+                stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
+                        " where id != ? AND groupid = ? AND  dayno = ? AND  " +
+                        " ((CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR " +
+                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?))");
+                stmt.setInt(1,node.get("id").asInt());
+                stmt.setInt(2,groupId);
+                stmt.setInt(3,dayNo);
+                stmt.setTime(4,Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(5,Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(6,Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                stmt.setTime(7,Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                resultSet = stmt.executeQuery();
+
+                if(!resultSet.next())
+                {
+
+                    ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
+                    stmt = con
+                            .prepareStatement(
+                                    "UPDATE "
+                                            + schemaName
+                                            + ".groupAgenda SET groupId =? ,dayNo=?,sessionName=?,sessionDesc=?,sessionStartTime=?,sessionEndTime=?,sessionConductor=?,"
+                                            + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) where id=?",
+                                    Statement.RETURN_GENERATED_KEYS);
+                    stmt.setInt(1, node.get("groupId").asInt());
+                    stmt.setInt(2, node.get("dayNo").asInt());
+                    stmt.setString(3, node.get("sessionName").asText());
+                    stmt.setString(4, node.get("sessionDesc").asText());
+                    stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                    stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                    stmt.setString(7, node.get("sessionConductor").asText());
+                    stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(9, loggedInUser.id);
+                    stmt.setString(10,contentType.name());
+                    stmt.setInt(11, node.get("id").asInt());
+
+                    result = stmt.executeUpdate();
+                    con.commit();
+                }
+                else
+                {
+                    throw new BadRequestException("");
+                }
 
             } catch (Exception ex) {
                 if (con != null)

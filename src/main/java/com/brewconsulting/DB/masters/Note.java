@@ -63,8 +63,8 @@ public class Note
     @JsonProperty("updateBy")
     public int updateBy;
 
-    @JsonProperty("username")
-    public String username;
+    @JsonProperty("userDetails")
+    public ArrayList<UserDetail> userDetails;
 
     public static final int Note = 12;
     // make default constructor to visible package
@@ -103,8 +103,13 @@ public class Note
                     stmt = con
                             .prepareStatement(" SELECT g.id,groupid,(note).title title,(note).description description , " +
                                     " (note).category category, g.createdon ," +
-                                    " g.createdby, g.updateon, g.updateby , username FROM " +
-                                    schemaName + ".groupNotes g left join master.users u on u.id = createdby where groupid = ? ORDER BY id ASC");
+                                    " g.createdby, g.updateon, g.updateby , u.username ,u.firstname,u.lastname," +
+                                    " (uf.address).city city, (uf.address).state state," +
+                                    " (uf.address).phone phone " +
+                                    " FROM "+schemaName + ".groupNotes g " +
+                                    " left join master.users u on u.id = g.updateby " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = g.updateby" +
+                                    " where groupid = ? ORDER BY g.createdon DESC");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     while (result.next()) {
@@ -118,7 +123,8 @@ public class Note
                         note.createBy = result.getInt(7);
                         note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         note.updateBy = result.getInt(9);
-                        note.username = result.getString(10);
+                        note.userDetails = new ArrayList<>();
+                        note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
 
                         groupNotes.add(note);
                     }
@@ -170,9 +176,12 @@ public class Note
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT g.id,groupid,(note).title title,(note).description description ," +
-                                    " (note).category category, createdon , username" +
-                                    " createdby, updateon, updateby FROM " +
-                                    schemaName +".groupNotes g left join master.users u on u.id = createdby where id = ? ");
+                                    " (note).category category, createdon ,createdby, updateon, updateby, u.username,u.firstname,u.lastname, " +
+                                    " (uf.address).city city,(uf.address).state state,(uf.address).phone phone  " +
+                                    " FROM "+schemaName +".groupNotes g " +
+                                    " left join master.users u on u.id = createdby " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = updateby " +
+                                    " where g.id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -186,7 +195,8 @@ public class Note
                         groupNote.createBy = result.getInt(7);
                         groupNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         groupNote.updateBy = result.getInt(9);
-                        groupNote.username = result.getString(10);
+                        groupNote.userDetails = new ArrayList<>();
+                        groupNote.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
 
                     }
                 } else
@@ -410,9 +420,14 @@ public class Note
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT cycleMeetingId,(note).title title,(note).description description ," +
-                                    " (note).category category, createdon ," +
-                                    " createdby, updateon, updateby , username FROM " +
-                                    schemaName + ".cycleMeetingNotes left join master.users u on u.id = createdby where id = ? ");
+                                    " (note).category category, c.createdon ," +
+                                    " c.createdby, c.updateon, c.updateby , u.username , u.firstname, u.lastname, " +
+                                    " (uf.address).city city, (uf.address).state state," +
+                                    " (uf.address).phone phone FROM " +
+                                    schemaName + ".cycleMeetingNotes c" +
+                                    " left join master.users u on u.id = createdby " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = c.updateby " +
+                                    " where c.id = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -426,7 +441,8 @@ public class Note
                         childNote.createBy = result.getInt(6);
                         childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         childNote.updateBy = result.getInt(8);
-                        childNote.username = result.getString(9);
+                        childNote.userDetails = new ArrayList<>();
+                        childNote.userDetails.add(new UserDetail(result.getInt(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13), (String[]) result.getArray(14).getArray()));
 
                     }
                 } else
@@ -476,10 +492,14 @@ public class Note
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("SELECT id,(note).title title,(note).description description ," +
-                                    " (note).category category, createdon ," +
-                                    " createdby, updateon, updateby FROM " +
-                                    schemaName + ".cycleMeetingNotes left join master.users u on u.id = createdby  where cycleMeetingId = ? ");
+                            .prepareStatement("SELECT c1.id,(note).title title,(note).description description ," +
+                                    " (note).category category, c1.createdon ," +
+                                    " c1.createdby, c1.updateon, c1.updateby, u.username,u.firstname,u.lastname, " +
+                                    " (uf.address).city city, (uf.address).state state,(uf.address).phone phone" +
+                                    "  FROM " +
+                                    schemaName + ".cycleMeetingNotes c1 left join master.users u on u.id = createdby " +
+                                    " left join "+schemaName+".userprofile uf ON uf.userid = c1.updateby " +
+                                    "where cycleMeetingId = ? ORDER BY c1.createdon DESC ");
                     stmt.setInt(1, cycleMeetingId);
                     result = stmt.executeQuery();
                     while (result.next()) {
@@ -493,7 +513,8 @@ public class Note
                         childNote.createBy = result.getInt(6);
                         childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         childNote.updateBy = result.getInt(8);
-                        childNote.username = result.getString(9);
+                        childNote.userDetails = new ArrayList<>();
+                        childNote.userDetails.add(new UserDetail(result.getInt(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13), (String[]) result.getArray(14).getArray()));
 
                         notes.add(childNote);
 

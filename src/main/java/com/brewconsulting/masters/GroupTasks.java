@@ -44,7 +44,7 @@ public class GroupTasks {
                             .getAllGroupTasks(id,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get group tasks\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -82,7 +82,7 @@ public class GroupTasks {
             }
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get particular group task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -120,7 +120,7 @@ public class GroupTasks {
                         .entity(new NoDataFound("Unable to Insert Group Task")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add group task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -156,7 +156,7 @@ public class GroupTasks {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update group task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -197,7 +197,7 @@ public class GroupTasks {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete group task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

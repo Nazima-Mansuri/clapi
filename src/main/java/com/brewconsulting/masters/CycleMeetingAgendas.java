@@ -51,7 +51,7 @@ public class CycleMeetingAgendas {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -85,7 +85,7 @@ public class CycleMeetingAgendas {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + id + "}").build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -127,8 +127,14 @@ public class CycleMeetingAgendas {
             }
         }
         catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to clone Cyclemeeting Agenda\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (BadRequestException b) {
+            resp = Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"Message\":" + "\"Agenda is already exist with same time.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
@@ -161,11 +167,18 @@ public class CycleMeetingAgendas {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }catch (IOException e) {
+        }
+        catch (BadRequestException b) {
+            resp = Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"Message\":" + "\"Agenda is already exist with same time.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -202,7 +215,7 @@ public class CycleMeetingAgendas {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -247,7 +260,7 @@ public class CycleMeetingAgendas {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Agenda by specific date.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

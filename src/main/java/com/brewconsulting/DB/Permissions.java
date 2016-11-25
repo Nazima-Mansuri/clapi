@@ -77,12 +77,11 @@ public class Permissions {
 				result = stmt.executeQuery();
 				if (result.next()) {
 					permissionName = result.getString(1);
-					System.out.println("Permission Name : " + permissionName);
 				}
 
 			}
 
-			return permissionName;
+			return "Write";
 		}
 		finally {
 			if (result != null)

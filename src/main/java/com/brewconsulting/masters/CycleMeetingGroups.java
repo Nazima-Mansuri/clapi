@@ -49,7 +49,7 @@ public class CycleMeetingGroups {
                             .getMeetingByDivisionId(id, ((LoggedInUser) crc
                                     .getProperty("userObject"))))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get group Meetings\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -81,7 +81,7 @@ public class CycleMeetingGroups {
                             .getGroupById(id, ((LoggedInUser) crc
                                     .getProperty("userObject"))))).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get particular Group meeting\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -118,7 +118,7 @@ public class CycleMeetingGroups {
                         .entity(new NoDataFound("Unable to Insert Group Meeting")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Group meeting \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -154,7 +154,7 @@ public class CycleMeetingGroups {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         }catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update group meeting\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -196,7 +196,7 @@ public class CycleMeetingGroups {
                 resp = Response.status(204).build();
 
         }catch (NotAuthorizedException na) {
-            resp = Response.status(Response.Status.UNAUTHORIZED)
+            resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete group meeting\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

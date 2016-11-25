@@ -3,6 +3,8 @@ package com.brewconsulting.masters;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.NoSuchFileException;
+import java.sql.SQLException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -16,6 +18,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.NoContentException;
 import javax.ws.rs.core.Response;
 
 import org.postgresql.util.PSQLException;
@@ -50,12 +53,11 @@ public class Divisions {
 									.getProperty("userObject")))).build();
 
 		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
+			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to get Divisions\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
 		}
-
 		catch (Exception e) {
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
@@ -91,7 +93,7 @@ public class Divisions {
 			}
 
 		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
+			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to get Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
@@ -122,17 +124,25 @@ public class Divisions {
 					(LoggedInUser) crc.getProperty("userObject"));
 			resp = Response.ok("{\"id\":" + divisionId + "}").build();
 		} catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
+			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to create Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
-		} catch (IOException e) {
+		}
+		catch (SQLException s)
+		{
+			resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+					.type(MediaType.APPLICATION_JSON)
+					.build();
+		}
+		catch (IOException e) {
 			if (resp == null) {
 				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 				e.printStackTrace();
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -160,17 +170,18 @@ public class Divisions {
 					(LoggedInUser) crc.getProperty("userObject"));
 			resp = Response.ok().build();
 		}catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
+			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
-		} 
+		}
 		catch (IOException e) {
 			if (resp == null)
 				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
+			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
 		return resp;
@@ -190,7 +201,6 @@ public class Divisions {
 	public Response deleteDiv(@PathParam("id") Integer id,
 			@Context ContainerRequestContext crc) {
 		Response resp = null;
-		String err = "This id is already Use in another table as foreign key";
 		try {
 			// affectedRow given how many rows deleted from database.
 			int affectedRow = Division.deleteDivision(id,
@@ -200,10 +210,10 @@ public class Divisions {
 			else
 				// If no rows affected in database. It gives server status
 				// 204(NO_CONTENT).
-				resp = Response.status(204).build();
+				resp = Response.status(204).entity("{\"Message\":\" + \"\"Division is not deleted.\"}").build();
 
 		}catch (NotAuthorizedException na) {
-			resp = Response.status(Response.Status.UNAUTHORIZED)
+			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to Delete Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
