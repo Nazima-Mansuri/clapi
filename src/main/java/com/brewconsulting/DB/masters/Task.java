@@ -85,6 +85,9 @@ public class Task {
     @JsonProperty("userDetails")
     public ArrayList<UserDetail> userDetails;
 
+/*    @JsonProperty("userList")
+    public List<String> userList;*/
+
 
     public static final int Task = 13;
 
@@ -144,6 +147,8 @@ public class Task {
                         task.status = result.getString(5);
                         task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         task.reminders = (Integer[]) result.getArray(7).getArray();
+                       /* task.userList = new ArrayList<>();
+                        task.userList = getUserNames(task.reminders);*/
                         task.assignTo = result.getInt(8);
                         task.assignBy = result.getInt(9);
                         task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
@@ -173,7 +178,40 @@ public class Task {
             throw new NotAuthorizedException("");
         }
     }
+/*
+    public static List<String> getUserNames(Integer[] array) throws SQLException, NamingException, ClassNotFoundException {
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+        List<String> list = new ArrayList<>();
 
+        try
+        {
+            for (int i =0 ;i<array.length;i++)
+            {
+                stmt = con.prepareStatement("SELECT username from master.users where id = ?");
+                stmt.setInt(1,array[i]);
+                result = stmt.executeQuery();
+                while (result.next())
+                {
+                    list.add(result.getString(1));
+                }
+
+            }
+            return list;
+        }
+        finally {
+            if (result != null)
+                if (!result.isClosed())
+                    result.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+    }*/
     /***
      * Method allows user to get Details of Particular Group Task.
      *

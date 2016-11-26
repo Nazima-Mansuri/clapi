@@ -23,6 +23,9 @@ public class History {
 	@JsonProperty("username")
 	public String username;
 
+	@JsonProperty("firstname")
+	public String firstname;
+
 	@JsonProperty("lastname")
 	public String lastname;
 
@@ -78,7 +81,7 @@ public class History {
 		try {
 			if (con != null) {
 				stmt = con
-						.prepareStatement("SELECT t.userid,u.username,u.lastname,"
+						.prepareStatement("SELECT t.userid,u.username,u.firstname,u.lastname,"
 								+ "(uf.address).addLine1 addLine1,"
 								+ "(uf.address).addLine2 addLine2,"
 								+ "(uf.address).addLine3 addLine3,"
@@ -99,18 +102,19 @@ public class History {
 					History history = new History();
 					history.userid = result.getInt(1);
 					history.username = result.getString(2);
-					history.lastname = result.getString(3);
-					history.addLine1 = result.getString(4);
-					history.addLine2 = result.getString(5);
-					history.addLine3 = result.getString(6);
-					history.city = result.getString(7);
-					history.state = result.getString(8);
-					if (result.getArray(9) != null)
-						history.phones = (String[]) result.getArray(9)
+					history.firstname = result.getString(3);
+					history.lastname = result.getString(4);
+					history.addLine1 = result.getString(5);
+					history.addLine2 = result.getString(6);
+					history.addLine3 = result.getString(7);
+					history.city = result.getString(8);
+					history.state = result.getString(9);
+					if (result.getArray(10) != null)
+						history.phones = (String[]) result.getArray(10)
 								.getArray();
-					history.empnumber = result.getString(10);
-					history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(11).getTime())));
-					history.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
+					history.empnumber = result.getString(11);
+					history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
+					history.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(13).getTime())));
 					history.isHistory = true;
 					histories.add(history);
 				}
@@ -129,5 +133,5 @@ public class History {
 					con.close();
 		}
 		return histories;
-		}
+	}
 }
