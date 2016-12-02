@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import javax.jws.soap.SOAPBinding;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -87,11 +88,11 @@ public class User {
     @JsonProperty("roleid")
     public int roleid;
 
-    @JsonView(UserViews.profileView.class)
+    @JsonView({UserViews.profileView.class, UserViews.divView.class})
     @JsonProperty("divId")
     public int divId;
 
-    @JsonView(UserViews.profileView.class)
+    @JsonView({UserViews.profileView.class, UserViews.divView.class})
     @JsonProperty("divName")
     public String divName;
 
@@ -617,7 +618,6 @@ public class User {
      * @param firstname
      * @param lastname
      * @param username
-     * @param clientId
      * @param isActive
      * @param addLine1
      * @param addLine2
@@ -634,9 +634,9 @@ public class User {
      * @return
      * @throws Exception
      */
-    public static int addUser(String firstname, String lastname,String username,int clientId , boolean isActive,
+    public static int addUser(String firstname, String lastname,String username, boolean isActive,
                               String addLine1, String addLine2, String addLine3, String city, String state,String phones,
-                              String designation,String empNumber,String profileImage,int roleid,int divid,LoggedInUser loggedInUser) throws Exception
+                              String designation,String empNumber,String profileImage,int roleid,String divid,LoggedInUser loggedInUser) throws Exception
     {
         int userRole = loggedInUser.roles.get(0).roleId;
         if(Permissions.isAuthorised(userRole,User).equals("Write"))
@@ -675,7 +675,7 @@ public class User {
                             + "clientId, username, password,isactive) values (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                     stmt.setString(1, firstname);
                     stmt.setString(2, lastname);
-                    stmt.setInt(3, clientId);
+                    stmt.setInt(3, loggedInUser.clientId);
                     stmt.setString(4, username);
                     stmt.setString(5, sb.toString());
                     stmt.setBoolean(6, isActive);
@@ -770,15 +770,25 @@ public class User {
                     //}
 //            } else
 //                throw new RequiredDataMissing("Role is required");
+                    System.out.println("DivId : " + divid);
+                    divid = divid.replace('"', ' ');
+                    divid = divid.replace('[', ' ');
+                    divid = divid.replace(']', ' ');
+                    divid = divid.replace('"', ' ');
+                    divid = divid.replaceAll("^\\s+", "").replaceAll("\\s+$", "");
+                    String[] divIdArr = divid.split(",");
+                    for (int i =0;i<divIdArr.length;i++)
+                    {
+                        stmt = con.prepareStatement(
+                                "insert into " + loggedInUser.schemaName + ".userdivmap (userId,divid,createdate,createBy) values"
+                                        + "(?,?,?,?)");
+                        stmt.setInt(1, userid);
+                        stmt.setInt(2, Integer.parseInt(divIdArr[i]));
+                        stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(4, loggedInUser.id);
+                        stmt.executeUpdate();
+                    }
 
-                    stmt = con.prepareStatement(
-                            "insert into " + loggedInUser.schemaName + ".userdivmap (userId,divid,createdate,createBy) values"
-                                    + "(?,?,?,?)");
-                    stmt.setInt(1, userid);
-                    stmt.setInt(2, divid);
-                    stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(4, loggedInUser.id);
-                    stmt.executeUpdate();
                     generateAndSendEmail(username, "testrolla@gmail.com", "Rolla@test",firstname,lastname,password);
                     con.commit();
                     return userid;
@@ -894,20 +904,19 @@ public class User {
                                 " e.roleid roleid, f.name rolename, a.username username," +
                                 " (b.address).addLine1 line1, (b.address).addLine2 line2, (b.address).addLine3 line3 ," +
                                 " (b.address).city city, (b.address).state, (b.address).phone phones, b.designation ," +
-                                " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby ," +
+                                " b.empNumber,b.createDate cdate, b.createBy cby ," +
                                 " b.updateDate  udate,  b.updateBy uby,b.profileimage profileimage, (b1.address).city updatecity ," +
                                 " (b1.address).state updatestate, (b1.address).phone updatephone ," +
                                 "(select a1.username from master.users a1," +
                                 " client1.userprofile b1 where a1.id = b1.updateby and b1.userId = a.id) updatename ,a1.firstname fname,a1.lastname lname " +
                                 " from master.users a left join " +
                                 loggedInUser.schemaName + ".userprofile b on a.id = b.userid " +
-                                " left join " + loggedInUser.schemaName + ".userdivmap c on a.id = c.userid left join " +
-                                loggedInUser.schemaName + ".divisions d on d.id = c.divid left join master.userrolemap e on " +
+                                " left join master.userrolemap e on " +
                                 " e.userid = a.id left join master.roles f on f.id = e.roleid " +
                                 " left join master.clients h on h.id = a.clientId " +
                                 " left join "+loggedInUser.schemaName+".userprofile b1 on b1.userid = b.updateby " +
-                                " left join master.users a1 on a1.id = b1.updateby "+
-                                " order by b.createDate DESC ");
+                                " left join master.users a1 on a1.id = b1.updateby " +
+                                " order by b.updateDate DESC ");
                 result = stmt.executeQuery();
                 while (result.next()) {
 
@@ -932,13 +941,13 @@ public class User {
                         user.phones = (String[]) result.getArray("phones").getArray();
 
                     user.roleid = result.getInt("roleid");
-                    user.divId = result.getInt("divId");
-                    user.divName = result.getString("divname");
+/*                    user.divId = result.getInt("divId");
+                    user.divName = result.getString("divname");*/
                     user.empNum = result.getString("empnumber");
                     user.createDate = result.getDate("cdate");
                     user.createBy = result.getInt("cby");
-                    user.updateDate = result.getDate("cdate");
-                    user.updateBy = result.getInt("cby");
+                    user.updateDate = result.getDate("udate");
+                    user.updateBy = result.getInt("uby");
                     user.designation = result.getString("designation");
                     user.userDetails = new ArrayList<>();
                     user.userDetails.add(new UserDetail(result.getInt("uby") , result.getString("updatename") , result.getString("fname"),result.getString("lname"),result.getString("updatecity"),result.getString("updatestate"), (String[]) result.getArray("updatephone").getArray()));
@@ -1008,7 +1017,7 @@ public class User {
                                     " left join master.clients h on h.id = a.clientId " +
                                     " left join "+loggedInUser.schemaName+".userprofile b1 on b1.userid = b.updateby " +
                                     " left join master.users a1 on a1.id = b1.updateby "+
-                                    " where c.divid = ? order by b.createDate DESC ");
+                                    " where c.divid = ? order by b.updateDate DESC ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     while (result.next()) {
@@ -1035,8 +1044,8 @@ public class User {
                         user.empNum = result.getString("empnumber");
                         user.createDate = result.getDate("cdate");
                         user.createBy = result.getInt("cby");
-                        user.updateDate = result.getDate("cdate");
-                        user.updateBy = result.getInt("cby");
+                        user.updateDate = result.getDate("udate");
+                        user.updateBy = result.getInt("uby");
                         user.designation = result.getString("designation");
                         user.userDetails = new ArrayList<>();
                         user.userDetails.add(new UserDetail(result.getInt("uby") , result.getString("updatename") ,result.getString("fname"),result.getString("lname"), result.getString("updatecity"),result.getString("updatestate"), (String[]) result.getArray("updatephone").getArray()));
@@ -1131,7 +1140,6 @@ public class User {
      * @param firstname
      * @param lastname
      * @param username
-     * @param clientId
      * @param isActive
      * @param addLine1
      * @param addLine2
@@ -1150,9 +1158,9 @@ public class User {
      * @return
      * @throws Exception
      */
-    public static int updateUserDetails(String firstname, String lastname,String username,int clientId , boolean isActive,
+    public static int updateUserDetails(String firstname, String lastname,String username, boolean isActive,
                                          String addLine1, String addLine2, String addLine3, String city, String state,String phones,
-                                         String designation,String empNumber,String profileImage,int roleid,int divid,
+                                         String designation,String empNumber,String profileImage,int roleid,String divid,
                                          int userid,boolean isPublic,LoggedInUser loggedInUser)
             throws Exception {
 
@@ -1169,14 +1177,13 @@ public class User {
 
             try {
                 con.setAutoCommit(false);
-                stmt = con.prepareStatement("UPDATE master.users SET firstname = ?,lastname = ?,clientId= ?,username=?, isactive=? " +
+                stmt = con.prepareStatement("UPDATE master.users SET firstname = ?,lastname = ?,username=?, isactive=? " +
                         " WHERE id = ?");
                 stmt.setString(1, firstname);
                 stmt.setString(2, lastname);
-                stmt.setInt(3, clientId);
-                stmt.setString(4, username);
-                stmt.setBoolean(5, isActive);
-                stmt.setInt(6, userid);
+                stmt.setString(3, username);
+                stmt.setBoolean(4, isActive);
+                stmt.setInt(5, userid);
 
                 affectedRows = stmt.executeUpdate();
 
@@ -1212,10 +1219,27 @@ public class User {
 
                     stmt.executeUpdate();
 
-                    stmt = con.prepareStatement("UPDATE " + loggedInUser.schemaName + ".userdivmap SET divid=? where userid=?");
-                    stmt.setInt(1, divid);
-                    stmt.setInt(2, userid);
+                    stmt = con.prepareStatement("DELETE from " + loggedInUser.schemaName + ".userdivmap where userid=?");
+                    stmt.setInt(1, userid);
                     stmt.executeUpdate();
+
+                        divid = divid.replace('"', ' ');
+                        divid = divid.replace('[', ' ');
+                        divid = divid.replace(']', ' ');
+                        divid = divid.replace('"', ' ');
+                        divid = divid.replaceAll("^\\s+", "").replaceAll("\\s+$", "");
+                        String[] divIdArr = divid.split(",");
+
+                        for (int i =0;i<divIdArr.length;i++) {
+                            stmt = con.prepareStatement(
+                                    "insert into " + loggedInUser.schemaName + ".userdivmap (userId,divid,createdate,createBy) values"
+                                            + "(?,?,?,?)");
+                            stmt.setInt(1, userid);
+                            stmt.setInt(2, Integer.parseInt(divIdArr[i]));
+                            stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
+                            stmt.setInt(4, loggedInUser.id);
+                            stmt.executeUpdate();
+                    }
 
                     stmt = con.prepareStatement("SELECT roleid from master.userrolemap where userid=?");
                     stmt.setInt(1, userid);
@@ -1327,6 +1351,50 @@ public class User {
         } else {
             throw new NotAuthorizedException("");
         }
+    }
+
+    /***
+     *  Method used to get all divisions for logged in user from userdivmap table.
+     *
+     * @param userId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<User> getDivisions(int userId,LoggedInUser loggedInUser) throws Exception
+    {
+        Connection con = DBConnectionProvider.getConn();
+        ArrayList<User> list = new ArrayList<User>();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+        User user = null;
+        try {
+
+            stmt = con.prepareStatement("SELECT u.divid,d.name from "+loggedInUser.schemaName+".userdivmap u " +
+                    " left join "+loggedInUser.schemaName+".divisions d on d.id = u.divid" +
+                    " where u.userid = ? ");
+            stmt.setInt(1,userId);
+            result = stmt.executeQuery();
+            while (result.next())
+            {
+                user = new User();
+                user.divId = result.getInt(1);
+                user.divName = result.getString(2);
+                list.add(user);
+            }
+
+        }finally {
+            if (result != null)
+                if (!result.isClosed())
+                    result.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
+        return list;
     }
 
     /***

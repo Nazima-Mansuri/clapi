@@ -1,33 +1,34 @@
 package com.brewconsulting.users;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.SQLException;
-import java.util.List;
+import com.brewconsulting.DB.masters.LoggedInUser;
+import com.brewconsulting.DB.masters.Role;
+import com.brewconsulting.DB.masters.User;
+import com.brewconsulting.DB.masters.UserViews;
+import com.brewconsulting.exceptions.NoDataFound;
+import com.brewconsulting.login.Secured;
+import com.brewconsulting.masters.Divisions;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 
-import javax.mail.MessagingException;
-import javax.naming.NamingException;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import com.brewconsulting.DB.masters.*;
-import com.brewconsulting.exceptions.NoDataFound;
-import com.brewconsulting.login.Credentials;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.postgresql.util.PSQLException;
-
-import com.brewconsulting.exceptions.RequiredDataMissing;
-import com.brewconsulting.login.Secured;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 @Path("users")
 @Secured
 public class Users {
+    static final Logger logger = Logger.getLogger(Users.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
      * Get the details of the user. User profile, and roles he is in.
@@ -45,16 +46,21 @@ public class Users {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User.getProfile(
                             (LoggedInUser) crc.getProperty("userObject"), id))).build();
         }
         catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to view other's profile\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }catch (Exception e) {
+            logger.error("Exception ",e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getStackTrace() + "\"}").build();
             e.printStackTrace();
@@ -80,16 +86,58 @@ public class Users {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writerWithView(UserViews.deAssociateView.class).writeValueAsString(User
                             .getDeassociateUser(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Deassociate User\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Get all divisions of logged in user
+     *
+     * @param userId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("divisions/{userId}")
+
+    public Response getdivisions(@PathParam("userId") int userId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.divView.class).writeValueAsString(User
+                            .getDivisions(userId,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Deassociate User\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -111,16 +159,21 @@ public class Users {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
                             .getAllUsers((LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Users. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -143,16 +196,21 @@ public class Users {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
                             .getAllUsersByDivId(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Users. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -174,15 +232,20 @@ public class Users {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writeValueAsString(Role.getAllRoles(
                             (LoggedInUser) crc.getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Roles\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception " ,e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -205,16 +268,21 @@ public class Users {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writerWithView(UserViews.clientView.class).writeValueAsString(User
                             .getAllClients((LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Clients. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -237,6 +305,9 @@ public class Users {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             int affectedRow = User.deactivateUser(node, (LoggedInUser) crc.getProperty("userObject"));
             System.out.println("Method called and affected rows" + affectedRow);
@@ -248,11 +319,13 @@ public class Users {
                 resp = Response.status(204).build();
 
         }  catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Deactivate User \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -274,15 +347,20 @@ public class Users {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             User.changePassword(id,node);
             resp = Response.ok("{\"Message\":" + "\" Password changed Successfully. \"}").build();
         }catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null)
                 resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}")
                         .type(MediaType.APPLICATION_JSON).build();
             e.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -297,7 +375,6 @@ public class Users {
      * @param firstname
      * @param lastname
      * @param username
-     * @param clientId
      * @param isActive
      * @param addLine1
      * @param addLine2
@@ -322,7 +399,6 @@ public class Users {
             @FormDataParam("firstName") String firstname,
             @FormDataParam("lastName") String lastname,
             @FormDataParam("username") String username,
-            @FormDataParam("clientId") int clientId,
             @FormDataParam("isActive") boolean isActive,
             @FormDataParam("addLine1") String addLine1,
             @FormDataParam("addLine2") String addLine2,
@@ -333,7 +409,7 @@ public class Users {
             @FormDataParam("designation") String designation,
             @FormDataParam("empNumber") String empNumber,
             @FormDataParam("roleid") int roleid,
-            @FormDataParam("divId") int divId,
+            @FormDataParam("divId") String divId,
             @Context ContainerRequestContext crc) {
 
         Response resp = null;
@@ -345,6 +421,9 @@ public class Users {
         System.out.println("Multipart Form Data");
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
 
             if (fileFormDataContentDisposition != null) {
                 fileName = System.currentTimeMillis() + "_"
@@ -355,7 +434,7 @@ public class Users {
                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Profile/1479199419218_default_image.jpg";
             }
 
-            int userId = User.addUser(firstname,lastname,username,clientId,isActive,addLine1,addLine2,addLine3,city,state,phones,
+            int userId = User.addUser(firstname,lastname,username,isActive,addLine1,addLine2,addLine3,city,state,phones,
                     designation,empNumber,uploadFilePath,roleid,divId,(LoggedInUser) crc.getProperty("userObject"));
 
             if (userId != 0)
@@ -367,23 +446,27 @@ public class Users {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add User\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (BadRequestException b) {
+            logger.error("BadRequestException " ,b);
             resp = Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"Message\":" + "\"" + b.getMessage()  +"\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -398,7 +481,6 @@ public class Users {
      * @param firstname
      * @param lastname
      * @param username
-     * @param clientId
      * @param isActive
      * @param addLine1
      * @param addLine2
@@ -427,7 +509,6 @@ public class Users {
             @FormDataParam("firstName") String firstname,
             @FormDataParam("lastName") String lastname,
             @FormDataParam("username") String username,
-            @FormDataParam("clientId") int clientId,
             @FormDataParam("isActive") boolean isActive,
             @FormDataParam("addLine1") String addLine1,
             @FormDataParam("addLine2") String addLine2,
@@ -438,7 +519,7 @@ public class Users {
             @FormDataParam("designation") String designation,
             @FormDataParam("empNumber") String empNumber,
             @FormDataParam("roleid") int roleid,
-            @FormDataParam("divId") int divId,
+            @FormDataParam("divId") String divId,
             @FormDataParam("isUpdated") boolean isUpdated,
             @FormDataParam("url") String url,
             @FormDataParam("userid") int userid,
@@ -453,6 +534,9 @@ public class Users {
         System.out.println("Multipart Form Data");
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             if(isUpdated)
             {
                 System.out.println("isUpdated : " + isUpdated);
@@ -469,7 +553,7 @@ public class Users {
                 System.out.println("isUpdated : " + isUpdated);
             }
 
-            int affectedRows = User.updateUserDetails(firstname,lastname,username,clientId,isActive,addLine1,addLine2,addLine3,city,state,phones,
+            int affectedRows = User.updateUserDetails(firstname,lastname,username,isActive,addLine1,addLine2,addLine3,city,state,phones,
                     designation,empNumber,uploadFilePath,roleid,divId,userid,isPublic,(LoggedInUser) crc.getProperty("userObject"));
 
             if (affectedRows != 0 || affectedRows >0)
@@ -481,16 +565,19 @@ public class Users {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Update User Details\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

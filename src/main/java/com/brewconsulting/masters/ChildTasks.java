@@ -7,6 +7,8 @@ import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.postgresql.util.PSQLException;
 
 import javax.ws.rs.*;
@@ -16,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Created by lcom53 on 15/10/16.
@@ -27,6 +30,9 @@ public class ChildTasks {
 
     ObjectMapper mapper = new ObjectMapper();
 
+    static final Logger logger = Logger.getLogger(ChildTasks.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
     /***
      * Produces list of Cycle Meeting tasks.
      *
@@ -39,18 +45,22 @@ public class ChildTasks {
     @Path("{id}")
     public Response getTasks(@PathParam("id") int id ,@Context ContainerRequestContext crc) {
         Response resp = null;
-        ObjectMapper mapper = new ObjectMapper();
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writerWithView(UserViews.childTaskView.class).writeValueAsString(Task
                             .getCycleMeetingTasks(id,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Tasks\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }  catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -72,6 +82,9 @@ public class ChildTasks {
                                 @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             Task task = Task.getCycleMeetingTaskById(id,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (task == null) {
@@ -85,12 +98,13 @@ public class ChildTasks {
             }
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }  catch (Exception e) {
-
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
 
@@ -113,6 +127,9 @@ public class ChildTasks {
                                   @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             int subTaskId = Task.addCycleMeetingTask(node,
                     (LoggedInUser) crc.getProperty("userObject"));
@@ -124,16 +141,19 @@ public class ChildTasks {
                         .entity(new NoDataFound("Unable to Insert Cycle Meeting Task")
                                 .getJsonString()).build();
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }  catch (IOException e) {
+            logger.error("IOException ", e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ", e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -155,20 +175,26 @@ public class ChildTasks {
                                   @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             Task.updateCycleMeetingTask(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }  catch (IOException e) {
+            logger.error("IOException ", e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception ", e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -190,6 +216,9 @@ public class ChildTasks {
                                   @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             // affectedRow given how many rows deleted from database.
             int affectedRow = Task.deleteCycleMeetingTask(id,
                     (LoggedInUser) crc.getProperty("userObject"));
@@ -201,17 +230,20 @@ public class ChildTasks {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Task\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
+            logger.error("PSQLException ", ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception ", e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();

@@ -1,7 +1,9 @@
 package com.brewconsulting.masters;
 
+import com.brewconsulting.DB.masters.CycleMeetingPost;
+import com.brewconsulting.DB.masters.CycleMeetingPostReply;
+import com.brewconsulting.DB.masters.GroupPostReply;
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.masters.Question;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,49 +20,50 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Created by lcom53 on 7/11/16.
+ * Created by lcom53 on 1/12/16.
  */
-@Path("questions")
+@Path("cyclemeetingposts")
 @Secured
-public class Questions {
+public class CycleMeetingPosts {
 
     ObjectMapper mapper = new ObjectMapper();
-    static final Logger logger = Logger.getLogger(Questions.class);
+    static final Logger logger = Logger.getLogger(CycleMeetingPosts.class);
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     @GET
     @Produces("application/json")
     @Secured
-    public Response questions(@Context ContainerRequestContext crc) {
+    @Path("{meetingId}")
+    public Response getmeetingposts(@PathParam("meetingId") int meetingId ,@Context ContainerRequestContext crc) {
         Response resp = null;
+
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             resp = Response.ok(
-                    mapper.writeValueAsString(Question
-                            .getAllQuestions((LoggedInUser) crc
-                                    .getProperty("userObject")))).build();
+                    mapper.writeValueAsString(CycleMeetingPost
+                            .getMeetingPost(meetingId,((LoggedInUser) crc
+                                    .getProperty("userObject"))))).build();
 
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException" , na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get Questions\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to get group Meetings\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (Exception e) {
-            logger.error("Exception " , e);
+        } catch (Exception e) {
+            logger.error("Exception" , e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
-
         return resp;
     }
 
+
     /***
-     *  Add MCQ Question
+     *  Add Cycle meeting Post
      *
      * @param input
      * @param crc
@@ -70,21 +73,21 @@ public class Questions {
     @Produces("application/json")
     @Secured
     @Consumes("application/json")
-    public Response createQues(InputStream input,
-                              @Context ContainerRequestContext crc) {
+    public Response createmeetingpost(InputStream input,
+                                   @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             JsonNode node = mapper.readTree(input);
-            int questionId = Question.addQuestion(node,
+            int meetingPostId = CycleMeetingPost.addMeetingPost(node,
                     (LoggedInUser) crc.getProperty("userObject"));
-            resp = Response.ok("{\"id\":" + questionId + "}").build();
+            resp = Response.ok("{\"id\":" + meetingPostId + "}").build();
         }  catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException" , na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to add Questions\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to add Group GroupPost Reply\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {

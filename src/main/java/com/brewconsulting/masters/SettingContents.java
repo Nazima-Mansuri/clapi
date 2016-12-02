@@ -1,11 +1,12 @@
 package com.brewconsulting.masters;
 
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.masters.Product;
 import com.brewconsulting.DB.masters.SettingContent;
 import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.postgresql.util.PSQLException;
@@ -17,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Created by lcom16 on 18/10/16.
@@ -26,6 +28,10 @@ import java.io.InputStream;
 public class SettingContents {
 
     ObjectMapper mapper = new ObjectMapper();
+
+    static final Logger logger = Logger.getLogger(SettingContents.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /**
      * Produces all contents.
@@ -41,16 +47,21 @@ public class SettingContents {
         Response resp = null;
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writeValueAsString(SettingContent
                             .getAllContent(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -74,16 +85,21 @@ public class SettingContents {
         Response resp = null;
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writeValueAsString(SettingContent
                             .getDivisionSpecificContent(divId,agendaId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -117,11 +133,19 @@ public class SettingContents {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             if (fileFormDataContentDisposition != null) {
-                fileName = System.currentTimeMillis() + "_"
-                        + fileFormDataContentDisposition.getFileName();
-                // This method is used to store image in AWS bucket.
-                uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
+                if(fileFormDataContentDisposition.getFileName() != null) {
+                    fileName = System.currentTimeMillis() + "_"
+                            + fileFormDataContentDisposition.getFileName();
+                    // This method is used to store image in AWS bucket.
+                    uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
+                }else {
+                    uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                }
+
             } else {
                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
             }
@@ -138,16 +162,19 @@ public class SettingContents {
                                 .getJsonString()).build();
 
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Contents \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -185,6 +212,9 @@ public class SettingContents {
         String uploadFilePath = null;
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             if (isUpdated) {
                 if (fileFormDataContentDisposition != null) {
                     fileName = System.currentTimeMillis() + "_"
@@ -204,16 +234,19 @@ public class SettingContents {
             resp = Response.ok().build();
 
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -236,6 +269,9 @@ public class SettingContents {
                                          @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             int affectedRow = SettingContent.deleteSettingContent(id,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (affectedRow > 0)
@@ -246,17 +282,20 @@ public class SettingContents {
                 resp = Response.status(204).build();
 
         }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
+            logger.error("PSQLException ",ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

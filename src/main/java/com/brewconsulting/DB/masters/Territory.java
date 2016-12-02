@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -58,12 +59,28 @@ public class Territory {
     @JsonProperty("username")
     public String username;
 
+    @JsonProperty("firstname")
+    public String firstname;
+
+    @JsonProperty("lastname")
+    public String lastname;
+
     @JsonProperty("isHistory")
     public boolean isHistory;
+
+    @JsonProperty("createDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    public Date createDate;
 
     @JsonProperty("createBy")
     public int createBy;
 
+    @JsonProperty("updatedate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    public Date updatedate;
+
+    @JsonProperty("updateby")
+    public int updateby;
     public static final int Territory = 3;
 
     // make the default constructor visible to package only.
@@ -116,8 +133,6 @@ public class Territory {
                                     + schemaName + ".userterritorymap u " + "on t.id = u.terrid" +
                                     " left join master.users uf on uf.id = u.userid "+
                                     "  where divId = ?");
-
-                    System.out.println("divId :"+ divId);
                     stmt.setInt(1, divId);
 
                     result = stmt.executeQuery();
@@ -149,7 +164,6 @@ public class Territory {
 //                        tw.children = terr.children;
 //					lookup.put(terr.id, terr);
                         lookup.put(terr.id, tw);
-                        System.out.println("in while");
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -288,9 +302,10 @@ public class Territory {
 
                     stmt = con
                             .prepareStatement("select distinct t.id,CASE WHEN b.terrid IS NULL THEN 'false' ELSE 'true' END AS isHistory," +
-                                    "name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
+                                    " name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
                                     + "(address).addLine3 addLine3,(address).city city,(address).state state,"
-                                    + "(address).phone phones,parentId,divId,u.userid,uf.username from " + schemaName
+                                    + "(address).phone phones,parentId,divId,u.userid,uf.username,uf.firstname,uf.lastname,"
+                                    + " t.createdate,t.createby,t.updatedate,t.updateby from " + schemaName
                                     + ".territories t left join "
                                     + schemaName + ".userterritorymap u " + "on t.id=u.terrid " +
                                     "LEFT JOIN " + schemaName + ".userterritorymaphistory b ON t.id = b.terrid "+
@@ -319,8 +334,14 @@ public class Territory {
                         territory.divId = result.getInt(11);
                         territory.personId = result.getInt(12);
                         territory.username = result.getString(13);
-                        if(territory.username != null)
-                            tw.text = territory.name +" - " + territory.username;
+                        territory.firstname = result.getString(14);
+                        territory.lastname = result.getString(15);
+                        territory.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(16).getTime())));
+                        territory.createBy = result.getInt(17);
+                        territory.updatedate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(18).getTime())));
+                        territory.updateby = result.getInt(19);
+                        if(territory.firstname != null && territory.lastname != null)
+                            tw.text = territory.name +" - " + territory.firstname + " " + territory.lastname;
                         else
                             tw.text = territory.name;
                         tw.data = territory;
@@ -394,7 +415,8 @@ public class Territory {
 
                 stmt = con.prepareStatement(
                         "INSERT INTO " + schemaName
-                                + ".territories(name,parentid,address,divid) values (?,?,ROW(?,?,?,?,?,?),?)",
+                                + ".territories(name,parentid,address,divid,createdate,createby,updatedate,updateby) " +
+                                " values (?,?,ROW(?,?,?,?,?,?),?,?,?,?,?)",
                         Statement.RETURN_GENERATED_KEYS);
                 stmt.setString(1, node.get("name").asText());
                 if (node.has("parentId"))
@@ -433,6 +455,11 @@ public class Territory {
                 stmt.setArray(8, pharr);
 
                 stmt.setInt(9, node.get("divId").asInt());
+
+                stmt.setTimestamp(10, new Timestamp((new Date()).getTime()));
+                stmt.setInt(11, loggedInUser.id);
+                stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
+                stmt.setInt(13, loggedInUser.id);
 
                 affectedRow = stmt.executeUpdate();
 
@@ -536,7 +563,9 @@ public class Territory {
                 Array pharr = con.createArrayOf("text", phoneArr);
 
                 stmt = con.prepareStatement(
-                        "UPDATE " + schemaName + ".territories SET name = ?,address =ROW(?,?,?,?,?,?) WHERE id = ?");
+                        "UPDATE " + schemaName +
+                                ".territories SET name = ?,address =ROW(?,?,?,?,?,?), updatedate = ?,updateby = ? " +
+                                "  WHERE id = ?");
                 stmt.setString(1, node.get("name").asText());
                 stmt.setString(2, node.get("addLine1").asText());
                 stmt.setString(3, node.get("addLine2").asText());
@@ -544,7 +573,9 @@ public class Territory {
                 stmt.setString(5, node.get("city").asText());
                 stmt.setString(6, node.get("state").asText());
                 stmt.setArray(7, pharr);
-                stmt.setInt(8, node.get("id").asInt());
+                stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                stmt.setInt(9, loggedInUser.id);
+                stmt.setInt(10, node.get("id").asInt());
 
                 affectedRow = stmt.executeUpdate();
 

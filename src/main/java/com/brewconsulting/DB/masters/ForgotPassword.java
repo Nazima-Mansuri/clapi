@@ -192,8 +192,9 @@ public class ForgotPassword {
         generateMailMessage = new MimeMessage(getMailSession);
         generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(username));
         generateMailMessage.setSubject("Rolla > Forgot Password");
-        String emailBody = "<h3> Hi "+name+", </h3>"+" <h4> We got your request for new password. </h4>"+"<h4>Your New Password : "+generateRandomString()+"</h4>";
-        System.out.println(generateRandomString());
+        String forgotPassword = generateRandomString();
+        String emailBody = "<h3> Hi "+name+", </h3>"+" <h4> We got your request for new password. </h4>"+"<h4>Your New Password : "+ forgotPassword +"</h4>";
+        System.out.println(forgotPassword);
         generateMailMessage.setContent(emailBody, "text/html");
         System.out.println("Mail Session has been created successfully..");
 
@@ -205,7 +206,8 @@ public class ForgotPassword {
         if (transport.isConnected())
         {
             transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
-            updatePassword(username,emailBody);
+            System.out.println(forgotPassword);
+            updatePassword(username,forgotPassword);
             transport.close();
             return true;
         }

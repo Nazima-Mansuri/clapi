@@ -110,7 +110,10 @@ public class Division {
             try {
                 if (con != null) {
                     stmt = con
-                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy,u.username,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
+                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy," +
+                                    " u.username,u.firstname,u.lastname,(address).addLine1 addLine1," +
+                                    " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                    " (address).state state,(address).phone phones from "
                                     + schemaName
                                     + ".divisions d left join master.users u on d.updateBy = u.id left join "
                                     + schemaName
@@ -127,16 +130,16 @@ public class Division {
                         div.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         div.updateBy = result.getInt(7);
                         div.username = result.getString(8);
-                        div.addLine1 = result.getString(9);
-                        div.addLine2 = result.getString(10);
-                        div.addLine3 = result.getString(11);
-                        div.city = result.getString(12);
-                        div.state = result.getString(13);
-                        if (result.getArray(14) != null)
-                            div.phones = (String[]) result.getArray(14)
+                        div.firstname = result.getString(9);
+                        div.lastname = result.getString(10);
+                        div.addLine1 = result.getString(11);
+                        div.addLine2 = result.getString(12);
+                        div.addLine3 = result.getString(13);
+                        div.city = result.getString(14);
+                        div.state = result.getString(15);
+                        if (result.getArray(16) != null)
+                            div.phones = (String[]) result.getArray(16)
                                     .getArray();
-                        div.firstname = loggedInUser.firstName;
-                        div.lastname = loggedInUser.lastName;
 
                         divisions.add(div);
                     }
@@ -188,11 +191,13 @@ public class Division {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, d.updateDate, "
-                                    + " d.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
+                                    + " d.updateBy,u.username,u.firstname,u.lastname,(address).addLine1 addLine1,(address).addLine2 addLine2," +
+                                    " (address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
                                     + schemaName
-                                    + ".divisions d left join "
-                                    + schemaName
-                                    + ".userprofile p on d.updateby = p.userid where id = ?");
+                                    + ".divisions d " +
+                                    " left join master.users u on u.id = d.updateby " +
+                                    " left join "+ schemaName+ ".userprofile p on d.updateby = p.userid " +
+                                    "where id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -204,16 +209,17 @@ public class Division {
                         division.createBy = result.getInt(5);
                         division.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         division.updateBy = result.getInt(7);
-                        division.addLine1 = result.getString(8);
-                        division.addLine2 = result.getString(9);
-                        division.addLine3 = result.getString(10);
-                        division.city = result.getString(11);
-                        division.state = result.getString(12);
-                        if (result.getArray(13) != null)
-                            division.phones = (String[]) result.getArray(13)
+                        division.username = result.getString(8);
+                        division.firstname = result.getString(9);
+                        division.lastname = result.getString(10);
+                        division.addLine1 = result.getString(11);
+                        division.addLine2 = result.getString(12);
+                        division.addLine3 = result.getString(13);
+                        division.city = result.getString(14);
+                        division.state = result.getString(15);
+                        if (result.getArray(16) != null)
+                            division.phones = (String[]) result.getArray(16)
                                     .getArray();
-                        division.firstname = loggedInUser.firstName;
-                        division.lastname = loggedInUser.lastName;
                     }
                 } else
                     throw new Exception("DB connection is null");

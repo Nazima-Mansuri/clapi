@@ -1,21 +1,32 @@
 package com.brewconsulting.DB.common;
 
+import com.brewconsulting.masters.Divisions;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Enumeration;
+import java.util.Properties;
 
 /**
  * Created by lcom53 on 15/11/16.
  */
 public class ContextListener implements ServletContextListener {
+    static final Logger logger = Logger.getLogger(ContextListener.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
+
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
 
@@ -25,6 +36,9 @@ public class ContextListener implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
         DataSource source = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             javax.naming.Context env = null;
             env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
             String databasename = (String) env.lookup("DB_URL");
@@ -58,8 +72,13 @@ public class ContextListener implements ServletContextListener {
             }
 
         } catch (NamingException e) {
+            logger.error("NamingException ",e);
             e.printStackTrace();
         } catch (SQLException e) {
+            logger.error("SQLException ",e);
+            e.printStackTrace();
+        } catch (IOException e) {
+            logger.error("IOException ",e);
             e.printStackTrace();
         }
     }

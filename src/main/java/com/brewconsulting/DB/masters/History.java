@@ -113,8 +113,16 @@ public class History {
 						history.phones = (String[]) result.getArray(10)
 								.getArray();
 					history.empnumber = result.getString(11);
-					history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
-					history.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(13).getTime())));
+					if(!result.getTimestamp(12).equals(result.getTimestamp(13))) {
+						history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
+						history.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(13).getTime())));
+					}
+					else
+					{
+						history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
+						history.endDate = null;
+
+					}
 					history.isHistory = true;
 					histories.add(history);
 				}

@@ -10,4 +10,5 @@ public class UserViews {
 	public static class groupNoteView{};
 	public static class childNoteView{};
 	public static class clientView{};
+	public static class divView{};
 }

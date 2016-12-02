@@ -1,5 +1,6 @@
 package com.brewconsulting.login;
 
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -28,17 +29,26 @@ import com.brewconsulting.DB.masters.User;
 import com.brewconsulting.DB.masters.UserViews;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import static com.brewconsulting.DB.masters.ForgotPassword.generateAndSendEmail;
 
 @Path("login")
 public class authentication {
 
+    static final Logger logger = Logger.getLogger(authentication.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
+
     @POST
     public Response login(Credentials credentials, @Context ServletContext context)
             throws SQLException, ClassNotFoundException, IOException {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             String username = credentials.getUsername();
             String password = credentials.getPassword();
 
@@ -52,8 +62,6 @@ public class authentication {
             for (int i = 0; i < byteData.length; i++) {
                 sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
             }
-
-            System.out.println("Digest(in hex format):: " + sb.toString());
 
             if (username.equals(null) || username.equals("")) {
                 resp = Response.status(Response.Status.BAD_REQUEST).entity("{\"Message\":" + "\" Username not specified\"}").build();
@@ -135,6 +143,7 @@ public class authentication {
 
             resp = Response.ok("" + node.toString() + "").type(MediaType.APPLICATION_JSON).build();
         } catch (Exception ex) {
+            logger.error("Exception " ,ex);
             if (resp == null)
                 resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage()  +"\"}")
                         .type(MediaType.APPLICATION_JSON).build();
@@ -159,15 +168,17 @@ public class authentication {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response refreshAccessToken(Credentials credentials, @Context ContainerRequestContext context, @Context ServletContext servletContext) throws SQLException, NamingException, ClassNotFoundException {
+    public Response refreshAccessToken(Credentials credentials, @Context ContainerRequestContext context, @Context ServletContext servletContext) throws SQLException, NamingException, ClassNotFoundException, IOException {
         Response resp = null;
+
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode node = mapper.createObjectNode();
         String salt = servletContext.getInitParameter("salt");
 
-            String refreshToken = credentials.getRefreshToken();
-            System.out.println("TOKEN : " + refreshToken + "\n");
-            System.out.println(" \n ************ TOKEN CALLED *********** \n");
+        properties.load(inp);
+        PropertyConfigurator.configure(properties);
+
+        String refreshToken = credentials.getRefreshToken();
 
             if(refreshToken == null || refreshToken == "")
             {
@@ -213,7 +224,6 @@ public class authentication {
                                     .setSubject(user.username).setId(UUID.randomUUID().toString())
                                     .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
                                     .signWith(SignatureAlgorithm.HS256, salt);
-                            System.out.println("\n ACCESS TOKEN GENERATED..... \n");
 
                             bldr.claim("user", mapper.writerWithView(UserViews.authView.class).writeValueAsString(user));
                             bldr.claim("tokenType", "ACCESS");
@@ -236,7 +246,14 @@ public class authentication {
                         resp = Response.status(498).entity("{\"Message\":" + "\" Invalid Token , Please Login Again!\"}").build();
                     }
                 }
+                catch (NotAuthorizedException na)
+                {
+                    logger.error("NotAuthorizedException ",na);
+                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ na.toString() +" \" }")
+                            .type(MediaType.APPLICATION_JSON).build();
+                }
                 catch (Exception ex) {
+                    logger.error("Exception ",ex);
                     context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
                     servletContext.log("Invalid token", ex);
                     resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ ex.toString() +" \" }")
@@ -264,6 +281,9 @@ public class authentication {
         String password = context.getInitParameter("password");
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             boolean isTrue = ForgotPassword.generateAndSendEmail(credentials.getUsername(),from,password);
             System.out.println("isTrue " + isTrue);
             if(isTrue)
@@ -279,6 +299,7 @@ public class authentication {
         }
         catch (Exception e)
         {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }

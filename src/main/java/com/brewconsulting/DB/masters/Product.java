@@ -130,14 +130,15 @@ public class Product {
                     if (divid != -1) {
                         stmt = con
                                 .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
-                                        + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
-                                        "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                        "(address).state state,(address).phone phones ,d.name from "
-                                        + schemaName
-                                        + ".products p left join "
-                                        + schemaName
-                                        + ".userprofile u on p.updateby = u.userid" +
-                                        " left join " + schemaName + ".divisions d on  p.division = d.id where p.division=? ORDER BY p.createDate DESC ");
+                                        + " p.createBy, p.updateDate,p.updateBy, u.username,u.firstname,u.lastname, " +
+                                        " (address).addLine1 addLine1," +
+                                        " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                        " (address).state state,(address).phone phones ,d.name from "
+                                        + schemaName + ".products p " +
+                                        " left join master.users u on u.id = p.updateby " +
+                                        " left join " + schemaName+ ".userprofile uf on p.updateby = uf.userid " +
+                                        " left join " + schemaName + ".divisions d on  p.division = d.id " +
+                                        " where p.division=? ORDER BY p.createDate DESC ");
                         stmt.setInt(1, divid);
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -156,31 +157,34 @@ public class Product {
                                     .parse(new SimpleDateFormat("dd-MM-yyyy")
                                             .format(new java.sql.Date(result.getTimestamp(9).getTime())));
                             product.updateBy = result.getInt(10);
-                            product.addLine1 = result.getString(11);
-                            product.addLine2 = result.getString(12);
-                            product.addLine3 = result.getString(13);
-                            product.city = result.getString(14);
-                            product.state = result.getString(15);
-                            if (result.getArray(16) != null)
-                                product.phones = (String[]) result.getArray(16)
+                            product.username = result.getString(11);
+                            product.firstname = result.getString(12);
+                            product.lastname = result.getString(13);
+                            product.addLine1 = result.getString(14);
+                            product.addLine2 = result.getString(15);
+                            product.addLine3 = result.getString(16);
+                            product.city = result.getString(17);
+                            product.state = result.getString(18);
+                            if (result.getArray(19) != null)
+                                product.phones = (String[]) result.getArray(19)
                                         .getArray();
-                            product.divName = result.getString(17);
-                            product.firstname = loggedInUser.firstName;
-                            product.lastname = loggedInUser.lastName;
-                            product.username = loggedInUser.username;
+                            product.divName = result.getString(20);
+
                             products.add(product);
                         }
                     } else {
+
                         stmt = con
                                 .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
-                                        + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1," +
-                                        "(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                        "(address).state state,(address).phone phones ,d.name from "
-                                        + schemaName
-                                        + ".products p left join "
-                                        + schemaName
-                                        + ".userprofile u on p.updateby = u.userid" +
-                                        " left join " + schemaName + ".divisions d on  p.division = d.id  ORDER BY p.createDate DESC ");
+                                        + " p.createBy, p.updateDate,p.updateBy, u.username,u.firstname,u.lastname, " +
+                                        " (address).addLine1 addLine1," +
+                                        " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                        " (address).state state,(address).phone phones ,d.name from "
+                                        + schemaName + ".products p " +
+                                        " left join master.users u on u.id = p.updateby " +
+                                        " left join " + schemaName+ ".userprofile uf on p.updateby = uf.userid " +
+                                        " left join " + schemaName + ".divisions d on  p.division = d.id " +
+                                        " ORDER BY p.createDate DESC ");
 
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -199,18 +203,18 @@ public class Product {
                                     .parse(new SimpleDateFormat("dd-MM-yyyy")
                                             .format(new java.sql.Date(result.getTimestamp(9).getTime())));
                             product.updateBy = result.getInt(10);
-                            product.addLine1 = result.getString(11);
-                            product.addLine2 = result.getString(12);
-                            product.addLine3 = result.getString(13);
-                            product.city = result.getString(14);
-                            product.state = result.getString(15);
-                            if (result.getArray(16) != null)
-                                product.phones = (String[]) result.getArray(16)
+                            product.username = result.getString(11);
+                            product.firstname = result.getString(12);
+                            product.lastname = result.getString(13);
+                            product.addLine1 = result.getString(14);
+                            product.addLine2 = result.getString(15);
+                            product.addLine3 = result.getString(16);
+                            product.city = result.getString(17);
+                            product.state = result.getString(18);
+                            if (result.getArray(19) != null)
+                                product.phones = (String[]) result.getArray(19)
                                         .getArray();
-                            product.divName = result.getString(17);
-                            product.firstname = loggedInUser.firstName;
-                            product.lastname = loggedInUser.lastName;
-                            product.username = loggedInUser.username;
+                            product.divName = result.getString(20);
                             products.add(product);
                         }
                     }
@@ -261,11 +265,12 @@ public class Product {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
-                                    + "p.createBy, p.updateDate,p.updateBy,(address).addLine1 addLine1,(address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
-                                    + schemaName
-                                    + ".products p left join "
-                                    + schemaName
-                                    + ".userprofile u on p.updateby = u.userid"
+                                    + "p.createBy, p.updateDate,u.username,u.firstname,u.lastname,p.updateBy,(address).addLine1 addLine1," +
+                                    " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state," +
+                                    " (address).phone phones from "
+                                    + schemaName + ".products p " +
+                                    " left join master.users u on u.id = p.updateby " +
+                                    " left join "+ schemaName + ".userprofile uf on p.updateby = uf.userid"
                                     + " where id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
@@ -281,19 +286,22 @@ public class Product {
                                 .parse(new SimpleDateFormat("dd-MM-yyyy")
                                         .format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         product.createBy = result.getInt(8);
-                        product.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
+                        product.updateDate = new SimpleDateFormat("dd-MM-yyyy")
+                                .parse(new SimpleDateFormat("dd-MM-yyyy")
+                                        .format(new java.sql.Date(result.getTimestamp(9).getTime())));
                         product.updateBy = result.getInt(10);
-                        product.addLine1 = result.getString(11);
-                        product.addLine2 = result.getString(12);
-                        product.addLine3 = result.getString(13);
-                        product.city = result.getString(14);
-                        product.state = result.getString(15);
-                        if (result.getArray(16) != null)
-                            product.phones = (String[]) result.getArray(16)
+                        product.username = result.getString(11);
+                        product.firstname = result.getString(12);
+                        product.lastname = result.getString(13);
+                        product.addLine1 = result.getString(14);
+                        product.addLine2 = result.getString(15);
+                        product.addLine3 = result.getString(16);
+                        product.city = result.getString(17);
+                        product.state = result.getString(18);
+                        if (result.getArray(19) != null)
+                            product.phones = (String[]) result.getArray(19)
                                     .getArray();
-                        product.firstname = loggedInUser.firstName;
-                        product.lastname = loggedInUser.lastName;
-                        product.username = loggedInUser.username;
+                        product.divName = result.getString(20);
                     }
                 } else
                     throw new Exception("DB connection is null");

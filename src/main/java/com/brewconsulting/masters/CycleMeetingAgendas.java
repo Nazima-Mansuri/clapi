@@ -1,13 +1,12 @@
 package com.brewconsulting.masters;
 
 import com.brewconsulting.DB.masters.CycleMeetingAgenda;
-import com.brewconsulting.DB.masters.Division;
-import com.brewconsulting.DB.masters.GroupAgenda;
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.utils;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.postgresql.util.PSQLException;
 
 import javax.ws.rs.*;
@@ -17,12 +16,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Timestamp;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 
 @Path("cycleMeetingAgendas")
@@ -32,7 +30,9 @@ public class CycleMeetingAgendas {
 
     ObjectMapper mapper = new ObjectMapper();
 
-
+    static final Logger logger = Logger.getLogger(CycleMeetingAgendas.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
     /**
      * get all cycle meeting agendas
      *
@@ -45,22 +45,26 @@ public class CycleMeetingAgendas {
     public Response cycleMeetingAgenda(@Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writeValueAsString(CycleMeetingAgenda
                             .getAllCycleMeetingAgenda((LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
+            logger.error("Exception " ,e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
 
         }
-
         return resp;
     }
 
@@ -80,21 +84,29 @@ public class CycleMeetingAgendas {
                                              @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             int id = CycleMeetingAgenda.addCycleMeetingAgenda(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + id + "}").build();
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
+            logger.error("IOException " ,e);
+
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception " ,e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -118,6 +130,9 @@ public class CycleMeetingAgendas {
         Response resp = null;
         try
         {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             List<Integer> list = new ArrayList<>();
             list = CycleMeetingAgenda.cloneCycleMeetingAgenda(node,(LoggedInUser) crc.getProperty("userObject"));
@@ -127,12 +142,15 @@ public class CycleMeetingAgendas {
             }
         }
         catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to clone Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (BadRequestException b) {
+            logger.error("BadRequestException " ,b);
             resp = Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"Message\":" + "\"Agenda is already exist with same time.\"}")
                     .type(MediaType.APPLICATION_JSON)
@@ -140,6 +158,7 @@ public class CycleMeetingAgendas {
         }
         catch (Exception e)
         {
+            logger.error("Exception " ,e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
@@ -162,27 +181,35 @@ public class CycleMeetingAgendas {
                                              @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             CycleMeetingAgenda.updateCycleMeetingAgenda(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok().build();
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (BadRequestException b) {
+            logger.error("BadRequestException " ,b);
             resp = Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"Message\":" + "\"Agenda is already exist with same time.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (IOException e) {
+            logger.error("IOException " ,e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception " ,e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -204,6 +231,9 @@ public class CycleMeetingAgendas {
                                              @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             // affectedRow given how many rows deleted from database.
             int affectedRow = CycleMeetingAgenda.deleteCycleMeetingAgenda(id,
                     (LoggedInUser) crc.getProperty("userObject"));
@@ -215,17 +245,21 @@ public class CycleMeetingAgendas {
                 resp = Response.status(204).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting Agenda\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
+            logger.error("PSQLException " ,ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception " ,e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();        }
@@ -249,10 +283,11 @@ public class CycleMeetingAgendas {
         Response resp = null;
         try {
 
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
             Date parseDate = sdf.parse(date);
-
-            System.out.println("API : " + parseDate);
 
             resp = Response.ok(
                     mapper.writeValueAsString(CycleMeetingAgenda
@@ -260,16 +295,20 @@ public class CycleMeetingAgendas {
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeeting Agenda by specific date.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
+            logger.error("IOException " ,e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception " ,e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

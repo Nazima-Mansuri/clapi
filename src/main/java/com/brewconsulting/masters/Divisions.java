@@ -1,40 +1,33 @@
 package com.brewconsulting.masters;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.NoSuchFileException;
-import java.sql.SQLException;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NoContentException;
-import javax.ws.rs.core.Response;
-
-import org.postgresql.util.PSQLException;
-
 import com.brewconsulting.DB.masters.Division;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+import org.postgresql.util.PSQLException;
+
+import javax.ws.rs.*;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.SQLException;
+import java.util.Properties;
 
 @Path("divisions")
 @Secured
 public class Divisions {
 	ObjectMapper mapper = new ObjectMapper();
 
+	static final Logger logger = Logger.getLogger(Divisions.class);
+	Properties properties = new Properties();
+	InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 	/***
 	 * Produces a list of all divisions
 	 *
@@ -47,18 +40,23 @@ public class Divisions {
 	public Response divisions(@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
+			properties.load(inp);
+			PropertyConfigurator.configure(properties);
+
 			resp = Response.ok(
 					mapper.writeValueAsString(Division
 							.getAllDivisions((LoggedInUser) crc
 									.getProperty("userObject")))).build();
 
 		} catch (NotAuthorizedException na) {
+			logger.error("NotAuthorizedException" , na);
 			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to get Divisions\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
 		}
 		catch (Exception e) {
+			logger.error("Exception " , e);
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
@@ -81,6 +79,9 @@ public class Divisions {
 			@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
+			properties.load(inp);
+			PropertyConfigurator.configure(properties);
+
 			Division div = Division.getDivisionById(id,
 					(LoggedInUser) crc.getProperty("userObject"));
 			if (div == null) {
@@ -93,11 +94,13 @@ public class Divisions {
 			}
 
 		} catch (NotAuthorizedException na) {
+			logger.error("NotAuthorizedException",na);
 			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to get Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
 		} catch (Exception e) {
+			logger.error("Exception " ,e);
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
@@ -119,11 +122,15 @@ public class Divisions {
 			@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
+			properties.load(inp);
+			PropertyConfigurator.configure(properties);
+
 			JsonNode node = mapper.readTree(input);
 			int divisionId = Division.addDivision(node,
 					(LoggedInUser) crc.getProperty("userObject"));
 			resp = Response.ok("{\"id\":" + divisionId + "}").build();
 		} catch (NotAuthorizedException na) {
+			logger.error("NotAuthorizedException",na);
 			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to create Division\"}")
 					.type(MediaType.APPLICATION_JSON)
@@ -131,17 +138,20 @@ public class Divisions {
 		}
 		catch (SQLException s)
 		{
+			logger.error("SQLException",s);
 			resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
 		}
 		catch (IOException e) {
+			logger.error("IOException",e);
 			if (resp == null) {
 				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 				e.printStackTrace();
 			}
 		} catch (Exception e) {
+			logger.error("Exception " , e);
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		}
@@ -165,21 +175,27 @@ public class Divisions {
 			@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
+			properties.load(inp);
+			PropertyConfigurator.configure(properties);
+
 			JsonNode node = mapper.readTree(input);
 			Division.updateDivision(node,
 					(LoggedInUser) crc.getProperty("userObject"));
 			resp = Response.ok().build();
 		}catch (NotAuthorizedException na) {
+			logger.error("NotAuthorizedException",na);
 			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
 		}
 		catch (IOException e) {
+			logger.error("IOException" ,e);
 			if (resp == null)
 				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
 		} catch (Exception e) {
+			logger.error("Exception" ,e);
 			// TODO Auto-generated catch block
 			resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();
@@ -202,6 +218,8 @@ public class Divisions {
 			@Context ContainerRequestContext crc) {
 		Response resp = null;
 		try {
+			properties.load(inp);
+			PropertyConfigurator.configure(properties);
 			// affectedRow given how many rows deleted from database.
 			int affectedRow = Division.deleteDivision(id,
 					(LoggedInUser) crc.getProperty("userObject"));
@@ -213,18 +231,21 @@ public class Divisions {
 				resp = Response.status(204).entity("{\"Message\":\" + \"\"Division is not deleted.\"}").build();
 
 		}catch (NotAuthorizedException na) {
+			logger.error("NotAuthorizedException",na);
 			resp = Response.status(Response.Status.FORBIDDEN)
 					.entity("{\"Message\":" + "\"You are not authorized to Delete Division\"}")
 					.type(MediaType.APPLICATION_JSON)
 					.build();
 		}
 		catch (PSQLException ex) {
+			logger.error("PSQLException " , ex);
 			resp = Response
 					.status(Response.Status.CONFLICT)
 					.entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
 					.type(MediaType.APPLICATION_JSON).build();
 			ex.printStackTrace();
 		} catch (Exception e) {
+			logger.error("Exception" ,e);
 			if (resp == null)
 				resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
 			e.printStackTrace();

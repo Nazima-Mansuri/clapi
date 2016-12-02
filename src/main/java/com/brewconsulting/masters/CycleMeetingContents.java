@@ -7,6 +7,8 @@ import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.postgresql.util.PSQLException;
@@ -18,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Created by lcom53 on 9/11/16.
@@ -26,6 +29,10 @@ import java.io.InputStream;
 @Secured
 public class CycleMeetingContents {
     ObjectMapper mapper = new ObjectMapper();
+
+    static final Logger logger = Logger.getLogger(CycleMeetingContents.class);
+    Properties properties = new Properties();
+    InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
      *  Produces List of Cyclemeeting content
@@ -42,18 +49,23 @@ public class CycleMeetingContents {
     public Response cyclemeetingContents(@PathParam("meetingId") int meetingId ,@PathParam("divId") int divId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writeValueAsString(Content
                             .getAllCycleMeetingContents(meetingId,divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to get division").build();
         }
 
         catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -75,18 +87,23 @@ public class CycleMeetingContents {
     public Response cyclemeetingContents(@PathParam("agendaId") int agendaId , @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             resp = Response.ok(
                     mapper.writeValueAsString(Content
                             .getChildContentByAgenda(agendaId,(LoggedInUser) crc
                                     .getProperty("userObject")) )).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to get division").build();
         }
 
         catch (Exception e) {
+            logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
@@ -129,12 +146,19 @@ public class CycleMeetingContents {
         String uploadFilePath = null;
 
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
 
             if (fileFormDataContentDisposition != null) {
-                fileName = System.currentTimeMillis() + "_"
-                        + fileFormDataContentDisposition.getFileName();
-                // This method is used to store content in AWS bucket.
-                uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
+             if(fileFormDataContentDisposition.getFileName() != null) {
+                 fileName = System.currentTimeMillis() + "_"
+                         + fileFormDataContentDisposition.getFileName();
+                 // This method is used to store content in AWS bucket.
+                 uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
+             }
+             else {
+                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+             }
             } else {
                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
             }
@@ -151,15 +175,18 @@ public class CycleMeetingContents {
                                 .getJsonString()).build();
 
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to create product").build();
         } catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -181,21 +208,28 @@ public class CycleMeetingContents {
                                           @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             int affectedRows = Content.addExistingCycleMeetingContent(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + affectedRows + "}").build();
+
         } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .header("content-type", MediaType.TEXT_PLAIN)
                     .entity("You are not authorized to create division")
                     .build();
         } catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -210,6 +244,9 @@ public class CycleMeetingContents {
                                      @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             // affectedRow given how many rows deleted from database.
             int affectedRow = Content.deleteCycleMeetingContent(id,
                     (LoggedInUser) crc.getProperty("userObject"));
@@ -221,18 +258,21 @@ public class CycleMeetingContents {
                 resp = Response.status(204).build();
 
         }catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Delete Cyclemeeting Content\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (PSQLException ex) {
+            logger.error("PSQLException ",ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
@@ -248,21 +288,27 @@ public class CycleMeetingContents {
                                  @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             JsonNode node = mapper.readTree(input);
             int result = Content.updateMeetingSeqNumber(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"result\":" + result + "}").build();
         }catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (IOException e) {
+            logger.error("IOException ",e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
