@@ -60,8 +60,8 @@ public class CycleMeetingAgenda {
     @JsonProperty("updateBy")
     public int updatedBy;
 
-    @JsonProperty("contents")
-    public  List<Content> contents;
+    @JsonProperty("contentList")
+    public  List<Content> contentList;
 
     public static final int CycleMeetingAgenda = 10;
 
@@ -117,7 +117,7 @@ public class CycleMeetingAgenda {
                         cycleMeetingAgenda.sessionEndTime = String.valueOf(result.getTime(5));
                         cycleMeetingAgenda.contentType = result.getString(6);
                         cycleMeetingAgenda.sessionConductor = result.getString(7);
-                        cycleMeetingAgenda.contents = new ArrayList<>();
+                        cycleMeetingAgenda.contentList = new ArrayList<>();
 
                     stmt =con.prepareStatement("SELECT id, agendaid, contenttype, contentseq, contentid " +
                             " FROM "+schemaName+".groupsessioncontentinfo WHERE agendaid = ?");
@@ -130,13 +130,12 @@ public class CycleMeetingAgenda {
                         content.agendaId = resultSet.getInt(2);
                         content.contentType = resultSet.getString(3);
                         content.contentSeq = resultSet.getInt(4);
-                        content.contentId = resultSet.getInt(5);
-                        cycleMeetingAgenda.contents.add(content);
+                        content.contentId = (Integer[]) resultSet.getArray(5).getArray();
+                        cycleMeetingAgenda.contentList.add(content);
                     }
                     cycleMeetingAgendas.add(cycleMeetingAgenda);
 
                 }
-                System.out.println("Agenda Size : " + cycleMeetingAgendas.size());
 
                 if(cycleMeetingAgendas.size() > 0) {
                     for (int i = 0; i < cycleMeetingAgendas.size(); i++) {
@@ -175,31 +174,37 @@ public class CycleMeetingAgenda {
                             } else
                                 throw new SQLException("No ID obtained");
 
-                        if(cycleMeetingAgendas.get(i).contents.size() > 0) {
-                            for (int j = 0; j < cycleMeetingAgendas.get(i).contents.size(); j++) {
+                        if(cycleMeetingAgendas.get(i).contentList.size() > 0) {
+                            for (int j = 0; j < cycleMeetingAgendas.get(i).contentList.size(); j++) {
+                                Integer contentIdArr[] = new Integer[cycleMeetingAgendas.get(i).contentList.get(j).contentId.length];
                                 stmt = con.prepareStatement("INSERT INTO  "
                                                 + schemaName
                                                 + ".cyclemeetingsessioncontentinfo (agendaid,contenttype,contentseq,createdon, "
                                                 + "createdby,updateon,updatedby,contentid) "
                                                 + "VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?)",
                                         Statement.RETURN_GENERATED_KEYS);
-                                System.out.println("Meeting Id : " + meetingid);
+
                                 stmt.setInt(1, meetingid);
-                                stmt.setString(2, cycleMeetingAgendas.get(i).contents.get(j).contentType);
-                                stmt.setInt(3, cycleMeetingAgendas.get(i).contents.get(j).contentSeq);
+                                stmt.setString(2, cycleMeetingAgendas.get(i).contentList.get(j).contentType);
+                                stmt.setInt(3, cycleMeetingAgendas.get(i).contentList.get(j).contentSeq);
                                 stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
                                 stmt.setInt(5, loggedInUser.id);
                                 stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
                                 stmt.setInt(7, loggedInUser.id);
-                                stmt.setInt(8, cycleMeetingAgendas.get(i).contents.get(j).contentId);
+                                for (int k=0;k<cycleMeetingAgendas.get(i).contentList.get(j).contentId.length;k++)
+                                {
+                                    contentIdArr[k] = cycleMeetingAgendas.get(i).contentList.get(j).contentId[k];
+                                }
+                                Array arr = con.createArrayOf("int",contentIdArr);
+                                stmt.setArray(8, arr);
                                 affectedRows = stmt.executeUpdate();
                                 if (affectedRows == 0)
-                                    throw new SQLException("Add Cycle Meeting Failed.");
+                                    throw new SQLException("Clone Cycle Meeting Failed.");
 
                                 generatedKeys = stmt.getGeneratedKeys();
 
                                 if (generatedKeys.next()) {
-                                    // It gives last inserted Id in divisionId
+                                    // It gives last inserted Id in groupContentId
                                     groupContentId = generatedKeys.getInt(1);
                                 } else
                                     throw new SQLException("No ID obtained");
@@ -251,15 +256,17 @@ public class CycleMeetingAgenda {
             ArrayList<CycleMeetingAgenda> cycleMeetingAgendas = new ArrayList<CycleMeetingAgenda>();
             PreparedStatement stmt = null;
             ResultSet result = null;
+            ResultSet contentResult = null;
 
             try {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT id, cyclemeetingid, meetingdate, sessionname, sessiondesc, to_char(sessionstarttime::Time, 'HH12:MI AM')," +
-                                    "to_char(sessionendtime::Time, 'HH12:MI AM'), createdon, createdby, updateon, updatedby, contenttype , sessionconductor " +
-                                    " FROM " + schemaName + ".cyclemeetingagenda ORDER BY sessionstarttime ASC");
+                                    " to_char(sessionendtime::Time, 'HH12:MI AM'), createdon, createdby, updateon, updatedby, contenttype , sessionconductor " +
+                                    " FROM " + schemaName + ".cyclemeetingagenda " +
+                                    " ORDER BY sessionstarttime ASC");
                     result = stmt.executeQuery();
-                    System.out.print(result);
+
                     while (result.next()) {
 
                         CycleMeetingAgenda cycleMeetingAgenda = new CycleMeetingAgenda();
@@ -276,6 +283,32 @@ public class CycleMeetingAgenda {
                         cycleMeetingAgenda.updatedBy = result.getInt(11);
                         cycleMeetingAgenda.contentType = result.getString(12);
                         cycleMeetingAgenda.sessionConductor = result.getString(13);
+                        cycleMeetingAgenda.contentList = new ArrayList<>();
+
+                        if(result.getString(12).equals("MIXED"))
+                        {
+                            stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
+                                    " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
+                                    " FROM "+schemaName+".cyclemeetingsessioncontentinfo as c1 WHERE  c1.agendaid = ?");
+                            stmt.setInt(1,result.getInt(1));
+                            contentResult = stmt.executeQuery();
+                            while (contentResult.next())
+                            {
+                                Content content = new Content();
+                                content.id = contentResult.getInt(1);
+                                content.agendaId = contentResult.getInt(2);
+                                content.contentType = contentResult.getString(3);
+                                content.contentSeq = contentResult.getInt(4);
+                                content.createdOn = contentResult.getTimestamp(5);
+                                content.createBy = contentResult.getInt(6);
+                                content.updateOn = contentResult.getTimestamp(7);
+                                content.updateBy = contentResult.getInt(8);
+                                content.contentId = (Integer[]) contentResult.getArray(9).getArray();
+                                content.title = contentResult.getString(10);
+                                content.description = contentResult.getString(11);
+                                cycleMeetingAgenda.contentList.add(content);
+                            }
+                        }
 
                         cycleMeetingAgendas.add(cycleMeetingAgenda);
                     }
@@ -318,7 +351,9 @@ public class CycleMeetingAgenda {
             PreparedStatement stmt = null;
             int result;
             ResultSet resultSet = null;
+            ResultSet seqResultSet = null;
             int id;
+            int sequenceNo = 0;
 
             try {
                 con.setAutoCommit(false);
@@ -366,10 +401,75 @@ public class CycleMeetingAgenda {
                     ResultSet generatedKeys = stmt.getGeneratedKeys();
 
                     if (generatedKeys.next())
-                        // It gives last inserted Id in divisionId
+                        // It gives last inserted Id in id
                         id = generatedKeys.getInt(1);
                     else
                         throw new SQLException("No ID obtained");
+
+                    if(contentType.name().equals("MIXED"))
+                    {
+                        for(int i=0;i<node.withArray("mixedContentType").size();i++)
+                        {
+
+                            stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".cyclemeetingsessioncontent" +
+                                    " where agendaid = ? ");
+                            stmt.setInt(1, id);
+                            seqResultSet = stmt.executeQuery();
+
+                            if (seqResultSet.next()) {
+                                if (seqResultSet.getInt("sequenceNo") > 0) {
+                                    sequenceNo = seqResultSet.getInt("sequenceNo");
+                                    sequenceNo++;
+                                } else {
+                                    sequenceNo = 0;
+                                    sequenceNo++;
+                                }
+                            } else {
+                                sequenceNo = 0;
+                                sequenceNo++;
+                            }
+
+                            System.out.println("Seq No : " + sequenceNo);
+                            Integer[] array = new Integer[]{};
+                            Array arr = con.createArrayOf("int",array);
+
+                            ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
+
+                            if(type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
+                                stmt = con.prepareStatement("INSERT INTO " +
+                                        schemaName +
+                                        ".cyclemeetingsessioncontentinfo(title,description,agendaid,contenttype,contentseq," +
+                                        " createdon,createdby , updateon, updatedby,contentid) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+
+                                stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if(node.withArray("mixedContentType").get(i).get("description").asText() != null ||
+                                        node.withArray("mixedContentType").get(i).get("description").asText() != "") {
+                                    stmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                }
+                                else
+                                    stmt.setString(2,null);
+
+                                stmt.setInt(3, id);
+                                stmt.setString(4, type.name());
+                                stmt.setInt(5, sequenceNo);
+                                stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                stmt.setInt(7, loggedInUser.id);
+                                stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                stmt.setInt(9, loggedInUser.id);
+                                stmt.setArray(10,arr);
+
+                                result = stmt.executeUpdate();
+                            }
+
+                            if(type.name().equals("TEST"))
+                            {
+                                // If content type is test then data inserted in test table
+                            }
+
+                        }
+                    }
 
                     con.commit();
                 } else {
@@ -408,9 +508,12 @@ public class CycleMeetingAgenda {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
+            PreparedStatement contentStmt = null;
             ResultSet resultSet;
+            ResultSet seqResultSet;
             int cyclemeetingId=0;
             Date meetingDate = null;
+            int sequenceNo;
 
             try {
                 con.setAutoCommit(false);
@@ -424,9 +527,6 @@ public class CycleMeetingAgenda {
                     cyclemeetingId = resultSet.getInt(1);
                     meetingDate = resultSet.getDate(2);
                 }
-                System.out.println("MEETING ID : " + cyclemeetingId);
-                System.out.println("MEETING DATE : " + meetingDate);
-
                 stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM " + schemaName + ".cycleMeetingAgenda " +
                         " where id != ? AND cyclemeetingid = ? AND  meetingdate = ? AND  " +
                         " ((CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR " +
@@ -448,8 +548,8 @@ public class CycleMeetingAgenda {
                                     "UPDATE "
                                             + schemaName
                                             + ".cycleMeetingAgenda SET cycleMeetingId =? ,meetingDate=?,sessionName=?,sessionDesc=?,sessionStartTime=?,sessionEndTime=?,"
-                                            + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) , sessionconductor = ? where id=?",
-                                    Statement.RETURN_GENERATED_KEYS);
+                                            + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) , sessionconductor = ? "
+                                            + "where id = ? ");
                     stmt.setInt(1, node.get("cycleMeetingId").asInt());
                     stmt.setDate(2, java.sql.Date.valueOf(node.get("meetingDate").asText()));
                     stmt.setString(3, node.get("sessionName").asText());
@@ -461,6 +561,74 @@ public class CycleMeetingAgenda {
                     stmt.setString(9, contentType.name());
                     stmt.setString(10, node.get("sessionConductor").asText());
                     stmt.setInt(11, node.get("id").asInt());
+
+                    if(contentType.name().equals("MIXED")){
+
+                        contentStmt = con.prepareStatement("DELETE FROM "+schemaName+" " +
+                                " .cyclemeetingsessioncontentinfo WHERE agendaid = ? ");
+                        contentStmt.setInt(1,node.get("id").asInt());
+                        contentStmt.executeUpdate();
+
+                        for(int i=0;i<node.withArray("mixedContentType").size();i++)
+                        {
+                            contentStmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".cyclemeetingsessioncontent" +
+                                    " where agendaid = ? ");
+                            contentStmt.setInt(1,node.get("id").asInt());
+                            seqResultSet = contentStmt.executeQuery();
+
+                            if (seqResultSet.next()) {
+                                if (seqResultSet.getInt("sequenceNo") > 0) {
+                                    sequenceNo = seqResultSet.getInt("sequenceNo");
+                                    sequenceNo++;
+                                } else {
+                                    sequenceNo = 0;
+                                    sequenceNo++;
+                                }
+                            } else {
+                                sequenceNo = 0;
+                                sequenceNo++;
+                            }
+
+                            Integer[] array = new Integer[]{};
+                            Array arr = con.createArrayOf("int",array);
+
+                            ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
+
+                            if(type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
+
+                                contentStmt = con.prepareStatement("INSERT INTO " +
+                                        schemaName +
+                                        ".cyclemeetingsessioncontentinfo(title,description,agendaid,contenttype,contentseq," +
+                                        " createdon,createdby , updateon, updatedby,contentid) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+
+                                contentStmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if(node.withArray("mixedContentType").get(i).get("description").asText() != null ||
+                                        node.withArray("mixedContentType").get(i).get("description").asText() != "") {
+                                    contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                }
+                                else
+                                    contentStmt.setString(2,null);
+
+                                contentStmt.setInt(3, node.get("id").asInt());
+                                contentStmt.setString(4, type.name());
+                                contentStmt.setInt(5, sequenceNo);
+                                contentStmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(7, loggedInUser.id);
+                                contentStmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(9, loggedInUser.id);
+                                contentStmt.setArray(10,arr);
+
+                                contentStmt.executeUpdate();
+                            }
+
+                            if(type.name().equals("TEST"))
+                            {
+                                // If content type is test then data inserted in test table
+                            }
+                        }
+                    }
 
                     stmt.executeUpdate();
                     con.commit();
@@ -550,14 +718,15 @@ public class CycleMeetingAgenda {
             ArrayList<CycleMeetingAgenda> cycleMeetingAgendas = new ArrayList<CycleMeetingAgenda>();
             PreparedStatement stmt = null;
             ResultSet result = null;
-
+            ResultSet contentResult = null;
 
             try {
                 if (con != null) {
                     stmt = con
                             .prepareStatement("SELECT id, sessionname, sessiondesc, to_char(sessionstarttime::Time, 'HH12:MI AM')," +
                                     "to_char(sessionendtime::Time, 'HH12:MI AM'),createdon, createdby, updateon, updatedby,contenttype , sessionconductor " +
-                                    " FROM " + schemaName + ".cyclemeetingagenda where cyclemeetingid= ? and meetingdate = ? ORDER BY sessionstarttime ASC");
+                                    " FROM " + schemaName + ".cyclemeetingagenda where cyclemeetingid= ? and meetingdate = ? " +
+                                    " ORDER BY sessionstarttime ASC");
 
                     stmt.setInt(1, cycleMeetingId);
                     stmt.setDate(2, new java.sql.Date(date.getTime()));
@@ -579,6 +748,32 @@ public class CycleMeetingAgenda {
                         cycleMeetingAgenda.sessionConductor = result.getString(11);
                         cycleMeetingAgenda.meetingDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(date.getTime())));
                         cycleMeetingAgenda.cycleMeetingId = cycleMeetingId;
+                        cycleMeetingAgenda.contentList = new ArrayList<>();
+
+                        if(result.getString(10).equals("MIXED"))
+                        {
+                            stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
+                                    " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
+                                    " FROM "+schemaName+".cyclemeetingsessioncontentinfo as c1 WHERE  c1.agendaid = ?");
+                            stmt.setInt(1,result.getInt(1));
+                            contentResult = stmt.executeQuery();
+                            while (contentResult.next())
+                            {
+                                Content content = new Content();
+                                content.id = contentResult.getInt(1);
+                                content.agendaId = contentResult.getInt(2);
+                                content.contentType = contentResult.getString(3);
+                                content.contentSeq = contentResult.getInt(4);
+                                content.createdOn = contentResult.getTimestamp(5);
+                                content.createBy = contentResult.getInt(6);
+                                content.updateOn = contentResult.getTimestamp(7);
+                                content.updateBy = contentResult.getInt(8);
+                                content.contentId = (Integer[]) contentResult.getArray(9).getArray();
+                                content.title = contentResult.getString(10);
+                                content.description = contentResult.getString(11);
+                                cycleMeetingAgenda.contentList.add(content);
+                            }
+                        }
 
                         cycleMeetingAgendas.add(cycleMeetingAgenda);
                     }

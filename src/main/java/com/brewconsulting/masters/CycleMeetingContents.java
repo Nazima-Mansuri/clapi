@@ -35,7 +35,7 @@ public class CycleMeetingContents {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     *  Produces List of Cyclemeeting content
+     *  Produces List of Cyclemeeting contents of specific group meeting and division.
      *
      * @param meetingId
      * @param divId
@@ -74,7 +74,7 @@ public class CycleMeetingContents {
     }
 
     /***
-     *  Produces List of Group Contents By Specific Agenda
+     *  Produces List of Cyclemeeting Contents By Specific Agenda
      *
      * @param agendaId
      * @param crc
@@ -111,6 +111,43 @@ public class CycleMeetingContents {
         return resp;
     }
 
+    /***
+     *  Produces list of Mixed Cycle meeting agenda type content.
+     *
+     * @param agendaId
+     * @param contentId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("mixedmeetingcontents/{agendaId}/{contentId}")
+    public Response groupMixedContents(@PathParam("agendaId") int agendaId, @PathParam("contentId") int contentId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(Content
+                            .getMixedMeetingContents(agendaId, contentId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group meeting contents \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
 
     /***
      *  Add New CycleMeeting Content
@@ -138,6 +175,7 @@ public class CycleMeetingContents {
             @FormDataParam("divid") int divId,
             @FormDataParam("contentSeq") int contentSeq,
             @FormDataParam("agendaId") int agendaId,
+            @FormDataParam("itemId") int itemId,
             @Context ContainerRequestContext crc) {
 
         Response resp = null;
@@ -164,7 +202,7 @@ public class CycleMeetingContents {
             }
 
             int contentId = Content.addCycleMeetingContent(contentName, contentDesc, contentType,
-                    divId,uploadFilePath,agendaId,(LoggedInUser) crc.getProperty("userObject"));
+                    divId,uploadFilePath,agendaId,itemId,(LoggedInUser) crc.getProperty("userObject"));
 
             if (contentId != 0)
                 resp = Response.ok("{\"id\":" + contentId + "}").build();
@@ -194,7 +232,7 @@ public class CycleMeetingContents {
     }
 
     /***
-     *  Add Exixting Content in CycleMeetingContent
+     *  Add Existing Content in CycleMeeting Content
      *
      * @param input
      * @param crc
@@ -236,6 +274,13 @@ public class CycleMeetingContents {
         return resp;
     }
 
+    /***
+     *  Delete cycle meeting content.
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
     @DELETE
     @Produces("application/json")
     @Secured
@@ -280,6 +325,13 @@ public class CycleMeetingContents {
         return resp;
     }
 
+    /***
+     *  Update cyclemeeting content sequence number.
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
     @PUT
     @Produces("application/json")
     @Secured
@@ -309,6 +361,48 @@ public class CycleMeetingContents {
             e.printStackTrace();
         } catch (Exception e) {
             logger.error("Exception ",e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Remove content id from Cycle meeting contents.
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("remove")
+    public Response removeMeetingContents(InputStream input,
+                                      @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int result = Content.removeMeetingContentOfItem(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"result\":" + result + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (IOException e) {
+            logger.error("IOException ", e);
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

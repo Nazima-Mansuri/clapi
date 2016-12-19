@@ -31,6 +31,13 @@ public class CycleMeetingPosts {
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
+    /***
+     * Produces cycle meeting posts.
+     *
+     * @param meetingId
+     * @param crc
+     * @return
+     */
     @GET
     @Produces("application/json")
     @Secured
@@ -45,6 +52,41 @@ public class CycleMeetingPosts {
             resp = Response.ok(
                     mapper.writeValueAsString(CycleMeetingPost
                             .getMeetingPost(meetingId,((LoggedInUser) crc
+                                    .getProperty("userObject"))))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException" , na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group Meetings\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception" , e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Produces all Posts.
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    public Response getposts(@Context ContainerRequestContext crc) {
+        Response resp = null;
+
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(CycleMeetingPost
+                            .getPosts(((LoggedInUser) crc
                                     .getProperty("userObject"))))).build();
 
         } catch (NotAuthorizedException na) {

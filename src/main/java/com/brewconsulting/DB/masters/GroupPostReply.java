@@ -73,7 +73,7 @@ public class GroupPostReply {
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int postReplyId;
                 if (generatedKeys.next())
-                    // It gives last inserted Id in groupTaskId
+                    // It gives last inserted Id in postReplyId
                     postReplyId = generatedKeys.getInt(1);
                 else
                     throw new SQLException("No ID obtained");

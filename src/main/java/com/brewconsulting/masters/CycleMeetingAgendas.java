@@ -34,7 +34,7 @@ public class CycleMeetingAgendas {
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
     /**
-     * get all cycle meeting agendas
+     * Produces all cycle meeting agendas.
      *
      * @param crc
      * @return
@@ -267,7 +267,7 @@ public class CycleMeetingAgendas {
     }
 
     /**
-     * get agenda by date
+     * get cycle meeting agenda by specific date.
      *
      * @param cycleMeetingId
      * @param date

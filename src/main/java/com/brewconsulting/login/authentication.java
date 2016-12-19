@@ -140,6 +140,10 @@ public class authentication {
 
             node.put("isFirstLogin",user.isFirstLogin);
             node.put("userId",user.id);
+            node.put("roleId",user.roles.get(0).roleId);
+            node.put("roleName",user.roles.get(0).roleName);
+            node.put("fullName",user.firstName + " " + user.lastName);
+            node.put("profileImage",user.profileImage);
 
             resp = Response.ok("" + node.toString() + "").type(MediaType.APPLICATION_JSON).build();
         } catch (Exception ex) {
@@ -192,7 +196,6 @@ public class authentication {
                         Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
                         JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
                         String tokenType = (String) clms.getBody().get("tokenType");
-                        System.out.println("TYPE : " + tokenType);
                         context.setProperty("userObject", mapper.treeToValue(jsonNode, LoggedInUser.class));
 
                         User user = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
@@ -219,7 +222,7 @@ public class authentication {
                             throw new Exception("Access token timeout not specified.");
 
                         if (user != null) {
-
+                            // access token that expires in short time.
                             JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
                                     .setSubject(user.username).setId(UUID.randomUUID().toString())
                                     .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))

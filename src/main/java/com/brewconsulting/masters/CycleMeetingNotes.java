@@ -25,12 +25,13 @@ import java.util.Properties;
  */
 @Path("cyclemeetingnotes")
 @Secured
-public class ChildNotes {
+public class CycleMeetingNotes {
 
     ObjectMapper mapper = new ObjectMapper();
-    static final Logger logger = Logger.getLogger(ChildNotes.class);
+    static final Logger logger = Logger.getLogger(CycleMeetingNotes.class);
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
+
     /**
      * Produces all Cycle Meeting Notes
      *
@@ -67,7 +68,7 @@ public class ChildNotes {
     }
 
     /**
-     * Produces Particulat Cycle Meeting Note.
+     * Produces Particular Cycle Meeting Note.
      *
      * @param id
      * @param crc
@@ -102,7 +103,7 @@ public class ChildNotes {
     }
 
     /**
-     * Add Cycle Meeting Note
+     * Add New Cycle Meeting Note
      *
      * @param input
      * @param crc
@@ -150,7 +151,7 @@ public class ChildNotes {
     }
 
     /***
-     * Update child note
+     * Update cycle meeting note
      *
      * @param input
      * @param crc
@@ -191,7 +192,7 @@ public class ChildNotes {
     }
 
     /***
-     * Delete child note
+     * Delete cycle meeting note
      *
      * @param id
      * @param crc

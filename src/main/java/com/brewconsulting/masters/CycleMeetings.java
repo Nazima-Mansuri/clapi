@@ -32,6 +32,7 @@ public class CycleMeetings {
     static final Logger logger = Logger.getLogger(CycleMeetings.class);
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
+
     /***
      * Produces a list of all Meetings.
      *
@@ -69,6 +70,13 @@ public class CycleMeetings {
         return resp;
     }
 
+    /***
+     *  Produces specific Cycle meeting.
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
     @GET
     @Produces("application/json")
     @Secured
@@ -101,7 +109,7 @@ public class CycleMeetings {
     }
 
     /***
-     * Add Sub Meeting
+     * Add cycle Meeting
      *
      * @param input
      * @param crc
@@ -150,7 +158,7 @@ public class CycleMeetings {
 
 
     /**
-     * Update Sub Meeting
+     * Update cycle Meeting
      *
      * @param input
      * @param crc
@@ -192,7 +200,7 @@ public class CycleMeetings {
     }
 
     /***
-     * Delete Sub Meeting
+     * Delete cycle Meeting
      *
      * @param id
      * @param crc

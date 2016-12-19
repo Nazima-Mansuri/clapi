@@ -39,6 +39,7 @@ public class CycleMeetingPostReply {
     public String replyProfileImage;
 
     /***
+     * Method is used to add Cycle meeting post reply.
      *
      * @param node
      * @param loggedInUser
@@ -73,7 +74,7 @@ public class CycleMeetingPostReply {
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int meetingPostReplyId;
                 if (generatedKeys.next())
-                    // It gives last inserted Id in groupTaskId
+                    // It gives last inserted Id in meetingPostReplyId
                     meetingPostReplyId = generatedKeys.getInt(1);
                 else
                     throw new SQLException("No ID obtained");

@@ -37,7 +37,6 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 	public AuthenticationFilter(@Context ServletContext scon) {
 		super();
 		this.salt = scon.getInitParameter("salt");
-		// System.out.println("SALT VALUE: " + salt);
 		this.servletContext = scon;
 		servletContext.log("her eis the LOG ENTRY");
 	}
@@ -73,14 +72,11 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = mapper.readTree((String) clms.getBody().get("user"));
 				String tokenType = (String) clms.getBody().get("tokenType");
-//				System.out.println("Token Type : " + tokenType);
 
 				context.setProperty("user", validate(node));
 				context.setProperty("userObject", mapper.treeToValue(node, LoggedInUser.class));
 			}
 			catch (Exception ex) {
-				/*resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-				e.printStackTrace();*/
 				context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ ex.toString() +" \" }")
 						.type(MediaType.APPLICATION_JSON).build());
 				servletContext.log("Invalid token", ex);

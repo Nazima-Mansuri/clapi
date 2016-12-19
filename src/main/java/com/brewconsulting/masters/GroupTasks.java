@@ -34,6 +34,40 @@ public class GroupTasks {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
+     *  Produces all Tasks of Logged in User
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Secured
+    @Produces("application/json")
+    public Response getUserGrpTasks(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(Task
+                            .getAllGroupTasksOfLogInUser((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group tasks\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
      * Produces list of group tasks.
      *
      * @param crc
@@ -122,7 +156,6 @@ public class GroupTasks {
     @POST
     @Secured
     @Produces("application/json")
-
     public Response createGrpTask(InputStream input,
                                   @Context ContainerRequestContext crc) {
         Response resp = null;
@@ -170,7 +203,6 @@ public class GroupTasks {
     @PUT
     @Secured
     @Produces("application/json")
-
     public Response updateGrpTask(InputStream input,
                                   @Context ContainerRequestContext crc) {
         Response resp = null;

@@ -330,7 +330,6 @@ public class User {
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt = null;
         try {
-
             stmt = con.prepareStatement(
                     "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username ,a.isfirstlogin "
                             + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
@@ -350,6 +349,15 @@ public class User {
                     user.schemaName = masterUsers.getString(5);
                     user.username = masterUsers.getString(8);
                     user.isFirstLogin = masterUsers.getBoolean(9);
+
+                    stmt = con.prepareStatement(" SELECT profileimage from "+masterUsers.getString(5)+".userprofile where userid = ? ");
+                    stmt.setInt(1,masterUsers.getInt(1));
+                    final ResultSet result = stmt.executeQuery();
+                    while (result.next())
+                    {
+                        user.profileImage = result.getString(1);
+                    }
+
                     user.roles = new ArrayList<Role>();
                     user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
                     continue;
@@ -358,7 +366,10 @@ public class User {
                 if (user.roles != null) {
                     user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
                 }
+
+
             }
+
         } finally {
             if (stmt != null)
                 if (!stmt.isClosed())

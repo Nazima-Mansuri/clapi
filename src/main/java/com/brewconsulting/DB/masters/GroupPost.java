@@ -45,6 +45,14 @@ public class GroupPost {
     public ArrayList<GroupPostReply> comments;
 
 
+    /***
+     *  Method is used to get all posts of specicfic group
+     *
+     * @param groupId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
     public static List<GroupPost> getGroupPost(int groupId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
 
@@ -162,7 +170,7 @@ public class GroupPost {
             ResultSet generatedKeys = stmt.getGeneratedKeys();
             int id;
             if (generatedKeys.next())
-                // It gives last inserted Id in divisionId
+                // It gives last inserted Id in id
                 id = generatedKeys.getInt(1);
             else
                 throw new SQLException("No ID obtained");

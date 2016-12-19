@@ -190,7 +190,7 @@ public class Products {
     }
 
     /***
-     * Updates a Product. Id of product is passedin input.
+     * Updates a Product.
      *
      * @param fileInputStream
      * @param fileFormDataContentDisposition
@@ -237,7 +237,6 @@ public class Products {
             }
             else
             {
-                System.out.println("Update : " + isUpdated);
                 uploadFilePath = url;
             }
 

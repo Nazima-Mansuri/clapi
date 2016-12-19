@@ -93,7 +93,6 @@ public class SettingContent {
                             SettingContent content = new SettingContent();
                             content.id = result.getInt(1);
                             content.contentName = result.getString(2);
-
                             content.contentDesc = result.getString(3);
                             content.divId = result.getInt(4);
                             if (!result.getString(5).contains("null")) {
@@ -191,8 +190,9 @@ public class SettingContent {
                                 " left join master.users u on u.id = c.createby " +
                                 " left join "+schemaName+".userprofile uf on uf.userid = c.createby " +
                                 " where (divid = ? OR divid IS NULL) AND " +
-                                " c.id NOT IN (SELECT contentid from "+schemaName+".groupsessioncontentinfo WHERE agendaid = ? ) " +
+                                " NOT EXISTS (SELECT contentid from client1.groupsessioncontentinfo WHERE agendaid = ? AND c.id = ANY(contentid::int[]))" +
                                 " ORDER BY c.createdon DESC");
+
                 stmt.setInt(1, divId);
                 stmt.setInt(2,agendaId);
                 result = stmt.executeQuery();
@@ -207,7 +207,6 @@ public class SettingContent {
                     content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                     content.userDetails = new ArrayList<>();
                     content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
-
                     contents.add(content);
                 }
             }
@@ -326,7 +325,7 @@ public class SettingContent {
     public static int updateSettingContent(String contentName, String contentDesc, int divId, String url, int id,
                                            LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to Update data
-// It checks that description is empty or not
+
         int userRole = loggedInUser.roles.get(0).roleId;
 
         if (Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
@@ -435,7 +434,7 @@ public class SettingContent {
         String existingBucketName = "com.brewconsulting.client1";
         String finalUrl = null;
         String amazonFileUploadLocationOriginal = existingBucketName
-                + "/Product";
+                + "/Content";
 
         try {
             AWSCredentials awsCredentials = new BasicAWSCredentials("AKIAJZZRFGQGNZIDUFTQ", "12uUP7pQrvR3Kf0GpyeJr328RQ/a1m8TI+/8w2X8");

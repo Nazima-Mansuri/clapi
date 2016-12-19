@@ -81,6 +81,7 @@ public class Division {
     Division() {
 
     }
+
     public static final int DIVISION = 2;
 
 
@@ -95,73 +96,157 @@ public class Division {
             throws Exception {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
-        System.out.println("User Role : " + userRole);
-
-        if (Permissions.isAuthorised(userRole,DIVISION).equals("Read") ||
-                Permissions.isAuthorised(userRole,DIVISION).equals("Write")) {
-
-            String schemaName = loggedInUser.schemaName;
-
-            Connection con = DBConnectionProvider.getConn();
-            ArrayList<Division> divisions = new ArrayList<Division>();
-            PreparedStatement stmt = null;
-            ResultSet result = null;
-
-            try {
-                if (con != null) {
-                    stmt = con
-                            .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy," +
-                                    " u.username,u.firstname,u.lastname,(address).addLine1 addLine1," +
-                                    " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                    " (address).state state,(address).phone phones from "
-                                    + schemaName
-                                    + ".divisions d left join master.users u on d.updateBy = u.id left join "
-                                    + schemaName
-                                    + ".userprofile p on d.updateby = p.userid ORDER BY d.updateDate DESC");
-                    result = stmt.executeQuery();
-                    System.out.print(result);
-                    while (result.next()) {
-                        Division div = new Division();
-                        div.id = result.getInt(1);
-                        div.name = result.getString(2);
-                        div.description = result.getString(3);
-                        div.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
-                        div.createBy = result.getInt(5);
-                        div.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
-                        div.updateBy = result.getInt(7);
-                        div.username = result.getString(8);
-                        div.firstname = result.getString(9);
-                        div.lastname = result.getString(10);
-                        div.addLine1 = result.getString(11);
-                        div.addLine2 = result.getString(12);
-                        div.addLine3 = result.getString(13);
-                        div.city = result.getString(14);
-                        div.state = result.getString(15);
-                        if (result.getArray(16) != null)
-                            div.phones = (String[]) result.getArray(16)
-                                    .getArray();
-
-                        divisions.add(div);
-                    }
-                } else
-                    throw new Exception("DB connection is null");
-
-            } finally {
-                if (result != null)
-                    if (!result.isClosed())
-                        result.close();
-                if (stmt != null)
-                    if (!stmt.isClosed())
-                        stmt.close();
-                if (con != null)
-                    if (!con.isClosed())
-                        con.close();
+        String roleName = loggedInUser.roles.get(0).roleName;
+        String schemaName = loggedInUser.schemaName;
+        Connection con = DBConnectionProvider.getConn();
+        ArrayList<Division> divisions = new ArrayList<Division>();
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+        ResultSet result1 = null;
+        String name = null;
+        int divId = 0;
+        List<Integer> idList = new ArrayList<>();
+        try {
+            stmt = con.prepareStatement("SELECT name from master.roles where id = ? ");
+            stmt.setInt(1, 2);
+            result1 = stmt.executeQuery();
+            while (result1.next()) {
+                name = result1.getString(1);
             }
-            return divisions;
-        } else {
-            throw new NotAuthorizedException("");
-        }
+            if (roleName.equals(name)) {
+                stmt = con.prepareStatement("SELECT divid from " + schemaName + ".userdivmap where userid = ? ");
+                stmt.setInt(1, loggedInUser.id);
+                result1 = stmt.executeQuery();
+                while (result1.next()) {
+                    idList.add(result1.getInt(1));
+                }
+                try {
+                    if (con != null) {
 
+                        for (int i = 0; i < idList.size(); i++) {
+                            stmt = con
+                                    .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy," +
+                                            " u.username,u.firstname,u.lastname,(address).addLine1 addLine1," +
+                                            " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                            " (address).state state,(address).phone phones from "
+                                            + schemaName
+                                            + ".divisions d left join master.users u on d.updateBy = u.id left join "
+                                            + schemaName
+                                            + ".userprofile p on d.updateby = p.userid " +
+                                            " WHERE d.id = ? " +
+                                            " ORDER BY d.updateDate DESC");
+                            stmt.setInt(1, idList.get(i));
+                            result = stmt.executeQuery();
+                            while (result.next()) {
+                                Division div = new Division();
+                                div.id = result.getInt(1);
+                                div.name = result.getString(2);
+                                div.description = result.getString(3);
+                                div.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                                div.createBy = result.getInt(5);
+                                div.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                                div.updateBy = result.getInt(7);
+                                div.username = result.getString(8);
+                                div.firstname = result.getString(9);
+                                div.lastname = result.getString(10);
+                                div.addLine1 = result.getString(11);
+                                div.addLine2 = result.getString(12);
+                                div.addLine3 = result.getString(13);
+                                div.city = result.getString(14);
+                                div.state = result.getString(15);
+                                if (result.getArray(16) != null)
+                                    div.phones = (String[]) result.getArray(16)
+                                            .getArray();
+
+                                divisions.add(div);
+                            }
+                        }
+                    } else
+                        throw new Exception("DB connection is null");
+                } finally {
+                    if (result != null)
+                        if (!result.isClosed())
+                            result.close();
+                    if (stmt != null)
+                        if (!stmt.isClosed())
+                            stmt.close();
+                    if (con != null)
+                        if (!con.isClosed())
+                            con.close();
+                }
+                return divisions;
+
+            } else {
+                if (Permissions.isAuthorised(userRole, DIVISION).equals("Read") ||
+                        Permissions.isAuthorised(userRole, DIVISION).equals("Write")) {
+                    try {
+                        if (con != null) {
+                            stmt = con
+                                    .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy," +
+                                            " u.username,u.firstname,u.lastname,(address).addLine1 addLine1," +
+                                            " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
+                                            " (address).state state,(address).phone phones from "
+                                            + schemaName
+                                            + ".divisions d left join master.users u on d.updateBy = u.id left join "
+                                            + schemaName
+                                            + ".userprofile p on d.updateby = p.userid ORDER BY d.updateDate DESC");
+                            result = stmt.executeQuery();
+                            while (result.next()) {
+                                Division div = new Division();
+                                div.id = result.getInt(1);
+                                div.name = result.getString(2);
+                                div.description = result.getString(3);
+                                div.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                                div.createBy = result.getInt(5);
+                                div.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                                div.updateBy = result.getInt(7);
+                                div.username = result.getString(8);
+                                div.firstname = result.getString(9);
+                                div.lastname = result.getString(10);
+                                div.addLine1 = result.getString(11);
+                                div.addLine2 = result.getString(12);
+                                div.addLine3 = result.getString(13);
+                                div.city = result.getString(14);
+                                div.state = result.getString(15);
+                                if (result.getArray(16) != null)
+                                    div.phones = (String[]) result.getArray(16)
+                                            .getArray();
+
+                                divisions.add(div);
+                            }
+                        } else
+                            throw new Exception("DB connection is null");
+
+                    } finally {
+                        if (result != null)
+                            if (!result.isClosed())
+                                result.close();
+                        if (stmt != null)
+                            if (!stmt.isClosed())
+                                stmt.close();
+                        if (con != null)
+                            if (!con.isClosed())
+                                con.close();
+                    }
+                    return divisions;
+                } else {
+                    throw new NotAuthorizedException("");
+                }
+            }
+        } finally {
+            if (result1 != null)
+                if (result1.isClosed())
+                    result1.close();
+            if (result != null)
+                if (!result.isClosed())
+                    result.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+        }
     }
 
     /***
@@ -177,8 +262,8 @@ public class Division {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,DIVISION).equals("Read") ||
-                Permissions.isAuthorised(userRole,DIVISION).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, DIVISION).equals("Read") ||
+                Permissions.isAuthorised(userRole, DIVISION).equals("Write")) {
 
             Division division = null;
             // TODO check authorization
@@ -196,7 +281,7 @@ public class Division {
                                     + schemaName
                                     + ".divisions d " +
                                     " left join master.users u on u.id = d.updateby " +
-                                    " left join "+ schemaName+ ".userprofile p on d.updateby = p.userid " +
+                                    " left join " + schemaName + ".userprofile p on d.updateby = p.userid " +
                                     "where id = ?");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
@@ -273,7 +358,7 @@ public class Division {
                                         + "updateBy) values (?,?,?,?,?,?)",
                                 Statement.RETURN_GENERATED_KEYS);
 
-                if(node.has("name"))
+                if (node.has("name"))
                     stmt.setString(1, node.get("name").asText());
                 else
                     throw new Exception("Division Name is not defined.");
@@ -348,7 +433,7 @@ public class Division {
                                     + schemaName
                                     + ".divisions SET name = ?,description = ?,updateDate = ?,"
                                     + "updateBy = ? WHERE id = ?");
-                    if(node.has("name"))
+                    if (node.has("name"))
                         stmt.setString(1, node.get("name").asText());
                     else
                         throw new Exception("Division Name is Not Defined.");
@@ -359,7 +444,7 @@ public class Division {
                     stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
                     stmt.setInt(4, loggedInUser.id);
 
-                    if(node.has("divisionId"))
+                    if (node.has("divisionId"))
                         stmt.setInt(5, node.get("divisionId").asInt());
                     else
                         throw new Exception("Division ID is not Defined for update Division.");
@@ -397,7 +482,7 @@ public class Division {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,DIVISION).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, DIVISION).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();

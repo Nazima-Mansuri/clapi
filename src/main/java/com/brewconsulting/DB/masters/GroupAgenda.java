@@ -64,6 +64,9 @@ public class GroupAgenda {
     @JsonProperty("updateBy")
     public int updateBy;
 
+    @JsonProperty("contentList")
+    public ArrayList<Content> contentList;
+
     public static final int GroupAgenda = 9;
     // MAKE THE DEFAULT CONSTRUCTOR VISIBLE TO PACKAGE ONLY.
     GroupAgenda() {
@@ -75,7 +78,7 @@ public class GroupAgenda {
     }
 
     /**
-     * method for get group agenda by dayNo
+     * method for get group agenda by groupid and dayNo
      *
      * @param groupId
      * @param dayNo
@@ -96,14 +99,16 @@ public class GroupAgenda {
             ArrayList<GroupAgenda> groupAgendas = new ArrayList<GroupAgenda>();
             PreparedStatement stmt = null;
             ResultSet result = null;
+            ResultSet contentResult = null;
 
             try {
                 if (con != null) {
 
                     stmt = con
                             .prepareStatement("SELECT id, sessionname, sessiondesc, to_char(sessionstarttime::Time, 'HH12:MI AM')," +
-                                    "to_char(sessionendtime::Time, 'HH12:MI AM'), sessionconductor,createdon, createdby, updateon, updatedby,contenttype " +
-                                    " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?  ORDER BY sessionstarttime ASC");
+                                    " to_char(sessionendtime::Time, 'HH12:MI AM'), sessionconductor,createdon, createdby, updateon, updatedby,contenttype " +
+                                    " FROM " + schemaName + ".groupagenda where groupid= ? and dayno = ?  " +
+                                    " ORDER BY sessionstarttime ASC");
 
                     stmt.setInt(1, groupId);
                     stmt.setInt(2, dayNo);
@@ -124,6 +129,32 @@ public class GroupAgenda {
                         groupAgenda.contentType = result.getString(11);
                         groupAgenda.groupId=groupId;
                         groupAgenda.dayNo=dayNo;
+                        groupAgenda.contentList = new ArrayList<>();
+
+                        if(result.getString(11).equals("MIXED"))
+                        {
+                            stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
+                                    " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
+                                    " FROM "+schemaName+".groupsessioncontentinfo as c1 WHERE  c1.agendaid = ?");
+                            stmt.setInt(1,result.getInt(1));
+                            contentResult = stmt.executeQuery();
+                            while (contentResult.next())
+                            {
+                                Content content = new Content();
+                                content.id = contentResult.getInt(1);
+                                content.agendaId = contentResult.getInt(2);
+                                content.contentType = contentResult.getString(3);
+                                content.contentSeq = contentResult.getInt(4);
+                                content.createdOn = contentResult.getTimestamp(5);
+                                content.createBy = contentResult.getInt(6);
+                                content.updateOn = contentResult.getTimestamp(7);
+                                content.updateBy = contentResult.getInt(8);
+                                content.contentId = (Integer[]) contentResult.getArray(9).getArray();
+                                content.title = contentResult.getString(10);
+                                content.description = contentResult.getString(11);
+                                groupAgenda.contentList.add(content);
+                            }
+                        }
 
                         groupAgendas.add(groupAgenda);
                     }
@@ -169,7 +200,9 @@ public class GroupAgenda {
             PreparedStatement stmt = null;
             int result;
             ResultSet resultSet;
+            ResultSet seqResultSet;
             int id = 0;
+            int sequenceNo;
 
             try {
                 con.setAutoCommit(false);
@@ -220,19 +253,81 @@ public class GroupAgenda {
                     ResultSet generatedKeys = stmt.getGeneratedKeys();
 
                     if (generatedKeys.next())
-                        // It gives last inserted Id in divisionId
+                        // It gives last inserted Id in id
                         id = generatedKeys.getInt(1);
                     else
                         throw new SQLException("No ID obtained");
 
-                    con.commit();
+                    if(contentType.name().equals("MIXED"))
+                    {
+                        for(int i=0;i<node.withArray("mixedContentType").size();i++)
+                        {
+                            stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".groupsessioncontent " +
+                                    " WHERE agendaid = ? ");
+                            stmt.setInt(1, id);
+                            seqResultSet = stmt.executeQuery();
 
+                            if (seqResultSet.next()) {
+                                if (seqResultSet.getInt("sequenceNo") > 0) {
+                                    sequenceNo = seqResultSet.getInt("sequenceNo");
+                                    sequenceNo++;
+                                } else {
+                                    sequenceNo = 0;
+                                    sequenceNo++;
+                                }
+                            } else {
+                                sequenceNo = 0;
+                                sequenceNo++;
+                            }
+                            System.out.println("Seq No : " + sequenceNo);
+
+                            Integer[] array = new Integer[]{};
+                            Array arr = con.createArrayOf("int",array);
+
+                            ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
+
+                            if(type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
+                                stmt = con.prepareStatement("INSERT INTO " +
+                                        schemaName +
+                                        ".groupSessionContentInfo(title,description,agendaid,contenttype,contentseq," +
+                                        " createdon,createdby , updateon, updatedby,contentid) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+
+                                stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if(node.withArray("mixedContentType").get(i).get("description").asText() != null ||
+                                        node.withArray("mixedContentType").get(i).get("description").asText() != "") {
+                                    stmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                }
+                                else
+                                    stmt.setString(2,null);
+
+                                stmt.setInt(3, id);
+                                stmt.setString(4, type.name());
+                                stmt.setInt(5, sequenceNo);
+                                stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                stmt.setInt(7, loggedInUser.id);
+                                stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                stmt.setInt(9, loggedInUser.id);
+                                stmt.setArray(10,arr);
+
+                                result = stmt.executeUpdate();
+                            }
+
+                            if(type.name().equals("TEST"))
+                            {
+
+                            }
+
+                        }
+                    }
+                    con.commit();
+                    return id;
                 }
                 else
                 {
                     throw new BadRequestException("");
                 }
-                return id;
 
             } catch (Exception ex) {
                 if (con != null)
@@ -267,9 +362,12 @@ public class GroupAgenda {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
+            PreparedStatement contentStmt = null;
             int result =0;
             ResultSet resultSet;
+            ResultSet seqResultSet;
             int groupId = 0,dayNo = 0;
+            int sequenceNo;
 
             try {
                 con.setAutoCommit(false);
@@ -306,8 +404,7 @@ public class GroupAgenda {
                                     "UPDATE "
                                             + schemaName
                                             + ".groupAgenda SET groupId =? ,dayNo=?,sessionName=?,sessionDesc=?,sessionStartTime=?,sessionEndTime=?,sessionConductor=?,"
-                                            + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) where id=?",
-                                    Statement.RETURN_GENERATED_KEYS);
+                                            + "updateOn=?,updatedBy=? , contenttype = CAST(? AS master.contentType) where id=?");
                     stmt.setInt(1, node.get("groupId").asInt());
                     stmt.setInt(2, node.get("dayNo").asInt());
                     stmt.setString(3, node.get("sessionName").asText());
@@ -320,6 +417,73 @@ public class GroupAgenda {
                     stmt.setString(10,contentType.name());
                     stmt.setInt(11, node.get("id").asInt());
 
+                    if(contentType.name().equals("MIXED")){
+
+                        contentStmt = con.prepareStatement("DELETE FROM "+schemaName+" " +
+                                " .groupsessioncontentinfo WHERE agendaid = ? ");
+                        contentStmt.setInt(1,node.get("id").asInt());
+                        contentStmt.executeUpdate();
+
+                        for(int i=0;i<node.withArray("mixedContentType").size();i++)
+                        {
+                            contentStmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".groupsessioncontent " +
+                                    " WHERE agendaid = ? ");
+                            contentStmt.setInt(1,node.get("id").asInt());
+                            seqResultSet = contentStmt.executeQuery();
+
+                            if (seqResultSet.next()) {
+                                if (seqResultSet.getInt("sequenceNo") > 0) {
+                                    sequenceNo = seqResultSet.getInt("sequenceNo");
+                                    sequenceNo++;
+                                } else {
+                                    sequenceNo = 0;
+                                    sequenceNo++;
+                                }
+                            } else {
+                                sequenceNo = 0;
+                                sequenceNo++;
+                            }
+
+                            Integer[] array = new Integer[]{};
+                            Array arr = con.createArrayOf("int",array);
+
+                            ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
+
+                            if(type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
+
+                                contentStmt = con.prepareStatement("INSERT INTO " +
+                                        schemaName +
+                                        ".groupSessionContentInfo(title,description,agendaid,contenttype,contentseq," +
+                                        " createdon,createdby , updateon, updatedby,contentid) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+
+                                contentStmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if(node.withArray("mixedContentType").get(i).get("description").asText() != null ||
+                                        node.withArray("mixedContentType").get(i).get("description").asText() != "") {
+                                    contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                }
+                                else
+                                    contentStmt.setString(2,null);
+
+                                contentStmt.setInt(3, node.get("id").asInt());
+                                contentStmt.setString(4, type.name());
+                                contentStmt.setInt(5, sequenceNo);
+                                contentStmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(7, loggedInUser.id);
+                                contentStmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(9, loggedInUser.id);
+                                contentStmt.setArray(10,arr);
+
+                                contentStmt.executeUpdate();
+                            }
+
+                            if(type.name().equals("TEST"))
+                            {
+                                // If content type is test it add contents in test table
+                            }
+                        }
+                    }
                     result = stmt.executeUpdate();
                     con.commit();
                 }

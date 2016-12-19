@@ -33,6 +33,40 @@ public class GroupNotes {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
+     *  Produces List of group notes.
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Secured
+    @Produces("application/json")
+    public Response getUserNotes(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(Note
+                            .getAllNotesOfLogInUser((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group notes\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
      * Produces list of notes for Specific Group
      *
      * @param id

@@ -33,7 +33,7 @@ public class CycleMeetingGroups {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     * Produces list of group meetings with its childs.
+     * Produces list of group meetings with its cycle meetings..
      *
      * @param id
      * @param crc
@@ -107,7 +107,7 @@ public class CycleMeetingGroups {
     }
 
     /**
-     *  add new Meeting
+     *  add new Group Meeting
      *
      * @param input
      * @param crc
@@ -155,7 +155,7 @@ public class CycleMeetingGroups {
     }
 
     /**
-     * Update a Meeting
+     * Update Group Meeting
      *
      * @param input
      * @param crc
@@ -197,7 +197,7 @@ public class CycleMeetingGroups {
     }
 
     /**
-     * Delete Meeting
+     * Delete Group Meeting
      *
      * @param id
      * @param crc

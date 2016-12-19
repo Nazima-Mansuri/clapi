@@ -125,6 +125,13 @@ public class ForgotPassword {
 
     }
 
+    /***
+     *  Method is used to get User's details
+     *
+     * @param username
+     * @return
+     * @throws Exception
+     */
     public static String getUserDetail(String username) throws Exception
     {
         Connection con = DBConnectionProvider.getConn();
@@ -176,9 +183,7 @@ public class ForgotPassword {
      */
     public static boolean generateAndSendEmail(String username,String from, String password) throws Exception {
 
-        String firstname = null;
         // Step1
-//        System.out.println("\n 1st ===> setup Mail Server Properties..");
         mailServerProperties = System.getProperties();
         mailServerProperties.put("mail.smtp.port", "587");
         mailServerProperties.put("mail.smtp.auth", "true");
@@ -186,7 +191,6 @@ public class ForgotPassword {
         System.out.println("Mail Server Properties have been setup successfully..");
 
         // Step2
-//        System.out.println("\n\n 2nd ===> get Mail Session..");
         String name = getUserDetail(username);
         getMailSession = Session.getDefaultInstance(mailServerProperties, null);
         generateMailMessage = new MimeMessage(getMailSession);
@@ -199,7 +203,6 @@ public class ForgotPassword {
         System.out.println("Mail Session has been created successfully..");
 
         // Step3
-//        System.out.println("\n\n 3rd ===> Get Session and Send mail");
         Transport transport = getMailSession.getTransport("smtp");
 
         transport.connect("smtp.gmail.com", from , password);

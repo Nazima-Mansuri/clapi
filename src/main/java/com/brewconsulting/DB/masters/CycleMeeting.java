@@ -20,6 +20,7 @@ import static com.brewconsulting.DB.utils.stringToDate;
 /**
  * Created by lcom53 on 7/10/16.
  */
+
 public class CycleMeeting {
 
     @JsonProperty("id")
@@ -111,7 +112,8 @@ public class CycleMeeting {
                                     +" left join master.users u ON u.id = organiser"
                                     +" left join "+schemaName+".userprofile uf on uf.userid = organiser"
                                     +" left join "+ schemaName +".cyclemeetingterritories ct on c.id = ct.cyclemeetingid "
-                                    +" where groupId = ? GROUP BY c.id,u.username,u.firstname,u.lastname,uf.address ORDER BY createdon DESC ");
+                                    +" where groupId = ? GROUP BY c.id,u.username,u.firstname,u.lastname,uf.address "
+                                    +" ORDER BY createdon DESC ");
                     stmt.setInt(1,id);
                     result = stmt.executeQuery();
                     System.out.print(result);

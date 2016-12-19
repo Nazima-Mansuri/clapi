@@ -31,7 +31,7 @@ public class CycleMeetingPostReplies {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     *
+     *  Insert cycle meeting post reply.
      *
      * @param input
      * @param crc

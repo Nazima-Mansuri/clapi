@@ -40,4 +40,11 @@ public class UserDetail {
         this.state = state;
         this.phones = phones;
     }
+
+    public UserDetail(int userId, String username, String firstname, String lastname) {
+        this.userId = userId;
+        this.username = username;
+        this.firstname = firstname;
+        this.lastname = lastname;
+    }
 }

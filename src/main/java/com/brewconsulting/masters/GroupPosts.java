@@ -44,7 +44,7 @@ public class GroupPosts {
     @Produces("application/json")
     @Secured
     @Path("{groupId}")
-    public Response divisionBymeetings(@PathParam("groupId") Integer groupId,
+    public Response GrpPosts(@PathParam("groupId") Integer groupId,
                                        @Context ContainerRequestContext crc) {
         Response resp = null;
 

@@ -10,6 +10,7 @@ import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -22,6 +23,12 @@ public class CycleMeetingPost {
 
     @JsonProperty("cycleMeetingId")
     public int cycleMeetingId;
+
+    @JsonProperty("cycleMeetingName")
+    public String cycleMeetingName;
+
+    @JsonProperty("divName")
+    public String divName;
 
     @JsonProperty("postText")
     public String postText;
@@ -46,6 +53,14 @@ public class CycleMeetingPost {
     public ArrayList<CycleMeetingPostReply> comments;
 
 
+    /***
+     *  Method is used to get all Cyclemeeting Posts by cycle meeting id.
+     *
+     * @param meetingId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
     public static List<CycleMeetingPost> getMeetingPost(int meetingId,LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
 
@@ -177,7 +192,7 @@ public class CycleMeetingPost {
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int meetingPostId;
                 if (generatedKeys.next())
-                    // It gives last inserted Id in groupTaskId
+                    // It gives last inserted Id in meetingPostId
                     meetingPostId = generatedKeys.getInt(1);
                 else
                     throw new SQLException("No ID obtained");
@@ -199,8 +214,114 @@ public class CycleMeetingPost {
         }
     }
 
+    /***
+     *  Method used to get only logged in  users's cycle meeting post.
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeetingPost> getPosts(LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,17).equals("Read") ||
+                Permissions.isAuthorised(userRole,17).equals("Write") )
+        {
+            CycleMeetingPost meetingPost = null;
+            CycleMeetingPostReply meetingPostReply = null;
+            // TODO check authorization
+            String schemaName = loggedInUser.schemaName;
+            ArrayList<CycleMeetingPost> meetingPostList = new ArrayList<CycleMeetingPost>();
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement(" SELECT p.id, cyclemeetingid, posttext, p.createdate, p.createby, usertosend , " +
+                                    " username ,firstname,lastname , uf.profileimage ,pr.id,replytext,pr.createby,rf.profileimage,c.title,d.name," +
+                                    " u.username,u.firstname,u.lastname " +
+                                    " FROM client1.cyclemeetingpost p " +
+                                    " inner join client1.cyclemeetingpostreply pr on pr.cyclemeetingpostid = p.id " +
+                                    " inner join master.users u on u.id = p.createby AND u.id = pr.createby " +
+                                    " inner join client1.userprofile uf on uf.userid = p.createby " +
+                                    " inner join client1.cyclemeeting c on c.id = cyclemeetingid " +
+                                    " inner join client1.cyclemeetinggroup cg on cg.id = c.groupid " +
+                                    " inner join client1.divisions d on d.id = division " +
+                                    " inner join client1.userprofile rf on rf.userid = pr.createby" +
+                                    " WHERE p.createby = ? OR ? = ANY(usertosend ::int[]) ");
+                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(2, loggedInUser.id);
+
+                    result = stmt.executeQuery();
+
+                    while (result.next())
+                    {
+                        meetingPost = new CycleMeetingPost();
+                        meetingPostReply = new CycleMeetingPostReply();
+                        meetingPost.comments = new ArrayList<>();
+                        meetingPost.id = result.getInt(1);
+                        meetingPost.cycleMeetingId = result.getInt(2);
+                        meetingPost.postText = result.getString(3);
+                        meetingPost.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                        meetingPost.createBy = result.getInt(5);
+                        meetingPost.userId = (Integer[]) result.getArray(6).getArray();
+                        meetingPost.userDetails = new ArrayList<>();
+                        meetingPost.userDetails.add(new UserDetail(loggedInUser.id,result.getString(7),result.getString(8),result.getString(9)));
+                        meetingPost.postProfileImage = result.getString(10);
+                        meetingPost.cycleMeetingName = result.getString(15);
+                        meetingPost.divName = result.getString(16);
+
+                        meetingPostReply.id = result.getInt(11);
+                        if (meetingPostReply.id != 0) {
+                            meetingPostReply.replyText = result.getString(12);
+                            meetingPostReply.cycleMeetingPostId = result.getInt(1);
+                            meetingPostReply.createBy = result.getInt(13);
+                            meetingPostReply.replyProfileImage = result.getString(14);
+                            meetingPostReply.userDetails = new ArrayList<>();
+                            meetingPostReply.userDetails.add(new UserDetail(result.getInt(13),result.getString(17),result.getString(18),result.getString(19)));
+                        }
+
+                        int index = findPost(meetingPost.id, meetingPostList);
+                        if (index != -1) {
+                            meetingPostList.get(index).comments.add(meetingPostReply);
+
+                        } else {
+                            meetingPostList.add(meetingPost);
+                            if (meetingPostReply.id != 0)
+                                meetingPost.comments.add(meetingPostReply);
+                        }
+
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return meetingPostList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+
+    }
 
 
+    /***
+     *  Method is used to get Post id in Cyclemeeting post list.
+     *
+     * @param meetingPostId
+     * @param list
+     * @return
+     */
     public static int findPost(int meetingPostId, List<CycleMeetingPost> list) {
         for (CycleMeetingPost meetingPost : list) {
             if (meetingPost.id == meetingPostId) {

@@ -133,7 +133,7 @@ public class Users {
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get Deassociate User\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to get Divisions of User\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
@@ -218,7 +218,7 @@ public class Users {
     }
 
     /***
-     * Produces al Roles
+     * Produces all Roles
      *
      * @param crc
      * @return
@@ -310,7 +310,6 @@ public class Users {
 
             JsonNode node = mapper.readTree(input);
             int affectedRow = User.deactivateUser(node, (LoggedInUser) crc.getProperty("userObject"));
-            System.out.println("Method called and affected rows" + affectedRow);
             if (affectedRow > 0)
                 resp = Response.ok().build();
             else
@@ -334,6 +333,7 @@ public class Users {
 
     /***
      *  Change password of User
+     *
      * @param id
      * @param input
      * @return

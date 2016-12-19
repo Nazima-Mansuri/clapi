@@ -26,13 +26,14 @@ import java.util.Properties;
 
 @Path("cyclemeetingtasks")
 @Secured
-public class ChildTasks {
+public class CycleMeetingTasks {
 
     ObjectMapper mapper = new ObjectMapper();
 
-    static final Logger logger = Logger.getLogger(ChildTasks.class);
+    static final Logger logger = Logger.getLogger(CycleMeetingTasks.class);
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
+
     /***
      * Produces list of Cycle Meeting tasks.
      *
@@ -170,7 +171,6 @@ public class ChildTasks {
     @PUT
     @Secured
     @Produces("application/json")
-
     public Response updateTask(InputStream input,
                                   @Context ContainerRequestContext crc) {
         Response resp = null;

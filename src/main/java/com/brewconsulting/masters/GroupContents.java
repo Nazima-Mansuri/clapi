@@ -38,7 +38,7 @@ public class GroupContents {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     * Produces List of Group Contents
+     * Produces List of Group Contents of specific meeting and division
      *
      * @param meetingId
      * @param divId
@@ -112,6 +112,44 @@ public class GroupContents {
         return resp;
     }
 
+    /***
+     *  Produces list of Mixed group agenda type content.
+     *
+     * @param agendaId
+     * @param contentId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("mixedgroupcontents/{agendaId}/{contentId}")
+    public Response groupMixedContents(@PathParam("agendaId") int agendaId, @PathParam("contentId") int contentId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(Content
+                            .getMixedGroupContents(agendaId, contentId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group meeting contents \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
 
     /***
      * Add Group content
@@ -137,6 +175,7 @@ public class GroupContents {
             @FormDataParam("contentType") String contentType,
             @FormDataParam("divid") int divId,
             @FormDataParam("agendaId") int agendaId,
+            @FormDataParam("itemId") int itemId,
             @Context ContainerRequestContext crc) {
 
         Response resp = null;
@@ -162,7 +201,7 @@ public class GroupContents {
             }
 
             int contentId = Content.addGroupContent(contentName, contentDesc, contentType,
-                    divId, uploadFilePath, agendaId, (LoggedInUser) crc.getProperty("userObject"));
+                    divId, uploadFilePath, agendaId,itemId, (LoggedInUser) crc.getProperty("userObject"));
 
             if (contentId != 0)
                 resp = Response.ok("{\"id\":" + contentId + "}").build();
@@ -193,7 +232,7 @@ public class GroupContents {
     }
 
     /***
-     * Add Exixting Content in Group Content
+     * Add Existing Content in Group Content
      *
      * @param input
      * @param crc
@@ -240,6 +279,13 @@ public class GroupContents {
         return resp;
     }
 
+    /***
+     *  Delete group Content
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
     @DELETE
     @Produces("application/json")
     @Secured
@@ -282,6 +328,13 @@ public class GroupContents {
         return resp;
     }
 
+    /***
+     *  Update group sequence number
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
     @PUT
     @Produces("application/json")
     @Secured
@@ -300,7 +353,49 @@ public class GroupContents {
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to update Division\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to update Group sequence number.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (IOException e) {
+            logger.error("IOException ", e);
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Remove content id from group content
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("remove")
+    public Response updateGrpContents(InputStream input,
+                                 @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int result = Content.removeGroupContentOfItem(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"result\":" + result + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Remove content from Item\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {

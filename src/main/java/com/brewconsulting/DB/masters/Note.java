@@ -149,6 +149,7 @@ public class Note
         }
     }
 
+
     /***
      * Method used to get particular Group Note
      *
@@ -269,7 +270,7 @@ public class Note
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int groupNoteId;
                 if (generatedKeys.next())
-                    // It gives last inserted Id in groupTaskId
+                    // It gives last inserted Id in groupNoteId
                     groupNoteId = generatedKeys.getInt(1);
                 else
                     throw new SQLException("No ID obtained");
@@ -591,7 +592,7 @@ public class Note
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int groupNoteId;
                 if (generatedKeys.next())
-                    // It gives last inserted Id in groupTaskId
+                    // It gives last inserted Id in groupNoteId
                     groupNoteId = generatedKeys.getInt(1);
                 else
                     throw new SQLException("No ID obtained");
@@ -711,6 +712,109 @@ public class Note
             throw new NotAuthorizedException("");
         }
     }
+
+    /***
+     *  It gives all notes of Logged in User
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Note> getAllNotesOfLogInUser(LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Note).equals("Read") ||
+                Permissions.isAuthorised(userRole,Note).equals("Write")) {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<Note> groupNotes = new ArrayList<Note>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement(" SELECT g.id,groupid,(note).title title,(note).description description , " +
+                                    " (note).category category, g.createdon ," +
+                                    " g.createdby, g.updateon, g.updateby , u.username ,u.firstname,u.lastname," +
+                                    " (uf.address).city city, (uf.address).state state," +
+                                    " (uf.address).phone phone " +
+                                    " FROM "+schemaName + ".groupNotes g " +
+                                    " left join master.users u on u.id = g.updateby " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = g.updateby " +
+                                    " WHERE g.createdby = ? " +
+                                    " ORDER BY g.createdon DESC");
+                    stmt.setInt(1,loggedInUser.id);
+                    result = stmt.executeQuery();
+                    while (result.next()) {
+                        Note note = new Note();
+                        note.id = result.getInt(1);
+                        note.groupId = result.getInt(2);
+                        note.title = result.getString(3);
+                        note.description = result.getString(4);
+                        note.category = result.getString(5);
+                        note.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        note.createBy = result.getInt(7);
+                        note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        note.updateBy = result.getInt(9);
+                        note.userDetails = new ArrayList<>();
+                        note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
+
+                        groupNotes.add(note);
+                    }
+
+                    stmt = con
+                            .prepareStatement("SELECT c1.id,cyclemeetingid,(note).title title,(note).description description ," +
+                                    " (note).category category, c1.createdon ," +
+                                    " c1.createdby, c1.updateon, c1.updateby, u.username,u.firstname,u.lastname, " +
+                                    " (uf.address).city city, (uf.address).state state,(uf.address).phone phone" +
+                                    "  FROM " +
+                                    schemaName + ".cycleMeetingNotes c1 left join master.users u on u.id = createdby " +
+                                    " left join "+schemaName+".userprofile uf ON uf.userid = c1.updateby " +
+                                    " WHERE c1.createdby = ?" +
+                                    " ORDER BY c1.createdon DESC ");
+                    stmt.setInt(1,loggedInUser.id);
+                    result = stmt.executeQuery();
+                    while (result.next()) {
+                        Note note = new Note();
+                        note.id = result.getInt(1);
+                        note.cycleMeetingId = result.getInt(2);
+                        note.title = result.getString(3);
+                        note.description = result.getString(4);
+                        note.category = result.getString(5);
+                        note.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        note.createBy = result.getInt(7);
+                        note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        note.updateBy = result.getInt(9);
+                        note.userDetails = new ArrayList<>();
+                        note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
+
+                        groupNotes.add(note);
+
+                    }
+                }
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+
+            return groupNotes;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
 
 }
 
