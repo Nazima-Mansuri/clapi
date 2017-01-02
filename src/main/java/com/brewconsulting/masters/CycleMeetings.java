@@ -109,6 +109,43 @@ public class CycleMeetings {
     }
 
     /***
+     * Produces a list of all Meetings of specific month.
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("monthofmeetings/{month}")
+    public Response monthmeetings(@PathParam("month") int month , @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(CycleMeeting
+                            .getAllSubMeetingsOfMonth(month,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeetings\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
      * Add cycle Meeting
      *
      * @param input

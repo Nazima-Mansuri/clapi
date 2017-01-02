@@ -154,6 +154,28 @@ public class GroupAgenda {
                                 content.description = contentResult.getString(11);
                                 groupAgenda.contentList.add(content);
                             }
+
+                            stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
+                                    " c1.updateon, c1.updatedby , c1.title , c1. description " +
+                                    " FROM "+schemaName+".groupsessioncontenttest as c1 WHERE  c1.agendaid = ?");
+                            stmt.setInt(1,result.getInt(1));
+                            contentResult = stmt.executeQuery();
+                            while (contentResult.next())
+                            {
+                                Content content = new Content();
+                                content.id = contentResult.getInt(1);
+                                content.agendaId = contentResult.getInt(2);
+                                content.contentType = contentResult.getString(3);
+                                content.contentSeq = contentResult.getInt(4);
+                                content.createdOn = contentResult.getTimestamp(5);
+                                content.createBy = contentResult.getInt(6);
+                                content.updateOn = contentResult.getTimestamp(7);
+                                content.updateBy = contentResult.getInt(8);
+                                content.title = contentResult.getString(9);
+                                content.description = contentResult.getString(10);
+                                groupAgenda.contentList.add(content);
+                            }
+
                         }
 
                         groupAgendas.add(groupAgenda);
@@ -258,6 +280,92 @@ public class GroupAgenda {
                     else
                         throw new SQLException("No ID obtained");
 
+
+                    stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".groupsessioncontent " +
+                            " WHERE agendaid = ? ");
+                    stmt.setInt(1, id);
+                    seqResultSet = stmt.executeQuery();
+
+                    if (seqResultSet.next()) {
+                        if (seqResultSet.getInt("sequenceNo") > 0) {
+                            sequenceNo = seqResultSet.getInt("sequenceNo");
+                            sequenceNo++;
+                        } else {
+                            sequenceNo = 0;
+                            sequenceNo++;
+                        }
+                    } else {
+                        sequenceNo = 0;
+                        sequenceNo++;
+                    }
+
+                    Integer[] array = new Integer[]{};
+                    Array arr = con.createArrayOf("int",array);
+
+                    if(contentType.name().equals("INFO") || contentType.name().equals("ACTIVITY")) {
+                        stmt = con.prepareStatement("INSERT INTO " +
+                                schemaName +
+                                ".groupSessionContentInfo(title,description,agendaid,contenttype,contentseq," +
+                                " createdon,createdby , updateon, updatedby,contentid) " +
+                                " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
+
+                        stmt.setString(1,null);
+                        stmt.setString(2,null);
+                        stmt.setInt(3, id);
+                        stmt.setString(4, contentType.name());
+                        stmt.setInt(5, sequenceNo);
+                        stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(7, loggedInUser.id);
+                        stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(9, loggedInUser.id);
+                        stmt.setArray(10,arr);
+
+                        result = stmt.executeUpdate();
+                    }
+
+                    if(contentType.name().equals("TEST"))
+                    {
+                        // It can create Empty Integer Array
+                        Integer[] intTest = new Integer[]{};
+                        Array testIntArr = con.createArrayOf("int",intTest);
+
+                        // It can create Empty Double Array
+                        Double[] doubleArr = new Double[]{};
+                        Array testDoubArr = con.createArrayOf("FLOAT8",doubleArr);
+
+                        stmt = con.prepareStatement(" INSERT INTO " +
+                                schemaName +
+                                ".groupsessioncontenttest(title,description,agendaid,contenttype,contentseq, " +
+                                " createdon,createdby,updateon, updatedby,scorecorrect,scoreincorrect,duration,timeperquestion, " +
+                                " testinstruction, testendnote, applyscoring,showfeedback,applyinterval," +
+                                " applytimeperquestion, allowreview,testdescription ) " +
+                                " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
+
+                        stmt.setString(1,null);
+                        stmt.setString(2,null);
+                        stmt.setInt(3, id);
+                        stmt.setString(4, contentType.name());
+                        stmt.setInt(5, sequenceNo);
+                        stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(7, loggedInUser.id);
+                        stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                        stmt.setInt(9, loggedInUser.id);
+                        stmt.setArray(10,testIntArr);
+                        stmt.setArray(11,testDoubArr);
+                        stmt.setObject(12,"00:00");
+                        stmt.setArray(13,testIntArr);
+                        stmt.setString(14,null);
+                        stmt.setString(15,null);
+                        stmt.setBoolean(16,false);
+                        stmt.setBoolean(17,false);
+                        stmt.setBoolean(18,false);
+                        stmt.setBoolean(19,false);
+                        stmt.setBoolean(20,false);
+                        stmt.setString(21,null);
+
+                        result = stmt.executeUpdate();
+                    }
+
                     if(contentType.name().equals("MIXED"))
                     {
                         for(int i=0;i<node.withArray("mixedContentType").size();i++)
@@ -279,10 +387,6 @@ public class GroupAgenda {
                                 sequenceNo = 0;
                                 sequenceNo++;
                             }
-                            System.out.println("Seq No : " + sequenceNo);
-
-                            Integer[] array = new Integer[]{};
-                            Array arr = con.createArrayOf("int",array);
 
                             ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
 
@@ -295,8 +399,7 @@ public class GroupAgenda {
 
                                 stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
 
-                                if(node.withArray("mixedContentType").get(i).get("description").asText() != null ||
-                                        node.withArray("mixedContentType").get(i).get("description").asText() != "") {
+                                if(node.withArray("mixedContentType").get(i).has("description")) {
                                     stmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
                                 }
                                 else
@@ -316,9 +419,53 @@ public class GroupAgenda {
 
                             if(type.name().equals("TEST"))
                             {
+                                // It can create Empty Integer Array
+                                Integer[] intTest = new Integer[]{};
+                                Array testIntArr = con.createArrayOf("int",intTest);
 
+                                // It can create Empty Double Array
+                                Double[] doubleArr = new Double[]{};
+                                Array testDoubArr = con.createArrayOf("FLOAT8",doubleArr);
+
+                                stmt = con.prepareStatement(" INSERT INTO " +
+                                        schemaName +
+                                        ".groupsessioncontenttest(title,description,agendaid,contenttype,contentseq, " +
+                                        " createdon,createdby,updateon, updatedby,scorecorrect,scoreincorrect,duration,timeperquestion, " +
+                                        " testinstruction, testendnote, applyscoring,showfeedback,applyinterval," +
+                                        " applytimeperquestion, allowreview,testdescription ) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
+
+                                stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if(node.withArray("mixedContentType").get(i).has("description")) {
+                                    stmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                }
+                                else
+                                    stmt.setString(2,null);
+
+                                stmt.setInt(3, id);
+                                stmt.setString(4, type.name());
+                                stmt.setInt(5, sequenceNo);
+                                stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                stmt.setInt(7, loggedInUser.id);
+                                stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                stmt.setInt(9, loggedInUser.id);
+                                stmt.setArray(10,testIntArr);
+                                stmt.setArray(11,testDoubArr);
+                                stmt.setObject(12,"00:00");
+                                stmt.setArray(13,testIntArr);
+                                stmt.setString(14,null);
+                                stmt.setString(15,null);
+                                stmt.setBoolean(16,false);
+                                stmt.setBoolean(17,false);
+                                stmt.setBoolean(18,false);
+                                stmt.setBoolean(19,false);
+                                stmt.setBoolean(20,false);
+                                stmt.setString(21,null);
+
+
+                                result = stmt.executeUpdate();
                             }
-
                         }
                     }
                     con.commit();
@@ -424,6 +571,11 @@ public class GroupAgenda {
                         contentStmt.setInt(1,node.get("id").asInt());
                         contentStmt.executeUpdate();
 
+                        contentStmt = con.prepareStatement("DELETE FROM "+schemaName+" " +
+                                " .groupsessioncontenttest WHERE agendaid = ? ");
+                        contentStmt.setInt(1,node.get("id").asInt());
+                        contentStmt.executeUpdate();
+
                         for(int i=0;i<node.withArray("mixedContentType").size();i++)
                         {
                             contentStmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".groupsessioncontent " +
@@ -459,8 +611,7 @@ public class GroupAgenda {
 
                                 contentStmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
 
-                                if(node.withArray("mixedContentType").get(i).get("description").asText() != null ||
-                                        node.withArray("mixedContentType").get(i).get("description").asText() != "") {
+                                if(node.withArray("mixedContentType").get(i).has("description")) {
                                     contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
                                 }
                                 else
@@ -480,7 +631,29 @@ public class GroupAgenda {
 
                             if(type.name().equals("TEST"))
                             {
-                                // If content type is test it add contents in test table
+                                contentStmt = con.prepareStatement("INSERT INTO " +
+                                        schemaName +
+                                        ".groupsessioncontenttest(title,description,agendaid,contenttype,contentseq," +
+                                        " createdon,createdby , updateon, updatedby) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,? )");
+
+                                contentStmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if(node.withArray("mixedContentType").get(i).has("description")) {
+                                    contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                }
+                                else
+                                    contentStmt.setString(2,null);
+
+                                contentStmt.setInt(3, node.get("id").asInt());
+                                contentStmt.setString(4, type.name());
+                                contentStmt.setInt(5, sequenceNo);
+                                contentStmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(7, loggedInUser.id);
+                                contentStmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(9, loggedInUser.id);
+
+                                contentStmt.executeUpdate();
                             }
                         }
                     }

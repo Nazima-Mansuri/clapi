@@ -194,10 +194,10 @@ public class GroupContents {
                     // This method is used to store content in AWS bucket.
                     uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
                 } else {
-                    uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                    uploadFilePath = "";
                 }
             } else {
-                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                uploadFilePath = "";
             }
 
             int contentId = Content.addGroupContent(contentName, contentDesc, contentType,

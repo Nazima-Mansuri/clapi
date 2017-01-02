@@ -158,7 +158,7 @@ public class ForgotPassword {
             }
             else
             {
-                throw new SQLException("");
+                throw new SQLException("User does not exist");
             }
 
         }

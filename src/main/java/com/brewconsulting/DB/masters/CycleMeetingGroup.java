@@ -219,10 +219,12 @@ public class CycleMeetingGroup {
 
 
                             } else {
-                                String last = statusList.get(statusList.size() - 1);
-                                statusList.clear();
-                                meetingGroup.status = last;
-                                statusList.add(last);
+                                if(statusList.size() > 0) {
+                                    String last = statusList.get(statusList.size() - 1);
+                                    statusList.clear();
+                                    meetingGroup.status = last;
+                                    statusList.add(last);
+                                }
                                 groMeetingWrappers.add(meetingGroup);
                                 if (cycleMeeting.id != 0)
                                     idList.add(cycleMeeting.id);
@@ -346,10 +348,12 @@ public class CycleMeetingGroup {
                                     groMeetingWrappers.get(index).cycleMeetings.add(cycleMeeting);
 
                                 } else {
-                                    String last = statusList.get(statusList.size() - 1);
-                                    statusList.clear();
-                                    meetingGroup.status = last;
-                                    statusList.add(last);
+                                    if(statusList.size() > 0) {
+                                        String last = statusList.get(statusList.size() - 1);
+                                        statusList.clear();
+                                        meetingGroup.status = last;
+                                        statusList.add(last);
+                                    }
                                     groMeetingWrappers.add(meetingGroup);
                                     if (cycleMeeting.id != 0)
                                         meetingGroup.cycleMeetings.add(cycleMeeting);

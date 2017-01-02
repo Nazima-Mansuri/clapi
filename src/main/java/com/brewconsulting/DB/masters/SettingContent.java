@@ -276,6 +276,7 @@ public class SettingContent {
                 else
                     stmt.setNull(3,0);
                 stmt.setString(4, url);
+                System.out.println("FILE PATH : " + url);
                 stmt.setInt(5, loggedInUser.id);
                 stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
 

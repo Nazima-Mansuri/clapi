@@ -1,9 +1,6 @@
 package com.brewconsulting.masters;
 
-import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.masters.Question;
-import com.brewconsulting.DB.masters.QuestionCollection;
-import com.brewconsulting.DB.masters.UserViews;
+import com.brewconsulting.DB.masters.*;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,8 +49,83 @@ public class QuestionCollections {
             PropertyConfigurator.configure(properties);
 
             resp = Response.ok(
-                    mapper.writeValueAsString(QuestionCollection
+                    mapper.writerWithView(UserViews.collectionView.class).writeValueAsString(QuestionCollection
                             .getAllQuestionCollection(agendaId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Collections\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+    /***
+     *  Produces List of all Group or Cycle meeting Question Collections Set.
+     *
+     * @param agendaId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Path("set/{agendaId}")
+    @Secured
+    public Response getquestioncollectionsSet(@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.quesSetView.class).writeValueAsString(QuestionCollection
+                            .getQuesionSet(agendaId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Collections\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+
+    /***
+     *  Produces List of all Group or Cycle meeting Question Collections.
+     *
+     * @param agendaId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("settings/{agendaId}")
+    public Response getcollectionsSettings(@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.settingView.class).writeValueAsString(QuestionCollection
+                            .getSettingDetails(agendaId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
@@ -255,4 +327,89 @@ public class QuestionCollections {
         }
         return resp;
     }
+
+
+    /***
+     *  Update Collection Details.
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    public Response updateQuesCollections(InputStream input,
+                                    @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int affectedRows = QuestionCollection.updateCollections(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Update Question Collections \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (IOException e) {
+            logger.error("IOException ", e);
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Update Collection Settings..
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("settings")
+    public Response updateQuesSettings(InputStream input,
+                                          @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int affectedRows = QuestionCollection.updateSettings(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Update Question Collections Settings \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (IOException e) {
+            logger.error("IOException ", e);
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
 }

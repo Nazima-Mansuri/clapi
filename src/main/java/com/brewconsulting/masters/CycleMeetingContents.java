@@ -195,10 +195,10 @@ public class CycleMeetingContents {
                  uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
              }
              else {
-                 uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                 uploadFilePath = "";
              }
             } else {
-                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                uploadFilePath = "";
             }
 
             int contentId = Content.addCycleMeetingContent(contentName, contentDesc, contentType,

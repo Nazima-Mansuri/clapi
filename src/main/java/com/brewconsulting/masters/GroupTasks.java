@@ -103,6 +103,77 @@ public class GroupTasks {
     }
 
     /***
+     * Produces list of group and cyclemeeting tasks of specific month.
+     *
+     * @param crc
+     * @return /*
+     */
+    @GET
+    @Secured
+    @Produces("application/json")
+    @Path("monthoftasks/{month}")
+    public Response getGrpTasksByMonths(@PathParam("month") int month ,@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(Task
+                            .getAllTasksOfMonth(month,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group tasks\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     * Produces list of group tasks.
+     *
+     * @param crc
+     * @return /*
+     */
+    @GET
+    @Secured
+    @Produces("application/json")
+    @Path("{assignTo}/{day}/{createBy}")
+    public Response getGrpTasks(@PathParam("assignTo") int assignTo,@PathParam("day") int day,
+                                @PathParam("createBy") int createBy,@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.groupTaskView.class).writeValueAsString(Task
+                            .filterTasks(assignTo,day,createBy,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get group tasks\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
      * get a particular Group Task.
      *
      * @param id
@@ -280,6 +351,54 @@ public class GroupTasks {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
 
+        }
+        return resp;
+    }
+
+    /***
+     * Add Group Task
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @POST
+    @Secured
+    @Produces("application/json")
+    @Path("usertask")
+    public Response createUserTask(InputStream input,
+                                  @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int userTaskId = Task.addUserTasks(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            if (userTaskId != 0)
+                resp = Response.ok("{\"id\":" + userTaskId + "}").build();
+            else
+                resp = Response
+                        .noContent()
+                        .entity(new NoDataFound("Unable to Insert User Task")
+                                .getJsonString()).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to add user task\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (IOException e) {
+            logger.error("IOException ",e);
+            if (resp == null) {
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
         return resp;
     }

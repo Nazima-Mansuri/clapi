@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.logging.Log;
 import org.omg.CORBA.PERSIST_STORE;
 
+import javax.naming.NamingException;
 import javax.ws.rs.NotAuthorizedException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,9 +91,6 @@ public class Question {
 
     @JsonProperty("fileType")
     public String fileType;
-
-
-
 
     // make the default constructor visible to package only.
     public Question() {
@@ -579,7 +577,7 @@ public class Question {
             ArrayList<Question> questionsList = new ArrayList<Question>();
             PreparedStatement stmt = null;
             ResultSet result = null;
-            boolean isDate = false, isKeyword= false,isProduct= false,isAuthor= false,isSameDate=false;
+            boolean isDate = false, isKeyword= false,isProduct= false,isAuthor= false;
             int index = 1;
 
             try {
@@ -605,7 +603,7 @@ public class Question {
                     }
                     if(node.has("Keyword"))
                     {
-                        if(node.get("Keyword").asText() != null) {
+                        if(node.withArray("Keyword").size() > 0) {
                             query = query.concat(" AND keywords = ? ");
                             isKeyword = true;
                         }
@@ -613,7 +611,7 @@ public class Question {
 
                     if(node.has("Product"))
                     {
-                        if(node.get("Product").asText() != null) {
+                        if(node.withArray("Product").size() > 0) {
                             query = query.concat(" AND products = ? ");
                             isProduct = true;
                         }
@@ -628,7 +626,7 @@ public class Question {
                     }
 
                     stmt = con.prepareStatement(query);
-
+                    System.out.println(" QUERY : " + query);
                     stmt.setInt(index++,node.get("divisionId").asInt());
 
                     if(isDate)
@@ -751,5 +749,180 @@ public class Question {
         }
 
         return finalUrl;
+    }
+
+
+    /***
+     *  Method used to get specific Question.
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static Question getQuestionById(int id,LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write"))
+        {
+            String schemaName = loggedInUser.schemaName;
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+            Question question = new Question();
+            try
+            {
+                stmt = con
+                        .prepareStatement(" SELECT q.id, complexitylevel, questionjson, q.imageurl,q.filetype " +
+                                " FROM " + schemaName + ".question q " +
+                                " WHERE id = ? " +
+                                " ORDER BY q.createdate DESC ");
+                        stmt.setInt(1,id);
+                        result = stmt.executeQuery();
+
+                        while (result.next())
+                        {
+                            question.id = result.getInt(1);
+                            question.complexityLevel = result.getString(2);
+                            question.questionJson = result.getString(3);
+                            question.questionImage = result.getString(4);
+                            question.fileType = result.getString(5);
+                        }
+
+            }
+            finally {
+                if(result != null)
+                    if(!result.isClosed())
+                        result.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+            }
+
+            return question;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+
+    /***
+     *  Method is used to get Question of Given complexity level.
+     *
+     * @param Questions
+     * @param complexitylevel
+     * @return
+     * @throws SQLException
+     * @throws NamingException
+     * @throws ClassNotFoundException
+     */
+    public static List<Question> getQuestionsByListAndComplexity(Integer[] Questions , String complexitylevel) throws SQLException, NamingException, ClassNotFoundException {
+
+        PreparedStatement stmt = null;
+        List<Question> quesList = new ArrayList<>();
+        Connection con = DBConnectionProvider.getConn();
+        ResultSet result = null;
+
+        try {
+            for (int i = 0; i < Questions.length; i++) {
+
+                stmt = con.prepareStatement("SELECT q.id,complexitylevel, questionjson, q.imageurl,q.filetype " +
+                        " FROM client1.question q WHERE complexitylevel = CAST(? AS master.complexitylevel) " +
+                        " AND id = ? ORDER BY q.createdate DESC ");
+                stmt.setString(1, complexitylevel);
+                stmt.setInt(2, Questions[i]);
+                result = stmt.executeQuery();
+
+                while (result.next()) {
+                    Question question = new Question();
+                    question.id = result.getInt(1);
+                    question.complexityLevel = result.getString(2);
+                    question.questionJson = result.getString(3);
+                    question.questionImage = result.getString(4);
+                    question.fileType = result.getString(5);
+                    quesList.add(question);
+                }
+            }
+
+            return quesList;
+        }
+        finally {
+            if(result != null)
+                if(!result.isClosed())
+                    result.close();
+            if(con != null)
+                if(!con.isClosed())
+                    con.close();
+            if(stmt != null)
+                if(!stmt.isClosed())
+                    stmt.close();
+        }
+    }
+
+    public static List<Question> getQuestionsByList(Integer[] Questions) throws SQLException, NamingException, ClassNotFoundException {
+
+        PreparedStatement stmt = null;
+        List<Question> quesList = new ArrayList<>();
+        Connection con = DBConnectionProvider.getConn();
+        ResultSet result = null;
+
+        try {
+            for (int i = 0; i < Questions.length; i++) {
+                stmt = con
+                        .prepareStatement(" SELECT q.id, questiontext, pollable, division," +
+                                " questiontype, complexitylevel, products, keywords, feedbackright, " +
+                                " feedbackwrong, q.isactive, q.createby, q.createdate, q.updatedate, " +
+                                " q.updateby, questionjson, answerjson , q.imageurl,q.filetype " +
+                                " FROM client1.question q " +
+                                " WHERE id = ? ");
+                stmt.setInt(1, Questions[i]);
+                result = stmt.executeQuery();
+
+                while (result.next()) {
+                    Question question = new Question();
+                    question.id = result.getInt(1);
+                    question.questionText = result.getString(2);
+                    question.pollable = result.getBoolean(3);
+                    question.division = result.getInt(4);
+                    question.questionType = result.getString(5);
+                    question.complexityLevel = result.getString(6);
+                    if (result.getArray(7).getArray() != null)
+                        question.products = (Integer[]) result.getArray(7).getArray();
+                    else
+                        question.products = null;
+                    question.keywords = (String[]) result.getArray(8).getArray();
+                    question.feedbackRight = result.getString(9);
+                    question.feedbackWrong = result.getString(10);
+                    question.isActive = result.getBoolean(11);
+                    question.createBy = result.getInt(12);
+                    question.createDate = result.getTimestamp(13);
+                    question.updatedate = result.getTimestamp(14);
+                    question.updateby = result.getInt(15);
+                    question.questionJson = result.getString(16);
+                    question.answerJson = result.getString(17);
+                    question.questionImage = result.getString(18);
+                    question.fileType = result.getString(19);
+                    quesList.add(question);
+                }
+            }
+
+            return quesList;
+        }
+        finally {
+            if(result != null)
+                if(!result.isClosed())
+                    result.close();
+            if(con != null)
+                if(!con.isClosed())
+                    con.close();
+            if(stmt != null)
+                if(!stmt.isClosed())
+                    stmt.close();
+        }
     }
 }

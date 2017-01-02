@@ -95,7 +95,6 @@ public class CycleMeetingTerritory {
                                     "where c.cyclemeetingid = ? ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
-                    System.out.print(result);
                     while (result.next()) {
                         CycleMeetingTerritory meetingTerritory = new CycleMeetingTerritory();
                         meetingTerritory.id = result.getInt(1);

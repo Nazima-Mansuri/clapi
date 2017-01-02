@@ -143,11 +143,11 @@ public class SettingContents {
                     // This method is used to store image in AWS bucket.
                     uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
                 }else {
-                    uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                    uploadFilePath = "";
                 }
 
             } else {
-                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
+                uploadFilePath = "";
             }
 
             int contentid = SettingContent.addSettingContent(contentName, contentDesc,
@@ -222,7 +222,7 @@ public class SettingContents {
                     // This method is used to store content in AWS bucket.
                     uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
                 } else {
-                    uploadFilePath = null;
+                    uploadFilePath = "";
                 }
             } else {
                 uploadFilePath = url;

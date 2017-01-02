@@ -21,6 +21,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.InputMismatchException;
 import java.util.Properties;
 
 @Path("users")
@@ -180,9 +181,46 @@ public class Users {
         return resp;
     }
 
+    /***
+     * Produces a List of All Users With specific Division.
+     *
+     * @param crc
+     * @return
+     */
+
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("allUser/{id}")
+    public Response getAllUsersByDivisions(@PathParam("id") int id,@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
+                            .getAllUsersByDivId(id,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Users. \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+
 
     /***
-     * Produces list of users for specific Division.
+     * Produces list of Activate users for specific Division.
      *
      * @param id
      * @param crc
@@ -192,7 +230,7 @@ public class Users {
     @Produces("application/json")
     @Secured
     @Path("userbydivision/{id}")
-    public Response getAllUsersByDivId(@PathParam("id") int id, @Context ContainerRequestContext crc) {
+    public Response getAllActivateUsersByDivId(@PathParam("id") int id, @Context ContainerRequestContext crc) {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -201,7 +239,7 @@ public class Users {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
-                            .getAllUsersByDivId(id, (LoggedInUser) crc
+                            .getAllActivateUsersByDivId(id, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
@@ -332,7 +370,49 @@ public class Users {
     }
 
     /***
-     *  Change password of User
+     *  Change password of user.
+     *
+     * @param input
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    public Response updatePassword(InputStream input) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int affectedRow = User.changePassword(node);
+            resp = Response.ok("{\"affectedRow\":" + affectedRow + "}").build();
+        }
+        catch (InputMismatchException e) {
+            logger.error("InputMismatchException ",e);
+            if (resp == null)
+                resp = Response.status(Response.Status.BAD_REQUEST).entity("{\"Message\":" + "\" Password Does not match. \"}")
+                        .type(MediaType.APPLICATION_JSON).build();
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            logger.error("IOException ",e);
+            if (resp == null)
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}")
+                        .type(MediaType.APPLICATION_JSON).build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Change password of User When user logged in First Time.
      *
      * @param id
      * @param input
@@ -343,7 +423,7 @@ public class Users {
     @Secured
     @Consumes("application/json")
     @Path("{id}")
-    public Response updatePassword(@PathParam("id") int id, InputStream input) {
+    public Response updateFirstLoginPassword(@PathParam("id") int id, InputStream input) {
         Response resp = null;
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -351,7 +431,7 @@ public class Users {
             PropertyConfigurator.configure(properties);
 
             JsonNode node = mapper.readTree(input);
-            User.changePassword(id,node);
+            User.changeFirstLoginPassword(id,node);
             resp = Response.ok("{\"Message\":" + "\" Password changed Successfully. \"}").build();
         }catch (IOException e) {
             logger.error("IOException ",e);
@@ -531,15 +611,12 @@ public class Users {
         String fileName = null;
         String uploadFilePath = "";
 
-        System.out.println("Multipart Form Data");
-
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             if(isUpdated)
             {
-                System.out.println("isUpdated : " + isUpdated);
                 if (fileFormDataContentDisposition != null) {
                     fileName = System.currentTimeMillis() + "_"
                             + fileFormDataContentDisposition.getFileName();
@@ -550,7 +627,6 @@ public class Users {
             else
             {
                 uploadFilePath = url;
-                System.out.println("isUpdated : " + isUpdated);
             }
 
             int affectedRows = User.updateUserDetails(firstname,lastname,username,isActive,addLine1,addLine2,addLine3,city,state,phones,
@@ -578,6 +654,101 @@ public class Users {
             }
         } catch (Exception e) {
             logger.error("Exception ",e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Used to update user profile details.
+     *
+     * @param fileInputStream
+     * @param fileFormDataContentDisposition
+     * @param firstname
+     * @param lastname
+     * @param addLine1
+     * @param addLine2
+     * @param addLine3
+     * @param city
+     * @param state
+     * @param phones
+     * @param isUpdated
+     * @param url
+     * @param userid
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Secured
+    @Produces("application/json")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("profile")
+    public Response updateUserProfile(
+            @FormDataParam("profileImage") InputStream fileInputStream,
+            @FormDataParam("profileImage") FormDataContentDisposition fileFormDataContentDisposition,
+            @FormDataParam("firstName") String firstname,
+            @FormDataParam("lastName") String lastname,
+            @FormDataParam("addLine1") String addLine1,
+            @FormDataParam("addLine2") String addLine2,
+            @FormDataParam("addLine3") String addLine3,
+            @FormDataParam("city") String city,
+            @FormDataParam("state") String state,
+            @FormDataParam("phones") String phones,
+            @FormDataParam("isUpdated") boolean isUpdated,
+            @FormDataParam("url") String url,
+            @FormDataParam("userid") int userid,
+            @Context ContainerRequestContext crc) {
+
+        Response resp = null;
+        // local variables
+        String fileName = null;
+        String uploadFilePath = "";
+
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            if(isUpdated)
+            {
+                if (fileFormDataContentDisposition != null) {
+                    fileName = System.currentTimeMillis() + "_"
+                            + fileFormDataContentDisposition.getFileName();
+                    // This method is used to store image in AWS bucket.
+                    uploadFilePath = User.writeToFile(fileInputStream, fileName);
+                }
+            }
+            else
+            {
+                uploadFilePath = url;
+            }
+
+            int affectedRows = User.updateUserProfileDetails(firstname,lastname,addLine1,addLine2,addLine3,city,state,phones,
+                   uploadFilePath,userid,(LoggedInUser) crc.getProperty("userObject"));
+
+            if (affectedRows != 0 || affectedRows >0)
+                resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
+            else
+                resp = Response
+                        .noContent()
+                        .entity(new NoDataFound("Unable to Update User Details")
+                                .getJsonString()).build();
+
+        }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Update User Details\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (IOException e) {
+            logger.error("IOException ",e);
+            if (resp == null) {
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

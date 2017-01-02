@@ -11,4 +11,8 @@ public class UserViews {
 	public static class childNoteView{};
 	public static class clientView{};
 	public static class divView{};
+	public static class collectionView{};
+	public static class settingView{};
+	public static class quesSetView{};
+	public static class quesAgendaView{};
 }

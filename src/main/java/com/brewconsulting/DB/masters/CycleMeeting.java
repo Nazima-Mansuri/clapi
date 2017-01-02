@@ -424,4 +424,80 @@ public class CycleMeeting {
             throw new NotAuthorizedException("");
         }
     }
+
+    /***
+     *  Method is used to get all meetings Of Specific Month.
+     *
+     * @param month
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeeting> getAllSubMeetingsOfMonth(int month,LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeeting).equals("Write") ) {
+
+            String schemaName = loggedInUser.schemaName;
+
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<CycleMeeting> cycleMeetings = new ArrayList<CycleMeeting>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate, " +
+                                    " organiser, c.createdon, c.createdby, c.updatedon, c.updatedby " +
+                                    " FROM "+schemaName+".cyclemeeting c " +
+                                    " left join "+schemaName+".cyclemeetingterritories ct on c.id = ct.cyclemeetingid " +
+                                    " left join "+schemaName+".userterritorymap t on t.terrid = ct.territoryid " +
+                                    " where Extract(month from startdate) = ? AND (organiser = ? OR t.userid = ? )" +
+                                    " ORDER BY createdon DESC ");
+
+                    stmt.setInt(1,month);
+                    stmt.setInt(2,loggedInUser.id);
+                    stmt.setInt(3,loggedInUser.id);
+
+                    result = stmt.executeQuery();
+
+                    while (result.next()) {
+                        CycleMeeting subMeeting = new CycleMeeting();
+                        subMeeting.id = result.getInt(1);
+                        subMeeting.title = result.getString(2);
+                        subMeeting.groupId = result.getInt(3);
+                        subMeeting.venue = result.getString(4);
+                        subMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
+                        subMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        subMeeting.organiser = result.getInt(7);
+                        subMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        subMeeting.createBy = result.getInt(9);
+                        subMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
+                        subMeeting.updateBy = result.getInt(11);
+
+                        cycleMeetings.add(subMeeting);
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return cycleMeetings;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
 }
