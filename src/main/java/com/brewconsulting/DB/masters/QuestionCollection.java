@@ -1873,7 +1873,8 @@ public class QuestionCollection {
 
                                     if(String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("") ||
+                                            String.valueOf(node.get("answerJson")).equals("{}")){
                                         stmt.setBoolean(5,false);
                                     }else{
                                         stmt.setBoolean(5,true);
@@ -1882,7 +1883,8 @@ public class QuestionCollection {
                                     stmt.setBoolean(6, false);
                                     if(String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("") ||
+                                            String.valueOf(node.get("answerJson")).equals("{}")){
                                         stmt.setDouble(4, 0);
                                         stmt.setBoolean(5,false);
                                     }else {
@@ -1926,6 +1928,8 @@ public class QuestionCollection {
                                 stmt.setInt(7,node.get("agendaId").asInt());
                                 stmt.setInt(8,node.get("userId").asInt());
                                 stmt.setInt(9,node.get("questionId").asInt());
+
+                                stmt.executeUpdate();
                             }
                             else
                             {
@@ -1946,7 +1950,8 @@ public class QuestionCollection {
 
                                     if(String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("") ||
+                                            String.valueOf(node.get("answerJson")).equals("{}")){
                                         stmt.setBoolean(8,false);
                                     }else{
                                         stmt.setBoolean(8,true);
@@ -1955,7 +1960,8 @@ public class QuestionCollection {
                                     stmt.setBoolean(9, false);
                                     if(String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("") ||
+                                            String.valueOf(node.get("answerJson")).equals("{}")){
                                         stmt.setDouble(6, 0);
                                         stmt.setBoolean(8,false);
                                     }else {
