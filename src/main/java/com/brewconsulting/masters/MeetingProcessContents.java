@@ -1,12 +1,14 @@
 package com.brewconsulting.masters;
 
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.DB.masters.Product;
+import com.brewconsulting.DB.masters.MeetingProcessContent;
+import com.brewconsulting.DB.masters.SettingContent;
 import com.brewconsulting.exceptions.NoDataFound;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.postgresql.util.PSQLException;
@@ -18,27 +20,36 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
-@Path("products")
-public class Products {
+/**
+ * Created by lcom62_one on 1/12/2017.
+ */
+
+@Path("meetingprocesscontents")
+@Secured
+public class MeetingProcessContents {
+
     ObjectMapper mapper = new ObjectMapper();
-    static final Logger logger = Logger.getLogger(Products.class);
+
+    static final Logger logger = Logger.getLogger(MeetingProcessContents.class);
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
-    /***
-     * Produces a list of all products
+    /**
+     * Produces all meeting process contents.
      *
      * @param crc
      * @return
      */
-
     @GET
     @Produces("application/json")
+    @Path("{meetingId}/{agendaId}")
     @Secured
-    @Path("/productsbydiv/{divid}")
-    public Response getAllproducts(@PathParam("divid") Integer divid ,@Context ContainerRequestContext crc) {
+    public Response getAllMeetingProcessContents(@PathParam("meetingId") int meetingId,@PathParam("agendaId") int agendaId,
+                                @Context ContainerRequestContext crc) {
         Response resp = null;
 
         try {
@@ -46,56 +57,13 @@ public class Products {
             PropertyConfigurator.configure(properties);
 
             resp = Response.ok(
-                    mapper.writeValueAsString(Product
-                            .getAllProducts(divid,(LoggedInUser) crc
+                    mapper.writeValueAsString(MeetingProcessContent
+                            .getAllMeetingProcessContent(meetingId,agendaId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get products \"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        } catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-            e.printStackTrace();
-        }
-
-        return resp;
-    }
-
-    /***
-     * get a particular product
-     *
-     * @param id
-     * @param crc
-     * @return
-     */
-    @GET
-    @Produces("application/json")
-    @Secured
-    @Path("{id}")
-    public Response products(@PathParam("id") Integer id,
-                             @Context ContainerRequestContext crc) {
-        Response resp = null;
-        try {
-            properties.load(inp);
-            PropertyConfigurator.configure(properties);
-
-            Product product = Product.getProductById(id,
-                    (LoggedInUser) crc.getProperty("userObject"));
-            if (product == null) {
-                resp = Response
-                        .noContent()
-                        .entity(new NoDataFound("This product does not exist")
-                                .getJsonString()).build();
-            } else
-                resp = Response.ok(mapper.writeValueAsString(product)).build();
-
-        }   catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
-            resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get product\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to get meeting process contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
@@ -107,70 +75,88 @@ public class Products {
     }
 
     /***
-     * Add new Product
+     *  Add meeting process contents.
      *
      * @param fileInputStream
      * @param fileFormDataContentDisposition
-     * @param name
-     * @param description
-     * @param division
-     * @param isActive
+     * @param contentName
+     * @param contentDesc
+     * @param divId
      * @param crc
      * @return
      */
     @POST
     @Secured
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response createPro(
-            @FormDataParam("uploadFile") InputStream fileInputStream,
-            @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
-            @FormDataParam("name") String name,
-            @FormDataParam("description") String description,
-            @FormDataParam("division") int division,
-            @FormDataParam("isActive") Boolean isActive,
-            @Context ContainerRequestContext crc) {
+    public Response createProcessCont(
+            @FormDataParam("uploadFile") List<FormDataBodyPart> contents,
+            /*@FormDataParam("uploadFile") InputStream fileInputStream,
+            @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,*/
+            @FormDataParam("meetingId") int meetingId,
+            @FormDataParam("agendaId") int agendaId,
+            @Context ContainerRequestContext crc)  {
 
         Response resp = null;
         // local variables
         String fileName = null;
-        String uploadFilePath = "";
-        ObjectMapper mapper = new ObjectMapper();
+        String uploadFilePath = null;
+        String fileType = "";
+        List<String> filePath = new ArrayList<>();
 
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
-
-            if (fileFormDataContentDisposition != null) {
+           /* if (fileFormDataContentDisposition != null) {
                 if(fileFormDataContentDisposition.getFileName() != null) {
                     fileName = System.currentTimeMillis() + "_"
                             + fileFormDataContentDisposition.getFileName();
                     // This method is used to store image in AWS bucket.
-                    uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-                }
-                else {
+                    uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
+                }else {
                     uploadFilePath = "";
                 }
+
             } else {
                 uploadFilePath = "";
+            }*/
+
+            if(contents.size() > 0) {
+                for (int i = 0; i < contents.size(); i++) {
+                    FormDataContentDisposition fileFormDataContentDisposition = contents.get(i).getFormDataContentDisposition();
+
+                    if (fileFormDataContentDisposition != null) {
+                        if (fileFormDataContentDisposition.getFileName() != null) {
+
+                            fileType = contents.get(i).getMediaType().toString();
+                            String[] split = fileType.split("/");
+                            fileType = split[0];
+
+                            fileName = System.currentTimeMillis() + "_"
+                                    + fileFormDataContentDisposition.getFileName();
+                            // This method is used to store image in AWS bucket.
+                            uploadFilePath = SettingContent.writeToFile(contents.get(i).getValueAs(InputStream.class), fileName);
+                            filePath.add(uploadFilePath);
+
+                        } else {
+                            uploadFilePath = "";
+                        }
+                    } else {
+                        uploadFilePath = "";
+                    }
+                }
             }
 
-            int productId = Product.addProduct(name, uploadFilePath,
-                    description, division, isActive,
-                    (LoggedInUser) crc.getProperty("userObject"));
+            List<Integer>  idList = MeetingProcessContent.addMeetingProcessContent(meetingId, agendaId,
+                     filePath, (LoggedInUser) crc.getProperty("userObject"));
 
-            if (productId != 0)
-                resp = Response.ok("{\"id\":" + productId + "}").build();
-            else
-                resp = Response
-                        .noContent()
-                        .entity(new NoDataFound("Unable to Insert Product")
-                                .getJsonString()).build();
+                resp = Response.ok("{\"idList\":" + idList + "}").build();
+                System.out.println("Id List : " + idList);
 
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to add product\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to add Meeting Process Content \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
@@ -188,91 +174,83 @@ public class Products {
     }
 
     /***
-     * Updates a Product.
+     *  Update meeting process contents.
      *
      * @param fileInputStream
      * @param fileFormDataContentDisposition
-     * @param name
-     * @param description
-     * @param isActive
+     * @param isUpdated
+     * @param url
      * @param id
      * @param crc
      * @return
      */
-
     @PUT
     @Secured
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response updatePro(
+    public Response updateMeetingProcessContent(
             @FormDataParam("uploadFile") InputStream fileInputStream,
             @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
-            @FormDataParam("name") String name,
-            @FormDataParam("description") String description,
-            @FormDataParam("isActive") boolean isActive,
             @FormDataParam("isUpdated") boolean isUpdated,
             @FormDataParam("url") String url,
-            @FormDataParam("id") int id, @Context ContainerRequestContext crc) {
+            @FormDataParam("id") int id,
+            @Context ContainerRequestContext crc) {
 
         Response resp = null;
+        // local variables
         String fileName = null;
-        String uploadFilePath = "";
-        ObjectMapper mapper = new ObjectMapper();
+        String uploadFilePath = null;
+
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
-            if(isUpdated)
-            {
+            if (isUpdated) {
                 if (fileFormDataContentDisposition != null) {
-                    if(fileFormDataContentDisposition.getFileName() != null)
-                    {
-                        fileName = System.currentTimeMillis() + "_"
-                                + fileFormDataContentDisposition.getFileName();
-                        // This method is used to store image in AWS bucket.
-                        uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-                    }
-                    else {
-//                        uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
-                        uploadFilePath = "";
-                    }
-                }
-                else {
+                    fileName = System.currentTimeMillis() + "_"
+                            + fileFormDataContentDisposition.getFileName();
+                    // This method is used to store content in AWS bucket.
+                    uploadFilePath = SettingContent.writeToFile(fileInputStream, fileName);
+                } else {
                     uploadFilePath = "";
                 }
-            }
-            else
-            {
+            } else {
                 uploadFilePath = url;
             }
 
-            int affectedRow = Product.updateProduct(name, uploadFilePath,
-                    description, isActive, id,
-                    (LoggedInUser) crc.getProperty("userObject"));
-            if (affectedRow > 0)
-                resp = Response.ok().build();
+            int affectedRows = MeetingProcessContent.updateMeetingProcessContent(uploadFilePath,
+                    id, (LoggedInUser) crc.getProperty("userObject"));
+
+            if (affectedRows != 0)
+                resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
             else
-                resp = Response.status(204).build();
+                resp = Response
+                        .noContent()
+                        .entity(new NoDataFound("Unable to Update Meeting Process Content")
+                                .getJsonString()).build();
+
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to update product\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to update meeting process contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
             logger.error("IOException ",e);
-            if (resp == null)
+            if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-            e.printStackTrace();
+                e.printStackTrace();
+            }
         } catch (Exception e) {
-            logger.error(" Exception ",e);
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return resp;
     }
 
+
     /***
-     * Delete a Product
+     *  delete meeting process contents.
      *
      * @param id
      * @param crc
@@ -282,14 +260,14 @@ public class Products {
     @Produces("application/json")
     @Secured
     @Path("{id}")
-    public Response deletePro(@PathParam("id") Integer id,
-                              @Context ContainerRequestContext crc) {
+    public Response deleteMeetingProcessContent(@PathParam("id") Integer id,
+                                         @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
-            int affectedRow = Product.deleteProduct(id,
+            int affectedRow = MeetingProcessContent.deleteMeetingProcessContent(id,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (affectedRow > 0)
                 resp = Response.ok().build();
@@ -301,21 +279,22 @@ public class Products {
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to delete product\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete meeting process contents\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
-            logger.error(" PSQLException ",ex);
+            logger.error("PSQLException ",ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
-            logger.error(" Exception ",e);
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return resp;
     }
+
 }

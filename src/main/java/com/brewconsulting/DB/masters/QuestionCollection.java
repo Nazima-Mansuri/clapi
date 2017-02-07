@@ -1,22 +1,22 @@
 package com.brewconsulting.DB.masters;
 
+import com.amazonaws.services.dynamodbv2.xspec.NULL;
 import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.dataformat.yaml.snakeyaml.events.Event;
-import com.fasterxml.jackson.dataformat.yaml.snakeyaml.external.com.google.gdata.util.common.base.PercentEscaper;
-import org.joda.time.Interval;
 
+import javax.naming.NamingException;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
-import java.sql.Date;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.jar.JarOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by lcom53 on 15/12/16.
@@ -69,7 +69,7 @@ public class QuestionCollection {
     @JsonProperty("questionsId")
     public Integer[] questionsId;
 
-    @JsonView({UserViews.collectionView.class})
+    @JsonView({UserViews.collectionView.class, UserViews.settingView.class})
     @JsonProperty("randomdelivery")
     public boolean randomdelivery;
 
@@ -97,15 +97,15 @@ public class QuestionCollection {
     @JsonProperty("agendaName")
     public String agendaName;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("Instruction")
     public String Instrction;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("EndNote")
     public String EndNote;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("Description")
     public String Description;
 
@@ -113,7 +113,7 @@ public class QuestionCollection {
     @JsonProperty("showFeedBack")
     public boolean showFeedBack;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("AllowReview")
     public boolean AllowReview;
 
@@ -121,11 +121,15 @@ public class QuestionCollection {
     @JsonProperty("Scoring")
     public HashMap Scoring;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("TimeLimitation")
     public HashMap TimeLimitation;
 
-    @JsonView({UserViews.collectionView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
+    @JsonProperty("deliveryMode")
+    public String deliveryMode;
+
+    @JsonView({UserViews.collectionView.class, UserViews.quesSetView.class})
     @JsonProperty("questions")
     public List<Question> questions;
 
@@ -157,12 +161,81 @@ public class QuestionCollection {
     @JsonProperty("applytimeperquestion")
     public boolean applytimeperquestion;
 
+/*    @JsonView({UserViews.quesAgendaView.class})
+    @JsonProperty("isAttempted")
+    public boolean isAttempted;
+
+    @JsonView({UserViews.quesAgendaView.class})
+    @JsonProperty("isReview")
+    public boolean isReview;*/
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("questionId")
+    public int questionId;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("questionJson")
+    public String questionJson;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("answerJson")
+    public String answerJson;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("userAnswerJson")
+    public String userAnswerJson;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("isReview")
+    public boolean isReview;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("score")
+    public double score;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("imageURL")
+    public String imageURL;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("fileType")
+    public String fileType;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("userId")
+    public int userId;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("username")
+    public String username;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("fullname")
+    public String fullname;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("correctAnswer")
+    public int correctAnswer;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("inCorrectAnswer")
+    public int inCorrectAnswer;
+
+    @JsonView({UserViews.scoreView.class})
+    @JsonProperty("notAttempt")
+    public int notAttempt;
+
+
     // make visible to package only
     public QuestionCollection() {
     }
 
     public enum ContentType {
         ACTIVITY, INFO, TEST, MIXED;
+    }
+
+    public enum DeliveryMode {
+        WEB, APP;
     }
 
     public static final int Question = 15;
@@ -185,28 +258,11 @@ public class QuestionCollection {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0;
             int result;
 
             try {
                 con.setAutoCommit(false);
 
-                stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName + ".groupagenda WHERE id = ? ");
-                stmt.setInt(1, node.get("agendaid").asInt());
-                resultSet = stmt.executeQuery();
-
-                while (resultSet.next()) {
-                    groupCount = resultSet.getInt(1);
-                }
-
-
-                stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName + ".cyclemeetingagenda WHERE id = ? ");
-                stmt.setInt(1, node.get("agendaid").asInt());
-                resultSet = stmt.executeQuery();
-
-                while (resultSet.next()) {
-                    meetingCount = resultSet.getInt(1);
-                }
 
                 // TODO: set up the reminder int array
                 Integer[] questionArr = new Integer[node.withArray("questions").size()];
@@ -229,29 +285,31 @@ public class QuestionCollection {
 
                 ContentType typeContent = ContentType.valueOf(node.get("contentType").asText());
 
-                if (groupCount > 0 && meetingCount == 0) {
+                if (node.get("isGroup").asBoolean()) {
+                    System.out.println("In GROUP..");
                     stmt = con
                             .prepareStatement(
                                     "INSERT INTO "
                                             + schemaName
                                             + ".groupsessioncontenttestquestioncollection"
                                             + " (agendaid,contenttype,contentseq,createdon,createdby,updateon,updatedby,"
-                                            + " questions,randomdelivery,collectionseq,disregardcomplexitylevel,deliverallquestions,"
-                                            + " questionbreakup,collectionname) values (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,?,?)",
+                                            + " questions,collectionseq,disregardcomplexitylevel,deliverallquestions,"
+                                            + " questionbreakup,collectionname) values (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,?)",
                                     Statement.RETURN_GENERATED_KEYS);
                 } else {
+                    System.out.println("In CYCLE MEETING..");
                     stmt = con
                             .prepareStatement(
                                     "INSERT INTO "
                                             + schemaName
                                             + ".cyclemeetingsessioncontenttestquestioncollection"
                                             + " (agendaid,contenttype,contentseq,createdon,createdby,updateon,updatedby,"
-                                            + " questions,randomdelivery,collectionseq,disregardcomplexitylevel,deliverallquestions,"
-                                            + " questionbreakup,collectionname) values (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,?,?)",
+                                            + " questions,collectionseq,disregardcomplexitylevel,deliverallquestions,"
+                                            + " questionbreakup,collectionname) values (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,?)",
                                     Statement.RETURN_GENERATED_KEYS);
                 }
 
-                stmt.setInt(1, node.get("agendaid").asInt());
+                stmt.setInt(1, node.get("agendaId").asInt());
                 stmt.setString(2, typeContent.name());
                 stmt.setInt(3, 1);
                 stmt.setTimestamp(4, new Timestamp((new java.util.Date()).getTime()));
@@ -259,12 +317,11 @@ public class QuestionCollection {
                 stmt.setTimestamp(6, new Timestamp((new java.util.Date()).getTime()));
                 stmt.setInt(7, loggedInUser.id);
                 stmt.setArray(8, question);
-                stmt.setBoolean(9, node.get("randomdelivery").asBoolean());
-                stmt.setInt(10, 1);
-                stmt.setBoolean(11, node.get("disregardcomplexitylevel").asBoolean());
-                stmt.setBoolean(12, node.get("deliverallquestions").asBoolean());
-                stmt.setArray(13, quesBreak);
-                stmt.setString(14, node.get("collectionname").asText());
+                stmt.setInt(9, 1);
+                stmt.setBoolean(10, node.get("disregardcomplexitylevel").asBoolean());
+                stmt.setBoolean(11, node.get("deliverallquestions").asBoolean());
+                stmt.setArray(12, quesBreak);
+                stmt.setString(13, node.get("collectionname").asText());
                 result = stmt.executeUpdate();
 
                 if (result == 0)
@@ -279,6 +336,9 @@ public class QuestionCollection {
                     throw new SQLException("No ID obtained");
 
                 con.commit();
+
+                arrangeQuestions(node.get("agendaId").asInt(), loggedInUser, node.get("isGroup").asBoolean(), node.get("meetingId").asInt());
+
                 return quesCollectionId;
 
             } catch (Exception ex) {
@@ -303,7 +363,7 @@ public class QuestionCollection {
      * @return
      * @throws Exception
      */
-    public static List<QuestionCollection> getAllQuestionCollection(int agendaId, LoggedInUser loggedInUser) throws Exception {
+    public static List<QuestionCollection> getAllQuestionCollection(int agendaId, boolean isGroup, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Question).equals("Read") ||
                 Permissions.isAuthorised(userRole, Question).equals("Write")) {
@@ -314,39 +374,20 @@ public class QuestionCollection {
             PreparedStatement stmt = null;
             ResultSet result = null;
             ResultSet questionResult = null;
-            int groupCount = 0, meetingCount = 0;
 
             try {
                 if (con != null) {
-                    stmt = con.prepareStatement("SELECT count(agendaid) as Count FROM "
-                            + schemaName
-                            + ".groupsessioncontenttestquestioncollection WHERE agendaid = ? ");
-                    stmt.setInt(1, agendaId);
-                    result = stmt.executeQuery();
-                    while (result.next()) {
-                        groupCount = result.getInt("Count");
-                    }
 
-                    stmt = con.prepareStatement("SELECT count(agendaid) as Count FROM "
-                            + schemaName
-                            + ".cyclemeetingsessioncontenttestquestioncollection WHERE agendaid = ? ");
-                    stmt.setInt(1, agendaId);
-                    result = stmt.executeQuery();
-
-                    while (result.next()) {
-                        meetingCount = result.getInt("Count");
-                    }
-
-                    if (groupCount > 0 && meetingCount == 0) {
+                    if (isGroup) {
                         stmt = con.prepareStatement("SELECT id, agendaid, contenttype, contentseq, createdon, createdby, " +
-                                " updateon, updatedby, questions, randomdelivery, collectionseq, " +
+                                " updateon, updatedby, questions, collectionseq, " +
                                 " disregardcomplexitylevel, deliverallquestions, questionbreakup," +
                                 " collectionname, title, description " +
                                 " FROM " + schemaName + ".groupsessioncontenttestquestioncollection " +
                                 " WHERE agendaid = ? ");
                     } else {
                         stmt = con.prepareStatement("SELECT id, agendaid, contenttype, contentseq, createdon, createdby, " +
-                                " updateon, updatedby,questions, randomdelivery, collectionseq, " +
+                                " updateon, updatedby,questions, collectionseq, " +
                                 " disregardcomplexitylevel, deliverallquestions, questionbreakup," +
                                 " collectionname, title, description " +
                                 " FROM " + schemaName + ".cyclemeetingsessioncontenttestquestioncollection " +
@@ -368,14 +409,13 @@ public class QuestionCollection {
                         questionCollection.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
                         questionCollection.updateBy = result.getInt(8);
                         questionCollection.questionsId = (Integer[]) result.getArray(9).getArray();
-                        questionCollection.randomdelivery = result.getBoolean(10);
-                        questionCollection.collectionseq = result.getInt(11);
-                        questionCollection.disregardcomplexitylevel = result.getBoolean(12);
-                        questionCollection.deliverallquestions = result.getBoolean(13);
-                        questionCollection.questionbreakup = (Integer[]) result.getArray(14).getArray();
-                        questionCollection.collection = result.getString(15);
-                        questionCollection.title = result.getString(16);
-                        questionCollection.description = result.getString(17);
+                        questionCollection.collectionseq = result.getInt(10);
+                        questionCollection.disregardcomplexitylevel = result.getBoolean(11);
+                        questionCollection.deliverallquestions = result.getBoolean(12);
+                        questionCollection.questionbreakup = (Integer[]) result.getArray(13).getArray();
+                        questionCollection.collection = result.getString(14);
+                        questionCollection.title = result.getString(15);
+                        questionCollection.description = result.getString(16);
                         questionCollection.questions = new ArrayList<>();
 
                         for (int i = 0; i < questionCollection.questionsId.length; i++) {
@@ -426,7 +466,7 @@ public class QuestionCollection {
      * @return
      * @throws Exception
      */
-    public static int deleteQuestionCollections(int id, LoggedInUser loggedInUser) throws Exception {
+    public static int deleteQuestionCollections(int id, boolean isGroup, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Question).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
@@ -434,27 +474,10 @@ public class QuestionCollection {
             PreparedStatement stmt = null;
             int affectedRows = 0;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0;
+
             try {
-                stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                        + ".groupsessioncontenttestquestioncollection " +
-                        " WHERE id = ? ");
-                stmt.setInt(1, id);
-                resultSet = stmt.executeQuery();
-                while (resultSet.next()) {
-                    groupCount = resultSet.getInt("Count");
-                }
 
-                stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                        + ".cyclemeetingsessioncontenttestquestioncollection " +
-                        " WHERE id = ? ");
-                stmt.setInt(1, id);
-                resultSet = stmt.executeQuery();
-                while (resultSet.next()) {
-                    meetingCount = resultSet.getInt("Count");
-                }
-
-                if (groupCount > 0 && meetingCount == 0) {
+                if (isGroup) {
                     stmt = con.prepareStatement(" DELETE FROM " + schemaName + ".groupsessioncontenttestquestioncollection " +
                             " WHERE id = ? ");
                     stmt.setInt(1, id);
@@ -500,34 +523,18 @@ public class QuestionCollection {
             PreparedStatement stmt = null;
             int result;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0;
             Integer[] array = new Integer[3];
 
             try {
                 if (con != null) {
 
-                    stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                            + ".groupsessioncontenttestquestioncollection " +
-                            " WHERE id = ? ");
-                    stmt.setInt(1, node.get("collectionId").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        groupCount = resultSet.getInt("Count");
-                    }
 
-                    stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                            + ".cyclemeetingsessioncontenttestquestioncollection " +
-                            " WHERE id = ? ");
-                    stmt.setInt(1, node.get("collectionId").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        meetingCount = resultSet.getInt("Count");
-                    }
-
+/*
                     stmt = con.prepareStatement(" SELECT count(complexitylevel) FROM " + schemaName +
                             ".question WHERE complexitylevel = ? AND id = ? ");
+*/
 
-                    if (groupCount > 0 && meetingCount == 0) {
+                    if (node.get("isGroup").asBoolean()) {
                         stmt = con
                                 .prepareStatement("UPDATE "
                                         + schemaName
@@ -646,32 +653,15 @@ public class QuestionCollection {
             PreparedStatement stmt = null;
             int result = 0;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0, gCount = 0, mCount = 0;
+            int gCount = 0, mCount = 0;
             List<Integer> list = new ArrayList<>();
 
             try {
                 if (con != null) {
 
-                    stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                            + ".groupsessioncontenttestquestioncollection " +
-                            " WHERE id = ? ");
-                    stmt.setInt(1, node.get("collectionId").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        groupCount = resultSet.getInt("Count");
-                    }
-
-                    stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                            + ".cyclemeetingsessioncontenttestquestioncollection " +
-                            " WHERE id = ? ");
-                    stmt.setInt(1, node.get("collectionId").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        meetingCount = resultSet.getInt("Count");
-                    }
 
                     for (int i = 0; i < node.withArray("questionId").size(); i++) {
-                        if (groupCount > 0 && meetingCount == 0) {
+                        if (node.get("isGroup").asBoolean()) {
                             stmt = con.prepareStatement(" SELECT count(*) FROM " +
                                     schemaName +
                                     ".groupsessioncontenttestquestioncollection " +
@@ -759,37 +749,18 @@ public class QuestionCollection {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0;
             int affectedRow;
             Array quesBreak = null;
 
             try {
                 if (con != null) {
-                    stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                            + ".groupsessioncontenttestquestioncollection " +
-                            " WHERE id = ? ");
-                    stmt.setInt(1, node.get("collectionId").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        groupCount = resultSet.getInt("Count");
-                    }
-
-                    stmt = con.prepareStatement(" SELECT count(id) as Count FROM " + schemaName
-                            + ".cyclemeetingsessioncontenttestquestioncollection " +
-                            " WHERE id = ? ");
-                    stmt.setInt(1, node.get("collectionId").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        meetingCount = resultSet.getInt("Count");
-                    }
-
-                    if (groupCount > 0 && meetingCount == 0) {
+                    if (node.get("isGroup").asBoolean()) {
                         if (node.get("deliverallquestions").asBoolean()) {
                             stmt = con
                                     .prepareStatement("UPDATE "
                                             + schemaName
                                             + ".groupsessioncontenttestquestioncollection "
-                                            + " SET collectionname = ?, randomdelivery = ?, deliverallquestions = ? "
+                                            + " SET collectionname = ?, deliverallquestions = ? "
                                             + " WHERE id = ? ");
 
                         } else {
@@ -806,20 +777,19 @@ public class QuestionCollection {
                                     .prepareStatement("UPDATE "
                                             + schemaName
                                             + ".groupsessioncontenttestquestioncollection "
-                                            + " SET collectionname = ?, randomdelivery = ?, deliverallquestions = ?,"
+                                            + " SET collectionname = ?, deliverallquestions = ?,"
                                             + " questionbreakup = ?,disregardcomplexitylevel = ?"
                                             + " WHERE id = ? ");
                         }
                         stmt.setString(1, node.get("collectionname").asText());
-                        stmt.setBoolean(2, node.get("randomdelivery").asBoolean());
-                        stmt.setBoolean(3, node.get("deliverallquestions").asBoolean());
+                        stmt.setBoolean(2, node.get("deliverallquestions").asBoolean());
 
                         if (!node.get("deliverallquestions").asBoolean()) {
-                            stmt.setArray(4, quesBreak);
-                            stmt.setBoolean(5, node.get("disregardcomplexitylevel").asBoolean());
-                            stmt.setInt(6, node.get("collectionId").asInt());
+                            stmt.setArray(3, quesBreak);
+                            stmt.setBoolean(4, node.get("disregardcomplexitylevel").asBoolean());
+                            stmt.setInt(5, node.get("collectionId").asInt());
                         } else
-                            stmt.setInt(4, node.get("collectionId").asInt());
+                            stmt.setInt(3, node.get("collectionId").asInt());
 
                         affectedRow = stmt.executeUpdate();
                     } else {
@@ -828,7 +798,7 @@ public class QuestionCollection {
                                     .prepareStatement("UPDATE "
                                             + schemaName
                                             + ".cyclemeetingsessioncontenttestquestioncollection "
-                                            + " SET collectionname = ?, randomdelivery = ?, deliverallquestions = ? "
+                                            + " SET collectionname = ?, deliverallquestions = ? "
                                             + " WHERE id = ? ");
 
                         } else {
@@ -845,24 +815,24 @@ public class QuestionCollection {
                                     .prepareStatement("UPDATE "
                                             + schemaName
                                             + ".cyclemeetingsessioncontenttestquestioncollection "
-                                            + " SET collectionname = ?, randomdelivery = ?, deliverallquestions = ?,"
+                                            + " SET collectionname = ?, deliverallquestions = ?,"
                                             + " questionbreakup = ?,disregardcomplexitylevel = ?"
                                             + " WHERE id = ? ");
                         }
                         stmt.setString(1, node.get("collectionname").asText());
-                        stmt.setBoolean(2, node.get("randomdelivery").asBoolean());
-                        stmt.setBoolean(3, node.get("deliverallquestions").asBoolean());
+                        stmt.setBoolean(2, node.get("deliverallquestions").asBoolean());
 
                         if (!node.get("deliverallquestions").asBoolean()) {
-                            stmt.setArray(4, quesBreak);
-                            stmt.setBoolean(5, node.get("disregardcomplexitylevel").asBoolean());
-                            stmt.setInt(6, node.get("collectionId").asInt());
+                            stmt.setArray(3, quesBreak);
+                            stmt.setBoolean(4, node.get("disregardcomplexitylevel").asBoolean());
+                            stmt.setInt(5, node.get("collectionId").asInt());
                         } else
-                            stmt.setInt(4, node.get("collectionId").asInt());
+                            stmt.setInt(3, node.get("collectionId").asInt());
 
                         affectedRow = stmt.executeUpdate();
                     }
 
+                    arrangeQuestions(node.get("agendaId").asInt(), loggedInUser, node.get("isGroup").asBoolean(), node.get("meetingId").asInt());
                 } else
                     throw new Exception("DB connection is null");
 
@@ -898,39 +868,23 @@ public class QuestionCollection {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0;
             int affectedRow = 0;
             try {
 
                 if (con != null) {
-                    stmt = con.prepareStatement(" SELECT count(agendaid) as Count FROM " + schemaName
-                            + ".groupsessioncontenttest " +
-                            " WHERE agendaid = ? ");
-                    stmt.setInt(1, node.get("agendaid").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        groupCount = resultSet.getInt("Count");
-                    }
 
-                    stmt = con.prepareStatement(" SELECT count(agendaid) as Count FROM " + schemaName
-                            + ".cyclemeetingsessioncontenttest " +
-                            " WHERE agendaid = ? ");
-                    stmt.setInt(1, node.get("agendaid").asInt());
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        meetingCount = resultSet.getInt("Count");
-                    }
 
                     Array correctScoreArray = null;
                     Array inCorrectScoreArray = null;
                     Array diffTimeArray = null;
 
-                    if (groupCount > 0 && meetingCount == 0) {
+                    if (node.get("isGroup").asBoolean()) {
+
                         stmt = con.prepareStatement(" UPDATE "
                                 + schemaName
                                 + ".groupsessioncontenttest SET testinstruction = ?, testendnote = ?,testdescription=?,"
                                 + " showfeedback = ?, allowreview = ?, applyscoring = ?, scorecorrect = ?,scoreincorrect = ?,"
-                                + " applytimeperquestion = ?, timeperquestion= ?, duration = CAST (? AS INTERVAL) "
+                                + " applytimeperquestion = ?, timeperquestion= ?, duration = CAST (? AS INTERVAL),randomdelivery = ? "
                                 + " WHERE agendaid = ? ");
 
                         if (node.has("Instruction"))
@@ -1004,18 +958,22 @@ public class QuestionCollection {
                         else
                             stmt.setObject(11, "00:00");
 
+                        stmt.setBoolean(12,node.get("randomDelivery").asBoolean());
 
-                        stmt.setInt(12, node.get("agendaid").asInt());
+                        stmt.setInt(13, node.get("agendaId").asInt());
 
                         affectedRow = stmt.executeUpdate();
 
                     } else {
 
+                        DeliveryMode mode = DeliveryMode.valueOf(node.get("deliveryMode").asText().toUpperCase());
+
                         stmt = con.prepareStatement(" UPDATE "
                                 + schemaName
                                 + ".cyclemeetingsessioncontenttest SET testinstruction = ?, testendnote = ?,testdescription=?,"
                                 + " showfeedback = ?, allowreview = ?, applyscoring = ?, scorecorrect = ?,scoreincorrect = ?,"
-                                + " applytimeperquestion = ?, timeperquestion= ?, duration = CAST (? AS INTERVAL) "
+                                + " applytimeperquestion = ?, timeperquestion= ?, duration = CAST (? AS INTERVAL) ,"
+                                + " deliverymode = CAST(? AS master.deliveryformat),randomdelivery = ? "
                                 + " WHERE agendaid = ? ");
 
                         if (node.has("Instruction"))
@@ -1089,12 +1047,17 @@ public class QuestionCollection {
                         else
                             stmt.setObject(11, "00:00");
 
+                        stmt.setString(12, mode.name());
 
-                        stmt.setInt(12, node.get("agendaid").asInt());
+                        stmt.setBoolean(13,node.get("randomDelivery").asBoolean());
+
+                        stmt.setInt(14, node.get("agendaId").asInt());
 
                         affectedRow = stmt.executeUpdate();
 
                     }
+
+                    arrangeQuestions(node.get("agendaId").asInt(), loggedInUser, node.get("isGroup").asBoolean(), node.get("meetingId").asInt());
 
                 } else
                     throw new Exception("DB connection is null");
@@ -1124,7 +1087,7 @@ public class QuestionCollection {
      * @return
      * @throws Exception
      */
-    public static List<QuestionCollection> getSettingDetails(int agendaId, LoggedInUser loggedInUser) throws Exception {
+    public static List<QuestionCollection> getSettingDetails(int agendaId, boolean isGroup, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Question).equals("Read") ||
                 Permissions.isAuthorised(userRole, Question).equals("Write")) {
@@ -1132,34 +1095,16 @@ public class QuestionCollection {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
-            int groupCount = 0, meetingCount = 0;
             int affectedRow = 0;
             List<QuestionCollection> collectionList = new ArrayList<>();
             QuestionCollection questionCollection;
             try {
-                stmt = con.prepareStatement(" SELECT count(agendaid) as Count FROM " + schemaName
-                        + ".groupsessioncontenttest " +
-                        " WHERE agendaid = ? ");
-                stmt.setInt(1, agendaId);
-                resultSet = stmt.executeQuery();
-                while (resultSet.next()) {
-                    groupCount = resultSet.getInt("Count");
-                }
 
-                stmt = con.prepareStatement(" SELECT count(agendaid) as Count FROM " + schemaName
-                        + ".cyclemeetingsessioncontenttest " +
-                        " WHERE agendaid = ? ");
-                stmt.setInt(1, agendaId);
-                resultSet = stmt.executeQuery();
-                while (resultSet.next()) {
-                    meetingCount = resultSet.getInt("Count");
-                }
-
-                if (groupCount > 0 && meetingCount == 0) {
+                if (isGroup) {
                     stmt = con.prepareStatement("SELECT id, agendaid, contenttype, contentseq, createdon, createdby, " +
                             " updateon, updatedby, testinstruction, testendnote,testdescription, applyscoring, " +
                             " scorecorrect, scoreincorrect, showfeedback, duration, " +
-                            " timeperquestion, applytimeperquestion, allowreview, title, description " +
+                            " timeperquestion, applytimeperquestion, allowreview, title, description,randomdelivery " +
                             " FROM " + schemaName + ".groupsessioncontenttest " +
                             " WHERE  agendaid = ? ");
                     stmt.setInt(1, agendaId);
@@ -1219,6 +1164,7 @@ public class QuestionCollection {
                         questionCollection.AllowReview = resultSet.getBoolean(19);
                         questionCollection.title = resultSet.getString(20);
                         questionCollection.description = resultSet.getString(21);
+                        questionCollection.randomdelivery = resultSet.getBoolean(22);
 
                         collectionList.add(questionCollection);
                     }
@@ -1226,7 +1172,7 @@ public class QuestionCollection {
                     stmt = con.prepareStatement("SELECT id, agendaid, contenttype, contentseq, createdon, createdby, " +
                             " updateon, updatedby, testinstruction, testendnote,testdescription, applyscoring, " +
                             " scorecorrect, scoreincorrect, showfeedback, duration, " +
-                            " timeperquestion, applytimeperquestion, allowreview, title, description " +
+                            " timeperquestion, applytimeperquestion, allowreview, title, description,deliverymode,randomdelivery " +
                             " FROM " + schemaName + ".cyclemeetingsessioncontenttest " +
                             " WHERE  agendaid = ? ");
                     stmt.setInt(1, agendaId);
@@ -1287,6 +1233,8 @@ public class QuestionCollection {
                         questionCollection.AllowReview = resultSet.getBoolean(19);
                         questionCollection.title = resultSet.getString(20);
                         questionCollection.description = resultSet.getString(21);
+                        questionCollection.deliveryMode = resultSet.getString(22);
+                        questionCollection.randomdelivery = resultSet.getBoolean(23);
 
                         collectionList.add(questionCollection);
                     }
@@ -1317,7 +1265,7 @@ public class QuestionCollection {
      * @return
      * @throws Exception
      */
-    public static List<QuestionCollection> getQuesionSet(int agendaId, LoggedInUser loggedInUser) throws Exception {
+    public static List<QuestionCollection> getQuesionSet_bk(int agendaId, boolean isGroup, LoggedInUser loggedInUser) throws Exception {
 
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Question).equals("Read") ||
@@ -1328,147 +1276,798 @@ public class QuestionCollection {
             Connection con = DBConnectionProvider.getConn();
             ResultSet resultSet = null;
             List<QuestionCollection> lstCollection = new ArrayList<>();
-            lstCollection = getAllQuestionCollection(agendaId, loggedInUser);
+            lstCollection = getAllQuestionCollection(agendaId, isGroup, loggedInUser);
 
             List<QuestionCollection> questionCollectionList = new ArrayList<>();
             boolean isValid = true;
-            int groupCount = 0,meetingCount = 0;
 
-            try
-            {
-                if(con != null)
-                {
+            try {
+                if (con != null) {
                     if (isValid) {
 
-                        stmt = con.prepareStatement("SELECT count(agendaid) as Count FROM "
-                                + schemaName
-                                + ".groupsessioncontenttestquestioncollection WHERE agendaid = ? ");
-                        stmt.setInt(1, agendaId);
-                        resultSet = stmt.executeQuery();
-                        while (resultSet.next()) {
-                            groupCount = resultSet.getInt("Count");
-                        }
-
-                        stmt = con.prepareStatement("SELECT count(agendaid) as Count FROM "
-                                + schemaName
-                                + ".cyclemeetingsessioncontenttestquestioncollection WHERE agendaid = ? ");
-                        stmt.setInt(1, agendaId);
-                        resultSet = stmt.executeQuery();
-
-                        while (resultSet.next()) {
-                            meetingCount = resultSet.getInt("Count");
-                        }
-
-                        if(groupCount >0 && meetingCount == 0) {
+                        if (isGroup) {
                             stmt = con.prepareStatement(" SELECT sessionname, testinstruction, testendnote, testdescription," +
                                     " allowreview, timeperquestion,applytimeperquestion, duration " +
                                     " FROM " + schemaName + ".groupagenda g " +
                                     " left join " + schemaName + ".groupsessioncontenttest t on t.agendaid = g.id " +
                                     " WHERE t.agendaid = ? ");
-                        }
-                        else
-                        {
+                        } else {
                             stmt = con.prepareStatement(" SELECT sessionname, testinstruction, testendnote, testdescription," +
                                     " allowreview, timeperquestion,applytimeperquestion, duration " +
                                     " FROM " + schemaName + ".cyclemeetingagenda g " +
                                     " left join " + schemaName + ".cyclemeetingsessioncontenttest t on t.agendaid = g.id " +
                                     " WHERE t.agendaid = ? ");
                         }
-                            stmt.setInt(1,agendaId);
-                            resultSet = stmt.executeQuery();
-                            while (resultSet.next())
-                            {
-                                QuestionCollection collection = new QuestionCollection();
+                        stmt.setInt(1, agendaId);
+                        resultSet = stmt.executeQuery();
+                        while (resultSet.next()) {
+                            QuestionCollection collection = new QuestionCollection();
 
-                                collection.agendaName = resultSet.getString(1);
-                                collection.Instrction = resultSet.getString(2);
-                                collection.EndNote = resultSet.getString(3);
-                                collection.Description = resultSet.getString(4);
-                                collection.AllowReview = resultSet.getBoolean(5);
+                            collection.agendaName = resultSet.getString(1);
+                            collection.Instrction = resultSet.getString(2);
+                            collection.EndNote = resultSet.getString(3);
+                            collection.Description = resultSet.getString(4);
+                            collection.AllowReview = resultSet.getBoolean(5);
 
-                                collection.TimeLimitation = new HashMap();
-                                collection.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(7));
-                                collection.TimeLimitation.put("FixedTime", resultSet.getString(8));
+                            collection.TimeLimitation = new HashMap();
+                            collection.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(7));
+                            collection.TimeLimitation.put("FixedTime", resultSet.getString(8));
 
-                                HashMap DifferentTime = new HashMap();
-                                Integer[] diffArr = (Integer[]) resultSet.getArray(6).getArray();
-                                if (diffArr.length > 0 && diffArr.length == 3) {
-                                    DifferentTime.put("Low", diffArr[0]);
-                                    DifferentTime.put("Medium", diffArr[1]);
-                                    DifferentTime.put("High", diffArr[2]);
-                                }
+                            HashMap DifferentTime = new HashMap();
+                            Integer[] diffArr = (Integer[]) resultSet.getArray(6).getArray();
+                            if (diffArr.length > 0 && diffArr.length == 3) {
+                                DifferentTime.put("Low", diffArr[0]);
+                                DifferentTime.put("Medium", diffArr[1]);
+                                DifferentTime.put("High", diffArr[2]);
+                            }
 
-                                collection.TimeLimitation.put("DifferentTime", DifferentTime);
+                            collection.TimeLimitation.put("DifferentTime", DifferentTime);
 
 //                                questionCollectionList.add(collection);
-                                collection.questions = new ArrayList<>();
+                            collection.questions = new ArrayList<>();
 
-                                if (lstCollection != null && lstCollection.size() > 0) {
-                                    for (QuestionCollection qc : lstCollection) {
-                                        if (qc.deliverallquestions) {
-                                            for (int index = 0; index < qc.questionsId.length; index++) {
-                                                collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[index], loggedInUser));
-                                            }
-                                        } else if (!qc.deliverallquestions && !qc.disregardcomplexitylevel) {
-                                            int low = qc.questionbreakup[0];
-                                            int medium = qc.questionbreakup[1];
-                                            int high = qc.questionbreakup[2];
-                                            List<Question> lstTemp = new ArrayList<>();
+                            if (lstCollection != null && lstCollection.size() > 0) {
+                                for (QuestionCollection qc : lstCollection) {
+                                    if (qc.deliverallquestions) {
+                                        for (int index = 0; index < qc.questionsId.length; index++) {
+                                            collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[index], loggedInUser));
+                                        }
+                                    } else if (!qc.deliverallquestions && !qc.disregardcomplexitylevel) {
+                                        int low = qc.questionbreakup[0];
+                                        int medium = qc.questionbreakup[1];
+                                        int high = qc.questionbreakup[2];
+                                        List<Question> lstTemp = new ArrayList<>();
 
-                                            if (low > 0) {
-                                                lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "LOW");
-                                                //Collections.shuffle(lstTemp);
-                                                for (int i = 0; i < low; i++) {
-                                                    collection.questions.add(lstTemp.get(i));
-                                                }
-                                                lstTemp.clear();
+                                        if (low > 0) {
+                                            lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "LOW");
+                                            //Collections.shuffle(lstTemp);
+                                            for (int i = 0; i < low; i++) {
+                                                collection.questions.add(lstTemp.get(i));
                                             }
-                                            if (medium > 0) {
-                                                lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "MEDIUM");
-                                                //Collections.shuffle(lstTemp);
-                                                for (int i = 0; i < medium; i++) {
-                                                    collection.questions.add(lstTemp.get(i));
-                                                }
-                                                lstTemp.clear();
+                                            lstTemp.clear();
+                                        }
+                                        if (medium > 0) {
+                                            lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "MEDIUM");
+                                            //Collections.shuffle(lstTemp);
+                                            for (int i = 0; i < medium; i++) {
+                                                collection.questions.add(lstTemp.get(i));
                                             }
-                                            if (high > 0) {
-                                                lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "HIGH");
-                                                //Collections.shuffle(lstTemp);
-                                                for (int i = 0; i < high; i++) {
-                                                    collection.questions.add(lstTemp.get(i));
-                                                }
-                                                lstTemp.clear();
+                                            lstTemp.clear();
+                                        }
+                                        if (high > 0) {
+                                            lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "HIGH");
+                                            //Collections.shuffle(lstTemp);
+                                            for (int i = 0; i < high; i++) {
+                                                collection.questions.add(lstTemp.get(i));
                                             }
-
-                                        } else if (!qc.deliverallquestions && qc.disregardcomplexitylevel) {
-                                            List<Question> lstTemp = new ArrayList<>();
-                                            int number = qc.questionbreakup[0];
-                                            if (number > 0) {
-                                                if (qc.questionsId.length >= number) {
-                                                    for (int i = 0; i < number; i++) {
-                                                        collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[i], loggedInUser));
-                                                    }
-                                                } else {
-                                                    for (int i = 0; i < qc.questionsId.length; i++) {
-                                                        collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[i], loggedInUser));
-                                                    }
-                                                }
-                                            }
+                                            lstTemp.clear();
                                         }
 
-                                        if (qc.randomdelivery) {
-                                            Collections.shuffle(collection.questions);
+                                    } else if (!qc.deliverallquestions && qc.disregardcomplexitylevel) {
+                                        List<Question> lstTemp = new ArrayList<>();
+                                        int number = qc.questionbreakup[0];
+                                        if (number > 0) {
+                                            if (qc.questionsId.length >= number) {
+                                                for (int i = 0; i < number; i++) {
+                                                    collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[i], loggedInUser));
+                                                }
+                                            } else {
+                                                for (int i = 0; i < qc.questionsId.length; i++) {
+                                                    collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[i], loggedInUser));
+                                                }
+                                            }
                                         }
                                     }
-                                    questionCollectionList.add(collection);
-                                } else {
 
+                                    if (qc.randomdelivery) {
+                                        Collections.shuffle(collection.questions);
+                                    }
+                                }
+                                questionCollectionList.add(collection);
+                            } else {
+
+                            }
+                        }
+                    } else {
+
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
+                        resultSet.close();
+
+            }
+            return questionCollectionList;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     * @param sessionId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getQuestionSet(int sessionId, LoggedInUser loggedInUser) throws Exception {
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
+        List<QuestionCollection> collectionList = new ArrayList<>();
+        ResultSet resultSet = null;
+        String schemaname = loggedInUser.schemaName;
+        int meetingId = 0;
+        boolean isStartSession = false, isPresent = false, isRandom = false, isAppMode = false;
+        Integer[] quesArray = new Integer[0];
+        String roleName = loggedInUser.roles.get(0).roleName;
+
+        try {
+            stmt = con.prepareStatement(" SELECT c.id FROM " + schemaname + ".cyclemeeting c " +
+                    " left join " + schemaname + ".cyclemeetingagenda c1 on c1.cyclemeetingid = c.id" +
+                    " WHERE c1.id = ? ");
+
+            stmt.setInt(1, sessionId);
+            resultSet = stmt.executeQuery();
+
+            while (resultSet.next()) {
+                meetingId = resultSet.getInt(1);
+            }
+
+            System.out.println(" Meeting Id : " + meetingId);
+
+            stmt = con.prepareStatement(" SELECT sessionstarttime, sessionendtime FROM " + schemaname + ".cyclemeetingactualtimes" +
+                    " WHERE sessionid = ? AND cycleMeetingid = ? ");
+            stmt.setInt(1, sessionId);
+            stmt.setInt(2, meetingId);
+            resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                System.out.println("Start Time : " + resultSet.getTimestamp(1));
+                System.out.println("ENd TIme : " + resultSet.getTimestamp(2));
+                SimpleDateFormat sd = new SimpleDateFormat("yyyy-MM-dd");
+                String date = sd.format(resultSet.getTimestamp(2));
+                System.out.println("DAte : " + date);
+
+                if (resultSet.getTimestamp(1) != null && date.equals("1970-01-01")) {
+                    isStartSession = true;
+                }
+            }
+
+            stmt = con.prepareStatement(" SELECT count(*) as Count FROM " + schemaname + ".cyclemeetingattendance " +
+                    "  WHERE cyclemeetingid = ? AND ? = ANY(userid :: int[])");
+            stmt.setInt(1, meetingId);
+            stmt.setInt(2, loggedInUser.id);
+            resultSet = stmt.executeQuery();
+
+            if (resultSet.next()) {
+                if (resultSet.getInt("Count") > 0) {
+                    isPresent = true;
+                }
+            }
+
+            if ((isStartSession && isPresent) || roleName.equals("ROOT") || roleName.equals("MANAGEMENT")) {
+                stmt = con.prepareStatement(" SELECT questionids,israndom " +
+                        " FROM " + schemaname + ".cyclemeetingassessmentactual WHERE meetingid = ? AND sessionid = ?");
+                stmt.setInt(1, meetingId);
+                stmt.setInt(2, sessionId);
+                resultSet = stmt.executeQuery();
+
+                while (resultSet.next()) {
+                    quesArray = (Integer[]) resultSet.getArray(1).getArray();
+                }
+
+                stmt = con.prepareStatement(" SELECT sessionname, testinstruction, testendnote, testdescription," +
+                        " allowreview, timeperquestion,applytimeperquestion, duration, deliverymode,randomdelivery " +
+                        " FROM " + schemaname + ".cyclemeetingagenda g " +
+                        " left join " + schemaname + ".cyclemeetingsessioncontenttest t on t.agendaid = g.id " +
+                        " WHERE t.agendaid = ? ");
+
+                stmt.setInt(1, sessionId);
+                resultSet = stmt.executeQuery();
+                while (resultSet.next()) {
+                    QuestionCollection collection = new QuestionCollection();
+
+                    collection.agendaName = resultSet.getString(1);
+                    collection.Instrction = resultSet.getString(2);
+                    collection.EndNote = resultSet.getString(3);
+                    collection.Description = resultSet.getString(4);
+                    collection.AllowReview = resultSet.getBoolean(5);
+
+                    collection.TimeLimitation = new HashMap();
+                    collection.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(7));
+                    collection.TimeLimitation.put("FixedTime", resultSet.getString(8));
+
+                    HashMap DifferentTime = new HashMap();
+                    Integer[] diffArr = (Integer[]) resultSet.getArray(6).getArray();
+                    if (diffArr.length > 0 && diffArr.length == 3) {
+                        DifferentTime.put("Low", diffArr[0]);
+                        DifferentTime.put("Medium", diffArr[1]);
+                        DifferentTime.put("High", diffArr[2]);
+                    }
+
+                    collection.TimeLimitation.put("DifferentTime", DifferentTime);
+                    collection.deliveryMode = resultSet.getString(9);
+
+                    if (resultSet.getString(9).equals("APP")) {
+                        isAppMode = true;
+                    }
+
+                    collection.randomdelivery = resultSet.getBoolean(10);
+                    isRandom = resultSet.getBoolean(10);
+
+///                   questionCollectionList.add(collection);
+                    collection.questions = new ArrayList<>();
+
+                    System.out.println("Length : " + quesArray.length);
+                    for (int i = 0; i < quesArray.length; i++) {
+                        System.out.println("Array " + i + " : " + quesArray[i]);
+                        collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(quesArray[i], loggedInUser));
+                    }
+                    collectionList.add(collection);
+                }
+                if (isRandom && isAppMode) {
+                    Collections.shuffle(collectionList);
+                }
+            } else {
+                throw new BadRequestException(" You are not authorized for this test right now. ");
+            }
+        } finally {
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (resultSet != null)
+                if (!resultSet.isClosed())
+                    resultSet.close();
+        }
+        return collectionList;
+    }
+
+    /***
+     *
+     *
+     * @param agendaId
+     * @param loggedInUser
+     * @param isGroup
+     * @param meetingId
+     * @throws Exception
+     */
+    public static void arrangeQuestions(int agendaId, LoggedInUser loggedInUser, boolean isGroup, int meetingId) throws Exception {
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
+        ResultSet resultSet = null;
+        List<Integer> questionIds = new ArrayList<>();
+        boolean isRandom = false;
+        try {
+            String schemaName = loggedInUser.schemaName;
+            List<QuestionCollection> lstCollection;
+            lstCollection = getAllQuestionCollection(agendaId, isGroup, loggedInUser);
+            System.out.println(" List Size : " + lstCollection.size());
+            if (lstCollection != null && lstCollection.size() > 0) {
+                for (QuestionCollection qc : lstCollection) {
+                    if (qc.deliverallquestions) {
+                        for (int index = 0; index < qc.questionsId.length; index++) {
+                            questionIds.add(qc.questionsId[index]);
+                            //collection.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(qc.questionsId[index], loggedInUser));
+                        }
+                    } else if (!qc.deliverallquestions && !qc.disregardcomplexitylevel) {
+                        int low = qc.questionbreakup[0];
+                        int medium = qc.questionbreakup[1];
+                        int high = qc.questionbreakup[2];
+                        List<Question> lstTemp = new ArrayList<>();
+
+                        if (low > 0) {
+                            lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "LOW");
+                            for (int i = 0; i < low; i++) {
+                                questionIds.add(lstTemp.get(i).id);
+                            }
+                            lstTemp.clear();
+                        }
+                        if (medium > 0) {
+                            lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "MEDIUM");
+                            for (int i = 0; i < medium; i++) {
+                                questionIds.add(lstTemp.get(i).id);
+                            }
+                            lstTemp.clear();
+                        }
+                        if (high > 0) {
+                            lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "HIGH");
+                            for (int i = 0; i < high; i++) {
+                                questionIds.add(lstTemp.get(i).id);
+                            }
+                            lstTemp.clear();
+                        }
+
+                    } else if (!qc.deliverallquestions && qc.disregardcomplexitylevel) {
+                        List<Question> lstTemp = new ArrayList<>();
+                        int number = qc.questionbreakup[0];
+                        if (number > 0) {
+                            if (qc.questionsId.length >= number) {
+                                for (int i = 0; i < number; i++) {
+                                    questionIds.add(qc.questionsId[i]);
+                                }
+                            } else {
+                                for (int i = 0; i < qc.questionsId.length; i++) {
+                                    questionIds.add(qc.questionsId[i]);
                                 }
                             }
+                        }
                     }
-                    else
-                    {
+                }
+            }
 
+            System.out.println("ID Size : " + questionIds.size());
+            if (questionIds.size() > 0) {
+                Integer[] quesId = new Integer[questionIds.size()];
+                for (int i = 0; i < questionIds.size(); i++) {
+                    quesId[i] = questionIds.get(i);
+                }
+
+                Array quesArr = con.createArrayOf("int", quesId);
+
+                stmt = con.prepareStatement("SELECT id,questionids FROM " + schemaName + ".cyclemeetingassessmentactual" +
+                        " WHERE meetingid = ? AND sessionid = ? ");
+                stmt.setInt(1, meetingId);
+                stmt.setInt(2, agendaId);
+                resultSet = stmt.executeQuery();
+                if (!resultSet.next()) {
+                    System.out.println(" In IF ...");
+                    stmt = con.prepareStatement(" INSERT  INTO " + schemaName
+                            + ".cyclemeetingassessmentactual(meetingid, groupagenda, sessionid, questionids,israndom)" +
+                            " VALUES (?, ?, ?, ?,?)");
+                    stmt.setInt(1, meetingId);
+                    stmt.setBoolean(2, isGroup);
+                    stmt.setInt(3, agendaId);
+                    stmt.setArray(4, quesArr);
+                    stmt.setBoolean(5, isRandom);
+
+                    stmt.executeUpdate();
+                } else {
+                    stmt = con.prepareStatement(" UPDATE " + schemaName + ".cyclemeetingassessmentactual SET questionids = ?, israndom = ? " +
+                            " WHERE  id = ? ");
+                    stmt.setArray(1, quesArr);
+                    stmt.setBoolean(2, isRandom);
+                    stmt.setInt(3, resultSet.getInt(1));
+
+                    stmt.executeUpdate();
+                }
+            }
+        } finally {
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (resultSet != null)
+                if (!resultSet.isClosed())
+                    resultSet.close();
+        }
+    }
+
+    /***
+     *
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int addUsersAllAnswer(JsonNode node, LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if (Permissions.isAuthorised(userRole, Question).equals("Write")) {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result = 0;
+            ResultSet resultSet;
+            String schemaname = loggedInUser.schemaName;
+            double score = 0;
+            Integer[] correctScore = new Integer[0];
+            Double[] inCorrectScore = new Double[0];
+            boolean isApplyScoring = false;
+            int count = 0;
+            boolean isReviewQuestion = false;
+
+            try {
+                stmt = con.prepareStatement(" SELECT applyscoring,scorecorrect,scoreincorrect FROM " + schemaname
+                        + ".cyclemeetingsessioncontenttest WHERE agendaid = ? ");
+                stmt.setInt(1, node.get("agendaId").asInt());
+                resultSet = stmt.executeQuery();
+                while (resultSet.next()) {
+                    isApplyScoring = resultSet.getBoolean(1);
+                    correctScore = (Integer[]) resultSet.getArray(2).getArray();
+                    inCorrectScore = (Double[]) resultSet.getArray(3).getArray();
+                }
+
+                for (int i = 0; i < node.withArray("answerSet").size(); i++) {
+                    stmt = con.prepareStatement("SELECT id,complexitylevel,questionjson,answerjson,isreview " +
+                            " FROM " + schemaname + ".question WHERE id = ? ");
+                    System.out.println("Question ID : " + node.withArray("answerSet").get(i).get("questionId").asInt());
+                    stmt.setInt(1, node.withArray("answerSet").get(i).get("questionId").asInt());
+                    resultSet = stmt.executeQuery();
+
+                    while (resultSet.next()) {
+                        stmt = con.prepareStatement(" INSERT INTO " + schemaname
+                                + ".cyclemeetingassessmentresult(questionid, userid, answerjson, questionjson, useranswerjson, score,agendaid,isattemp,isreview)" +
+                                " VALUES(?, ?, ?, ?, ?, ?,?,?,?) ");
+                        stmt.setInt(1, resultSet.getInt(1));
+                        stmt.setInt(2, node.get("userId").asInt());
+                        System.out.println("Right Answer : " + resultSet.getString(4));
+                        stmt.setString(3, resultSet.getString(4));
+                        isReviewQuestion = resultSet.getBoolean(5);
+                        stmt.setString(4, resultSet.getString(3));
+                        System.out.println("Answer JSON : " + String.valueOf(node.withArray("answerSet").get(i).get("answerJson")));
+                        stmt.setString(5, String.valueOf(node.withArray("answerSet").get(i).get("answerJson")));
+
+                        if(isReviewQuestion) {
+                            stmt.setDouble(6, 0);
+                            stmt.setBoolean(9, true);
+
+                            if(String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).isEmpty() ||
+                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals(null) ||
+                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals("")){
+                                stmt.setBoolean(8,false);
+                            }else{
+                                stmt.setBoolean(8,true);
+                            }
+                        } else{
+                            stmt.setBoolean(9, false);
+                            if(String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).isEmpty() ||
+                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals(null) ||
+                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals("")){
+                                stmt.setDouble(6, 0);
+                                stmt.setBoolean(8,false);
+                            }else {
+                                if (isApplyScoring) {
+                                    if (resultSet.getString(4).equals(String.valueOf(node.withArray("answerSet").get(i).get("answerJson")))) {
+                                        if (correctScore.length > 0) {
+                                            if (resultSet.getString(2).equals("LOW")) {
+                                                score = correctScore[0];
+                                            }
+                                            if (resultSet.getString(2).equals("MEDIUM")) {
+                                                score = correctScore[1];
+                                            }
+                                            if (resultSet.getString(2).equals("HIGH")) {
+                                                score = correctScore[2];
+                                            }
+                                        }
+                                        stmt.setDouble(6, score);
+                                        stmt.setBoolean(8, true);
+                                    } else {
+                                        if (inCorrectScore.length > 0) {
+                                            if (resultSet.getString(2).equals("LOW")) {
+                                                score = inCorrectScore[0];
+                                            }
+                                            if (resultSet.getString(2).equals("MEDIUM")) {
+                                                score = inCorrectScore[1];
+                                            }
+                                            if (resultSet.getString(2).equals("HIGH")) {
+                                                score = inCorrectScore[2];
+                                            }
+                                        }
+                                        stmt.setDouble(6, -score);
+                                        stmt.setBoolean(8, true);
+                                    }
+                                }
+                            }
+                        }
+                        stmt.setInt(7, node.get("agendaId").asInt());
+                        result = stmt.executeUpdate();
+                        count++;
+                    }
+                }
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+            }
+            return count;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+    /***
+     *
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int addUsersAnswer(JsonNode node, LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if (Permissions.isAuthorised(userRole, Question).equals("Write")) {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int result = 0;
+            ResultSet resultSet;
+            ResultSet updateResultSet;
+            String schemaname = loggedInUser.schemaName;
+            boolean isApplyScoring = false;
+            Integer[] correctScore = new Integer[0];
+            Double[] inCorrectScore = new Double[0];
+            double score = 0;
+            int resultId = 0;
+            String actualAnswer = "";
+            String QuestionJson = "" , complexitylevel ="";
+            boolean isReviewQuestion = false;
+            String UserAnswerJson = String.valueOf(node.get("answerJson"));
+
+            try {
+                if (con != null) {
+                    stmt = con.prepareStatement(" SELECT applyscoring,scorecorrect,scoreincorrect FROM " + schemaname
+                            + ".cyclemeetingsessioncontenttest WHERE agendaid = ? ");
+                    stmt.setInt(1, node.get("agendaId").asInt());
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next()) {
+                        isApplyScoring = resultSet.getBoolean(1);
+                        correctScore = (Integer[]) resultSet.getArray(2).getArray();
+                        inCorrectScore = (Double[]) resultSet.getArray(3).getArray();
+                    }
+
+                    stmt = con.prepareStatement("SELECT id,complexitylevel,questionjson,answerjson,isreview " +
+                            " FROM " + schemaname + ".question WHERE id = ? ");
+                    System.out.println("Question ID : " + node.get("questionId").asInt());
+                    stmt.setInt(1, node.get("questionId").asInt());
+                    resultSet = stmt.executeQuery();
+
+                    while (resultSet.next()) {
+                        complexitylevel = resultSet.getString(2);
+                        QuestionJson = resultSet.getString(3);
+                        actualAnswer = resultSet.getString(4);
+                        isReviewQuestion = resultSet.getBoolean(5);
+
+
+                        stmt = con.prepareStatement(" SELECT count(*) AS Count FROM "+schemaname+".cyclemeetingassessmentresult" +
+                                " WHERE agendaid = ? AND userid = ? AND questionid = ? ");
+                        stmt.setInt(1,node.get("agendaId").asInt());
+                        stmt.setInt(2,node.get("userId").asInt());
+                        stmt.setInt(3,node.get("questionId").asInt());
+                        updateResultSet = stmt.executeQuery();
+                        while (updateResultSet.next())
+                        {
+                            if(updateResultSet.getInt("Count") > 0)
+                            {
+                                stmt = con.prepareStatement(" UPDATE "+schemaname+".cyclemeetingassessmentresult " +
+                                        " SET answerjson = ?, questionjson = ?, useranswerjson = ?, score = ?,isattemp = ? ,isreview = ?" +
+                                        " WHERE agendaid = ? AND userid = ? AND questionid = ?");
+                                stmt.setString(1, actualAnswer);
+                                stmt.setString(2, QuestionJson);
+                                stmt.setString(3, UserAnswerJson );
+
+                                if(isReviewQuestion) {
+                                    stmt.setDouble(4, 0);
+                                    stmt.setBoolean(6, true);
+
+                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                            String.valueOf(node.get("answerJson")).equals(null) ||
+                                            String.valueOf(node.get("answerJson")).equals("")){
+                                        stmt.setBoolean(5,false);
+                                    }else{
+                                        stmt.setBoolean(5,true);
+                                    }
+                                } else{
+                                    stmt.setBoolean(6, false);
+                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                            String.valueOf(node.get("answerJson")).equals(null) ||
+                                            String.valueOf(node.get("answerJson")).equals("")){
+                                        stmt.setDouble(4, 0);
+                                        stmt.setBoolean(5,false);
+                                    }else {
+                                        if (isApplyScoring) {
+                                            if (actualAnswer.equals(String.valueOf(node.get("answerJson")))) {
+                                                if (correctScore.length > 0) {
+                                                    if (resultSet.getString(2).equals("LOW")) {
+                                                        score = correctScore[0];
+                                                    }
+                                                    if (resultSet.getString(2).equals("MEDIUM")) {
+                                                        score = correctScore[1];
+                                                    }
+                                                    if (resultSet.getString(2).equals("HIGH")) {
+                                                        score = correctScore[2];
+                                                    }
+                                                }
+                                                stmt.setDouble(4, score);
+                                                stmt.setBoolean(5, true);
+                                            } else {
+                                                if (inCorrectScore.length > 0) {
+                                                    if (resultSet.getString(2).equals("LOW")) {
+                                                        score = inCorrectScore[0];
+                                                    }
+                                                    if (resultSet.getString(2).equals("MEDIUM")) {
+                                                        score = inCorrectScore[1];
+                                                    }
+                                                    if (resultSet.getString(2).equals("HIGH")) {
+                                                        score = inCorrectScore[2];
+                                                    }
+                                                }
+                                                stmt.setDouble(4, -score);
+                                                stmt.setBoolean(5, true);
+                                            }
+                                        }else{
+                                            stmt.setDouble(4, 0);
+                                            stmt.setBoolean(5, true);
+                                        }
+                                    }
+                                }
+
+                                stmt.setInt(7,node.get("agendaId").asInt());
+                                stmt.setInt(8,node.get("userId").asInt());
+                                stmt.setInt(9,node.get("questionId").asInt());
+                            }
+                            else
+                            {
+                                stmt = con.prepareStatement(" INSERT INTO " + schemaname
+                                        + ".cyclemeetingassessmentresult(questionid, userid, answerjson, questionjson, useranswerjson, score,agendaid,isattemp,isreview)" +
+                                        " VALUES(?, ?, ?, ?, ?, ?,?,?,?) ", Statement.RETURN_GENERATED_KEYS);
+                                stmt.setInt(1, resultSet.getInt(1));
+                                stmt.setInt(2, node.get("userId").asInt());
+                                System.out.println("Right Answer : " + resultSet.getString(4));
+                                stmt.setString(3, resultSet.getString(4));
+                                stmt.setString(4, resultSet.getString(3));
+                                System.out.println("Answer JSON : " + String.valueOf(node.get("answerJson")));
+                                stmt.setString(5, String.valueOf(node.get("answerJson")));
+
+                                if(isReviewQuestion) {
+                                    stmt.setDouble(6, 0);
+                                    stmt.setBoolean(9, true);
+
+                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                            String.valueOf(node.get("answerJson")).equals(null) ||
+                                            String.valueOf(node.get("answerJson")).equals("")){
+                                        stmt.setBoolean(8,false);
+                                    }else{
+                                        stmt.setBoolean(8,true);
+                                    }
+                                } else{
+                                    stmt.setBoolean(9, false);
+                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                            String.valueOf(node.get("answerJson")).equals(null) ||
+                                            String.valueOf(node.get("answerJson")).equals("")){
+                                        stmt.setDouble(6, 0);
+                                        stmt.setBoolean(8,false);
+                                    }else {
+                                        if (isApplyScoring) {
+                                            if (actualAnswer.equals(String.valueOf(node.get("answerJson")))) {
+                                                if (correctScore.length > 0) {
+                                                    if (resultSet.getString(2).equals("LOW")) {
+                                                        score = correctScore[0];
+                                                    }
+                                                    if (resultSet.getString(2).equals("MEDIUM")) {
+                                                        score = correctScore[1];
+                                                    }
+                                                    if (resultSet.getString(2).equals("HIGH")) {
+                                                        score = correctScore[2];
+                                                    }
+                                                }
+                                                stmt.setDouble(6, score);
+                                                stmt.setBoolean(8, true);
+                                            } else {
+                                                if (inCorrectScore.length > 0) {
+                                                    if (resultSet.getString(2).equals("LOW")) {
+                                                        score = inCorrectScore[0];
+                                                    }
+                                                    if (resultSet.getString(2).equals("MEDIUM")) {
+                                                        score = inCorrectScore[1];
+                                                    }
+                                                    if (resultSet.getString(2).equals("HIGH")) {
+                                                        score = inCorrectScore[2];
+                                                    }
+                                                }
+                                                stmt.setDouble(6, -score);
+                                                stmt.setBoolean(8, true);
+                                            }
+                                        }else{
+                                            stmt.setDouble(6, 0);
+                                            stmt.setBoolean(8, true);
+                                        }
+                                    }
+                                }
+
+                                stmt.setInt(7, node.get("agendaId").asInt());
+                                result = stmt.executeUpdate();
+
+                                if (result == 0)
+                                    throw new SQLException("Add Question Collection Failed.");
+
+                                ResultSet generatedKeys = stmt.getGeneratedKeys();
+                                if (generatedKeys.next())
+                                    // It gives last inserted Id in quesCollectionId
+                                    resultId = generatedKeys.getInt(1);
+                                else
+                                    throw new SQLException("No ID obtained");
+                            }
+                        }
+                    }
+                }
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+            }
+            return resultId;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *  This method is used to Get User's Total Score.
+     *
+     * @param agendaId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getUsersWiseResult(int agendaId,LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            String schemaname = loggedInUser.schemaName;
+            ResultSet resultSet = null;
+            List<QuestionCollection> questionList = new ArrayList<>();
+
+            try {
+                if(con != null) {
+                    stmt = con.prepareStatement(
+                            " SELECT count(case when answerjson = useranswerjson and isattemp = true and isreview = false then 1 else null end) as CorrectAnswer," +
+                                  " count(case when isattemp = true and isreview = false and answerjson != useranswerjson then 1 else null end) as IncorrectAnswer,"+
+                                    "count(case when isattemp = false then 1 else null end) as notAttempt,"+
+                                    " sum(score) as TotalScore, userid,username,firstname,lastname" +
+                                    " FROM " + schemaname + ".cyclemeetingassessmentresult " +
+                                     " left join master.users u on u.id = userid " +
+                                     " WHERE agendaid = ? GROUP BY(userid,u.username,u.firstname,u.lastname) ORDER BY totalscore DESC ");
+                    stmt.setInt(1, agendaId);
+                    resultSet = stmt.executeQuery();
+
+                    while (resultSet.next()) {
+                        QuestionCollection collection = new QuestionCollection();
+                        collection.correctAnswer = resultSet.getInt(1);
+                        collection.inCorrectAnswer = resultSet.getInt(2);
+                        collection.notAttempt = resultSet.getInt(3);
+                        collection.score = resultSet.getDouble(4);
+                        collection.userId = resultSet.getInt(5);
+                        collection.username = resultSet.getString(6);
+                        collection.fullname = resultSet.getString(7) + " "+ resultSet.getString(8);
+                        questionList.add(collection);
                     }
                 }
                 else
@@ -1484,9 +2083,331 @@ public class QuestionCollection {
                 if(resultSet != null)
                     if(!resultSet.isClosed())
                         resultSet.close();
-
             }
-            return questionCollectionList;
+            return questionList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *  This method is used to Get User's Total Score.
+     *
+     * @param agendaId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getQuestionWiseResult(int agendaId,LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            String schemaname = loggedInUser.schemaName;
+            ResultSet resultSet = null;
+            List<QuestionCollection> questionList = new ArrayList<>();
+
+            try {
+                if(con != null) {
+                    stmt = con.prepareStatement(
+                            " SELECT count(case when c.answerjson = useranswerjson and c.isattemp = true and c.isreview = false then 1 else null end) as CorrectAnswer," +
+                                    " count(case when c.isattemp = true and c.isreview = false and c.answerjson != useranswerjson then 1 else null end) as IncorrectAnswer,"+
+                                    " count(case when c.isattemp = false then 1 else null end) as notAttempt,"+
+                                    " questionid,c.questionjson,c.answerjson,q.isreview " +
+                                    " FROM " + schemaname + ".cyclemeetingassessmentresult c " +
+                                    " left join "+schemaname+".question q ON q.id = questionid " +
+                                    " WHERE agendaid = ? GROUP BY(questionid,c.questionjson,c.answerjson,q.isreview)");
+                    stmt.setInt(1, agendaId);
+                    resultSet = stmt.executeQuery();
+
+                    while (resultSet.next()) {
+                        QuestionCollection collection = new QuestionCollection();
+                        collection.correctAnswer = resultSet.getInt(1);
+                        collection.inCorrectAnswer = resultSet.getInt(2);
+                        collection.notAttempt = resultSet.getInt(3);
+                        collection.questionId = resultSet.getInt(4);
+                        collection.questionJson= resultSet.getString(5);
+                        collection.answerJson = resultSet.getString(6);
+                        collection.isReview = resultSet.getBoolean(7);
+                        questionList.add(collection);
+                    }
+                }
+                else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return questionList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *  Method is used to get Specific Question wise user's Score.
+     *
+     * @param userId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getUsersQuestionWiseScore(int userId,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write") )
+        {
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<QuestionCollection> questionList = new ArrayList<>();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            String schemaname = loggedInUser.schemaName;
+
+            try {
+                if(con != null)
+                {
+                    stmt = con.prepareStatement(" SELECT questionid,r.questionjson,score,userid,username " +
+                            " FROM "+schemaname+".cyclemeetingassessmentresult r" +
+                            " left join "+schemaname+".question q on q.id = questionid" +
+                            " left join master.users u on u.id = userid" +
+                            " WHERE userid = ? ");
+                    stmt.setInt(1,userId);
+                    resultSet = stmt.executeQuery();
+
+                    while (resultSet.next())
+                    {
+                        QuestionCollection collection = new QuestionCollection();
+                        collection.questionId = resultSet.getInt(1);
+                        collection.questionJson = resultSet.getString(2);
+                        collection.score = resultSet.getDouble(3);
+                        collection.userId = resultSet.getInt(4);
+                        collection.username = resultSet.getString(5);
+                        questionList.add(collection);
+                    }
+                }
+                else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return questionList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getUserWiseParticularScore(int userId, int agendaId , String mode,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            List<QuestionCollection> questionsList = new ArrayList<>();
+            String schemaname = loggedInUser.schemaName;
+            String condition = "";
+            try {
+                if(mode.equals("correct")){
+                    condition = " AND r.answerjson = useranswerjson AND isattemp = true AND r.isReview=false";
+                }else if(mode.equals("incorrect")){
+                    condition = " AND isattemp = true AND r.answerjson != useranswerjson AND r.isReview=false";
+                }else if(mode.equals("notattempt")){
+                    condition = " AND isattemp = false";
+                }
+
+                stmt = con.prepareStatement(" SELECT questionid,r.questionjson,r.answerjson,score," +
+                        " q.imageurl,q.filetype,r.useranswerjson " +
+                        " FROM "+schemaname+".cyclemeetingassessmentresult r " +
+                        " left join "+schemaname+".question q on q.id = questionid " +
+                        " WHERE userid = ? AND agendaid = ? " + condition);
+                System.out.println("Condition : "+ condition);
+                stmt.setInt(1,userId);
+                stmt.setInt(2,agendaId);
+
+                resultSet = stmt.executeQuery();
+
+                while (resultSet.next())
+                {
+                    QuestionCollection collection = new QuestionCollection();
+                    collection.questionId = resultSet.getInt(1);
+                    collection.questionJson = resultSet.getString(2);
+                    collection.answerJson = resultSet.getString(3);
+                    collection.score = resultSet.getDouble(4);
+                    collection.imageURL = resultSet.getString(5);
+                    collection.fileType = resultSet.getString(6);
+                    collection.userAnswerJson = resultSet.getString(7);
+                    questionsList.add(collection);
+                }
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return questionsList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getQuestionWiseUserStatus(int questionId, int agendaId , String mode,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            List<QuestionCollection> questionsList = new ArrayList<>();
+            String schemaname = loggedInUser.schemaName;
+            String condition = "";
+            try {
+                if(mode.equals("correct")){
+                    condition = "AND r.answerjson = useranswerjson AND isattemp = true AND isReview=false";
+                }else if(mode.equals("incorrect")){
+                    condition = "AND isattemp = true AND r.answerjson != useranswerjson AND isReview=false";
+                }else if(mode.equals("notattempt")){
+                    condition = "AND isattemp = false";
+                }
+
+                stmt = con.prepareStatement(" SELECT r.userid,score,u.username,u.firstname,u.lastname " +
+                        " FROM "+schemaname+".cyclemeetingassessmentresult r " +
+                        " left join master.users u on u.id = r.userid " +
+                        " WHERE questionid = ? AND agendaid = ? " + condition);
+                stmt.setInt(1,questionId);
+                stmt.setInt(2,agendaId);
+
+                resultSet = stmt.executeQuery();
+
+                while (resultSet.next())
+                {
+                    QuestionCollection collection = new QuestionCollection();
+                    collection.questionId = resultSet.getInt(1);
+                    collection.score = resultSet.getDouble(2);
+                    collection.username = resultSet.getString(3);
+                    collection.fullname = resultSet.getString(4)+ " " + resultSet.getString(5);
+                    questionsList.add(collection);
+                }
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return questionsList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<QuestionCollection> getUserTotalScore(int userId,int agendaId,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
+                Permissions.isAuthorised(userRole,Question).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            List<QuestionCollection> questionsList = new ArrayList<>();
+            String schemaname = loggedInUser.schemaName;
+
+            try {
+                stmt = con.prepareStatement(" SELECT r.userid,r.score,u.username,u.firstname,u.lastname, r.questionjson" +
+                        " FROM "+schemaname+".cyclemeetingassessmentresult r " +
+                        " left join master.users u on u.id = r.userid " +
+                        " WHERE isattemp = true AND userid = ? AND agendaid = ? ");
+                stmt.setInt(1,userId);
+                stmt.setInt(2,agendaId);
+
+                resultSet = stmt.executeQuery();
+
+                while (resultSet.next())
+                {
+                    QuestionCollection collection = new QuestionCollection();
+                    collection.userId= resultSet.getInt(1);
+                    collection.score = resultSet.getDouble(2);
+                    collection.username = resultSet.getString(3);
+                    collection.fullname = resultSet.getString(4)+ " " + resultSet.getString(5);
+                    collection.questionJson =resultSet.getString(6);
+                    questionsList.add(collection);
+                }
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return questionsList;
         }
         else
         {

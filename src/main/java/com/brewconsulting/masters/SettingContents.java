@@ -115,7 +115,7 @@ public class SettingContents {
      * @param contentName
      * @param
      */
-     @POST
+    @POST
     @Secured
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response createCont(

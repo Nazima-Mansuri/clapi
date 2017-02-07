@@ -86,6 +86,9 @@ public class Task {
     @JsonProperty("userDetails")
     public ArrayList<UserDetail> userDetails;
 
+    @JsonProperty("remindUserDetails")
+    public ArrayList<UserDetail> remindUserDetails;
+
     public static final int Task = 13;
 
     public enum taskStatus {
@@ -847,6 +850,7 @@ public class Task {
             ArrayList<Task> groupTasks = new ArrayList<Task>();
             PreparedStatement stmt = null;
             ResultSet result = null;
+            ResultSet userSet = null;
 
             try {
                 if (con != null) {
@@ -878,6 +882,22 @@ public class Task {
                         task.status = result.getString(5);
                         task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         task.reminders = (Integer[]) result.getArray(7).getArray();
+                        task.remindUserDetails = new ArrayList<>();
+
+                        if(task.reminders.length > 0)
+                        {
+                            for (int i=0;i<task.reminders.length;i++)
+                            {
+                                stmt = con.prepareStatement(" SELECT username,firstname,lastname FROM master.users WHERE id = ?");
+                                stmt.setInt(1,task.reminders[i]);
+                                userSet = stmt.executeQuery();
+                                while (userSet.next())
+                                {
+                                    task.remindUserDetails.add(new UserDetail(task.reminders[i],userSet.getString(1),userSet.getString(2),userSet.getString(3)));
+                                }
+                            }
+                        }
+
                         task.assignTo = result.getInt(8);
                         task.assignBy = result.getInt(9);
                         task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
@@ -918,6 +938,22 @@ public class Task {
                         task.status = result.getString(5);
                         task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
                         task.reminders = (Integer[]) result.getArray(7).getArray();
+                        task.remindUserDetails = new ArrayList<>();
+
+                        if(task.reminders.length > 0)
+                        {
+                            for (int i=0;i<task.reminders.length;i++)
+                            {
+                                stmt = con.prepareStatement(" SELECT username,firstname,lastname FROM master.users WHERE id = ?");
+                                stmt.setInt(1,task.reminders[i]);
+                                userSet = stmt.executeQuery();
+                                while (userSet.next())
+                                {
+                                    task.remindUserDetails.add(new UserDetail(task.reminders[i],userSet.getString(1),userSet.getString(2),userSet.getString(3)));
+                                }
+                            }
+                        }
+
                         task.assignTo = result.getInt(8);
                         task.assignBy = result.getInt(9);
                         task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
@@ -929,7 +965,6 @@ public class Task {
                         task.division = result.getInt(20);
                         groupTasks.add(task);
                     }
-
 
                     stmt = con
                             .prepareStatement(" SELECT g.id,(task).title title,(task).description description , " +
@@ -957,6 +992,21 @@ public class Task {
                         task.status = result.getString(4);
                         task.dueDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
                         task.reminders = (Integer[]) result.getArray(6).getArray();
+                        task.remindUserDetails = new ArrayList<>();
+
+                        if(task.reminders.length > 0)
+                        {
+                            for (int i=0;i<task.reminders.length;i++)
+                            {
+                                stmt = con.prepareStatement(" SELECT username,firstname,lastname FROM master.users WHERE id = ?");
+                                stmt.setInt(1,task.reminders[i]);
+                                userSet = stmt.executeQuery();
+                                while (userSet.next())
+                                {
+                                    task.remindUserDetails.add(new UserDetail(task.reminders[i],userSet.getString(1),userSet.getString(2),userSet.getString(3)));
+                                }
+                            }
+                        }
                         task.assignTo = result.getInt(7);
                         task.assignBy = result.getInt(8);
                         task.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
@@ -1177,7 +1227,7 @@ public class Task {
     }
 
     /***
-     *
+     *  Method is used to filter tasks according to filter options.
      *
      * @param loggedInUser
      * @return
@@ -1200,9 +1250,12 @@ public class Task {
                 stmt = con.prepareStatement(" SELECT g.id,groupid,(task).title title,(task).description description ," +
                         " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
                         " (task).assignedTo assignedTo , (task).assignedBy assignedBy, g.createdon , " +
-                        " g.createdby, g.updateon, g.updateby,cg.division " +
+                        " g.createdby, g.updateon, g.updateby,cg.division,u.username,u.firstname,u.lastname," +
+                        " (uf.address).city city, (uf.address).state state,(uf.address).phone phone  " +
                         " FROM "+schemaName+".grouptasks g " +
                         " left join "+schemaName+".cyclemeetinggroup cg on cg.id = groupid " +
+                        " left join master.users u on u.id = (task).assignedto "+
+                        " left join "+schemaName+".userprofile uf on uf.userid = (g.task).assignedto "+
                         "  where (task).assignedTo = ? OR (task).dueDate::date = current_date::date -  ?::interval " +
                         " OR ((task).dueDate::date < current_date::date - '1 day'::interval AND (task).status != 'Done') " +
                         "  OR g.createdby = ? " +
@@ -1231,16 +1284,21 @@ public class Task {
                     task.updateOn = result.getTimestamp(12);
                     task.updateBy = result.getInt(13);
                     task.division = result.getInt(14);
+                    task.userDetails = new ArrayList<>();
+                    task.userDetails.add(new UserDetail(result.getInt(8),result.getString(15),result.getString(16),result.getString(17),result.getString(18),result.getString(19), (String[]) result.getArray(20).getArray()));
                     taskList.add(task);
                 }
 
                 stmt = con.prepareStatement(" SELECT g.id,cycleMeetingId,(task).title title,(task).description description ," +
                         " (task).status status, (task).dueDate dueDate, (task).reminders reminders, " +
                         " (task).assignedTo assignedTo , (task).assignedBy assignedBy, g.createdon , " +
-                        " g.createdby, g.updateon, g.updateby,cg.division " +
+                        " g.createdby, g.updateon, g.updateby,cg.division, u.username,u.firstname,u.lastname," +
+                        " (uf.address).city city, (uf.address).state state,(uf.address).phone phone " +
                         " FROM "+schemaName+".cycleMeetingTasks g " +
                         " left join "+schemaName+".cyclemeeting cc on cc.id = cycleMeetingId " +
                         " left join "+schemaName+".cyclemeetinggroup cg on cg.id = cc.groupid "+
+                        " left join master.users u on u.id = (task).assignedto "+
+                        " left join "+schemaName+".userprofile uf on uf.userid = (g.task).assignedto "+
                         "  where (task).assignedTo = ? OR (task).dueDate::date = current_date::date -  ?::interval " +
                         " OR ((task).dueDate::date < current_date::date - '1 day'::interval AND (task).status != 'Done') " +
                         "  OR g.createdby = ? " +
@@ -1269,14 +1327,19 @@ public class Task {
                     task.updateOn = result.getTimestamp(12);
                     task.updateBy = result.getInt(13);
                     task.division = result.getInt(14);
+                    task.userDetails = new ArrayList<>();
+                    task.userDetails.add(new UserDetail(result.getInt(8),result.getString(15),result.getString(16),result.getString(17),result.getString(18),result.getString(19), (String[]) result.getArray(20).getArray()));
                     taskList.add(task);
                 }
 
-                stmt = con.prepareStatement(" SELECT id,(task).title title,(task).description description ," +
+                stmt = con.prepareStatement(" SELECT g.id,(task).title title,(task).description description ," +
                         "(task).status status, (task).dueDate dueDate, (task).reminders reminders," +
                         " (task).assignedTo assignedTo , (task).assignedBy assignedBy," +
-                        " createdon, createdby, updateon, updateby " +
-                        " FROM "+schemaName+".usertasks " +
+                        " g.createdon, g.createdby, g.updateon, g.updateby,u.username,u.firstname,u.lastname," +
+                        " (uf.address).city city, (uf.address).state state,(uf.address).phone phone  " +
+                        " FROM "+schemaName+".usertasks g " +
+                        " left join master.users u on u.id = (task).assignedTo " +
+                        " left join "+schemaName+".userprofile uf on uf.userid = (task).assignedTo " +
                         "  where (task).assignedTo = ? OR (task).dueDate::date = current_date::date -  ?::interval " +
                         " OR ((task).dueDate::date < current_date::date - '1 day'::interval AND (task).status != 'Done') " +
                         "  OR createdby = ? " +
@@ -1303,6 +1366,8 @@ public class Task {
                     task.createBy = result.getInt(10);
                     task.updateOn = result.getTimestamp(11);
                     task.updateBy = result.getInt(12);
+                    task.userDetails = new ArrayList<>();
+                    task.userDetails.add(new UserDetail(result.getInt(7),result.getString(13),result.getString(14),result.getString(15),result.getString(16),result.getString(17), (String[]) result.getArray(18).getArray()));
                     taskList.add(task);
                 }
 

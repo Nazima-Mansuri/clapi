@@ -15,7 +15,25 @@ public class Credentials implements Serializable {
 	private boolean isPublic = true;
 	private String accessToken;
 	private String refreshToken;
-	
+	private String deviceToken;
+	private String deviceOS;
+
+	public String getDeviceToken() {
+		return deviceToken;
+	}
+
+	public void setDeviceToken(String deviceToken) {
+		this.deviceToken = deviceToken;
+	}
+
+	public String getDeviceOS() {
+		return deviceOS;
+	}
+
+	public void setDeviceOS(String deviceOS) {
+		this.deviceOS = deviceOS;
+	}
+
 	public Credentials(){
 		
 	}

@@ -76,7 +76,10 @@ public class GroupAgenda {
     public enum ContentType {
         ACTIVITY, INFO, TEST, MIXED;
     }
-
+    public enum DeliveryMode
+    {
+        WEB,APP;
+    }
     /**
      * method for get group agenda by groupid and dayNo
      *
@@ -135,7 +138,8 @@ public class GroupAgenda {
                         {
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
-                                    " FROM "+schemaName+".groupsessioncontentinfo as c1 WHERE  c1.agendaid = ?");
+                                    " FROM "+schemaName+".groupsessioncontentinfo as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq");
                             stmt.setInt(1,result.getInt(1));
                             contentResult = stmt.executeQuery();
                             while (contentResult.next())
@@ -157,7 +161,8 @@ public class GroupAgenda {
 
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.title , c1. description " +
-                                    " FROM "+schemaName+".groupsessioncontenttest as c1 WHERE  c1.agendaid = ?");
+                                    " FROM "+schemaName+".groupsessioncontenttest as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq ");
                             stmt.setInt(1,result.getInt(1));
                             contentResult = stmt.executeQuery();
                             while (contentResult.next())
@@ -230,6 +235,7 @@ public class GroupAgenda {
                 con.setAutoCommit(false);
 
                 ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
+                DeliveryMode deliveryMode = DeliveryMode.APP;
 
                 stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
                         " where groupid = ? AND  dayno = ? AND  " +
@@ -339,7 +345,7 @@ public class GroupAgenda {
                                 " createdon,createdby,updateon, updatedby,scorecorrect,scoreincorrect,duration,timeperquestion, " +
                                 " testinstruction, testendnote, applyscoring,showfeedback,applyinterval," +
                                 " applytimeperquestion, allowreview,testdescription ) " +
-                                " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
+                                " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?)");
 
                         stmt.setString(1,null);
                         stmt.setString(2,null);
@@ -462,7 +468,6 @@ public class GroupAgenda {
                                 stmt.setBoolean(19,false);
                                 stmt.setBoolean(20,false);
                                 stmt.setString(21,null);
-
 
                                 result = stmt.executeUpdate();
                             }
@@ -714,7 +719,6 @@ public class GroupAgenda {
                 } else
                     throw new Exception("DB connection is null");
             } finally {
-
                 if (stmt != null)
                     if (!stmt.isClosed())
                         stmt.close();

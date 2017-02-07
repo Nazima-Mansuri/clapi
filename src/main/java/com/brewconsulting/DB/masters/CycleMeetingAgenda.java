@@ -81,6 +81,10 @@ public class CycleMeetingAgenda {
         ACTIVITY, INFO, TEST, MIXED;
     }
 
+    public enum DeliveryMode
+    {
+        WEB,APP;
+    }
     /***
      * Method is used to clone child agenda from parent agenda.
      *
@@ -149,7 +153,7 @@ public class CycleMeetingAgenda {
                     if(result.getString(6).equals("TEST"))
                     {
                         stmt = con.prepareStatement(" SELECT id, agendaid, contenttype, contentseq, " +
-                                " questions, randomdelivery, collectionseq, " +
+                                " questions, collectionseq, " +
                                 " disregardcomplexitylevel, deliverallquestions, questionbreakup, " +
                                 " collectionname, title, description " +
                                 " FROM "+schemaName+".groupsessioncontenttestquestioncollection " +
@@ -164,21 +168,20 @@ public class CycleMeetingAgenda {
                             collection.contentType = resultSet.getString(3);
                             collection.contentSeq = resultSet.getInt(4);
                             collection.questionsId = (Integer[]) resultSet.getArray(5).getArray();
-                            collection.randomdelivery = resultSet.getBoolean(6);
-                            collection.collectionseq = resultSet.getInt(7);
-                            collection.disregardcomplexitylevel = resultSet.getBoolean(8);
-                            collection.deliverallquestions = resultSet.getBoolean(9);
-                            collection.questionbreakup = (Integer[]) resultSet.getArray(10).getArray();
-                            collection.collection = resultSet.getString(11);
-                            collection.title = resultSet.getString(12);
-                            collection.description = resultSet.getString(13);
+                            collection.collectionseq = resultSet.getInt(6);
+                            collection.disregardcomplexitylevel = resultSet.getBoolean(7);
+                            collection.deliverallquestions = resultSet.getBoolean(8);
+                            collection.questionbreakup = (Integer[]) resultSet.getArray(9).getArray();
+                            collection.collection = resultSet.getString(10);
+                            collection.title = resultSet.getString(11);
+                            collection.description = resultSet.getString(12);
                             cycleMeetingAgenda.questionCollectionList.add(collection);
                         }
 
                         stmt = con.prepareStatement("SELECT id, agendaid, contenttype, contentseq," +
                                 " testinstruction, testendnote, applyscoring," +
                                 " scorecorrect, showfeedback, duration, applyinterval, timeperquestion, " +
-                                " applytimeperquestion, allowreview, title, description, testdescription,scoreincorrect " +
+                                " applytimeperquestion, allowreview, title, description, testdescription,scoreincorrect,randomdelivery " +
                                 " FROM "+schemaName+".groupsessioncontenttest WHERE agendaid = ?  ");
                         stmt.setInt(1,result.getInt(1));
                         resultSet = stmt.executeQuery();
@@ -201,10 +204,9 @@ public class CycleMeetingAgenda {
                             testCollection.AllowReview = resultSet.getBoolean(14);
                             testCollection.title = resultSet.getString(15);
                             testCollection.description = resultSet.getString(16);
-                            System.out.println("TEST ttile : " + resultSet.getString(15));
-                            System.out.println("TEST desc : " +  resultSet.getString(16));
                             testCollection.Description = resultSet.getString(17);
                             testCollection.scoreIncorrect = (Double[]) resultSet.getArray(18).getArray();
+                            testCollection.randomdelivery = resultSet.getBoolean(19);
                             cycleMeetingAgenda.testSettingList.add(testCollection);
                         }
                     }
@@ -229,7 +231,7 @@ public class CycleMeetingAgenda {
                             }
 
                             stmt = con.prepareStatement(" SELECT id, agendaid, contenttype, contentseq, " +
-                                    " questions, randomdelivery, collectionseq, " +
+                                    " questions, collectionseq, " +
                                     " disregardcomplexitylevel, deliverallquestions, questionbreakup, " +
                                     " collectionname, title, description " +
                                     " FROM "+schemaName+".groupsessioncontenttestquestioncollection " +
@@ -244,21 +246,20 @@ public class CycleMeetingAgenda {
                                 collection.contentType = resultSet.getString(3);
                                 collection.contentSeq = resultSet.getInt(4);
                                 collection.questionsId = (Integer[]) resultSet.getArray(5).getArray();
-                                collection.randomdelivery = resultSet.getBoolean(6);
-                                collection.collectionseq = resultSet.getInt(7);
-                                collection.disregardcomplexitylevel = resultSet.getBoolean(8);
-                                collection.deliverallquestions = resultSet.getBoolean(9);
-                                collection.questionbreakup = (Integer[]) resultSet.getArray(10).getArray();
-                                collection.collection = resultSet.getString(11);
-                                collection.title = resultSet.getString(12);
-                                collection.description = resultSet.getString(13);
+                                collection.collectionseq = resultSet.getInt(6);
+                                collection.disregardcomplexitylevel = resultSet.getBoolean(7);
+                                collection.deliverallquestions = resultSet.getBoolean(8);
+                                collection.questionbreakup = (Integer[]) resultSet.getArray(9).getArray();
+                                collection.collection = resultSet.getString(10);
+                                collection.title = resultSet.getString(11);
+                                collection.description = resultSet.getString(12);
                                 cycleMeetingAgenda.questionCollectionList.add(collection);
                             }
 
                             stmt = con.prepareStatement("SELECT id, agendaid, contenttype, contentseq," +
                                     " testinstruction, testendnote, applyscoring," +
                                     " scorecorrect, showfeedback, duration, applyinterval, timeperquestion, " +
-                                    " applytimeperquestion, allowreview, title, description, testdescription,scoreincorrect " +
+                                    " applytimeperquestion, allowreview, title, description, testdescription,scoreincorrect,randomdelivery " +
                                     " FROM "+schemaName+".groupsessioncontenttest WHERE agendaid = ?  ");
                             stmt.setInt(1,result.getInt(1));
                             resultSet = stmt.executeQuery();
@@ -283,6 +284,7 @@ public class CycleMeetingAgenda {
                                 testCollection.description = resultSet.getString(16);
                                 testCollection.Description = resultSet.getString(17);
                                 testCollection.scoreIncorrect = (Double[]) resultSet.getArray(18).getArray();
+                                testCollection.randomdelivery = resultSet.getBoolean(19);
                                 cycleMeetingAgenda.testSettingList.add(testCollection);
                             }
                     }
@@ -376,9 +378,9 @@ public class CycleMeetingAgenda {
 
                                 stmt = con.prepareStatement(" INSERT INTO "+schemaName
                                         +".cyclemeetingsessioncontenttestquestioncollection(agendaid,contenttype,contentseq,createdon," +
-                                        " createdby,updateon,updatedby,title,description,questions, randomdelivery, " +
+                                        " createdby,updateon,updatedby,title,description,questions, " +
                                         " collectionseq, disregardcomplexitylevel, deliverallquestions, questionbreakup, collectionname)" +
-                                        " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                                        " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
                                 stmt.setInt(1,meetingid);
                                 stmt.setString(2,cycleMeetingAgendas.get(i).questionCollectionList.get(j).contentType);
@@ -390,12 +392,11 @@ public class CycleMeetingAgenda {
                                 stmt.setString(8,cycleMeetingAgendas.get(i).questionCollectionList.get(j).title);
                                 stmt.setString(9,cycleMeetingAgendas.get(i).questionCollectionList.get(j).description);
                                 stmt.setArray(10,quesarr);
-                                stmt.setBoolean(11,cycleMeetingAgendas.get(i).questionCollectionList.get(j).randomdelivery);
-                                stmt.setInt(12,cycleMeetingAgendas.get(i).questionCollectionList.get(j).collectionseq);
-                                stmt.setBoolean(13,cycleMeetingAgendas.get(i).questionCollectionList.get(j).disregardcomplexitylevel);
-                                stmt.setBoolean(14,cycleMeetingAgendas.get(i).questionCollectionList.get(j).deliverallquestions);
-                                stmt.setArray(15,breakarr);
-                                stmt.setString(16,cycleMeetingAgendas.get(i).questionCollectionList.get(j).collection);
+                                stmt.setInt(11,cycleMeetingAgendas.get(i).questionCollectionList.get(j).collectionseq);
+                                stmt.setBoolean(12,cycleMeetingAgendas.get(i).questionCollectionList.get(j).disregardcomplexitylevel);
+                                stmt.setBoolean(13,cycleMeetingAgendas.get(i).questionCollectionList.get(j).deliverallquestions);
+                                stmt.setArray(14,breakarr);
+                                stmt.setString(15,cycleMeetingAgendas.get(i).questionCollectionList.get(j).collection);
 
                                 affectedRows = stmt.executeUpdate();
                             }
@@ -413,8 +414,8 @@ public class CycleMeetingAgenda {
                                         " .cyclemeetingsessioncontenttest(agendaid, contenttype, contentseq, createdon, createdby, " +
                                         " updateon, updatedby, testinstruction, testendnote, applyscoring, " +
                                         " scorecorrect, showfeedback, duration, applyinterval, timeperquestion, " +
-                                        " applytimeperquestion, allowreview, title, description, testdescription, scoreincorrect)" +
-                                        " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,CAST (? AS INTERVAL),?,?,?,?,?,?,?,?)");
+                                        " applytimeperquestion, allowreview, title, description, testdescription, scoreincorrect,randomdelivery)" +
+                                        " VALUES (?,CAST(? AS master.contentType),?,?,?,?,?,?,?,?,?,?,CAST (? AS INTERVAL),?,?,?,?,?,?,?,?,?)");
                                 stmt.setInt(1,meetingid);
                                 stmt.setString(2,cycleMeetingAgendas.get(i).testSettingList.get(j).contentType);
                                 stmt.setInt(3,cycleMeetingAgendas.get(i).testSettingList.get(j).contentSeq);
@@ -451,6 +452,7 @@ public class CycleMeetingAgenda {
                                 }
                                 Array incorrectarr = con.createArrayOf("FLOAT8",scoreIncorrect);
                                 stmt.setArray(21,incorrectarr);
+                                stmt.setBoolean(22,cycleMeetingAgendas.get(i).testSettingList.get(j).randomdelivery);
 
                                 affectedRows = stmt.executeUpdate();
                             }
@@ -534,7 +536,8 @@ public class CycleMeetingAgenda {
                         {
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
-                                    " FROM "+schemaName+".cyclemeetingsessioncontentinfo as c1 WHERE  c1.agendaid = ?");
+                                    " FROM "+schemaName+".cyclemeetingsessioncontentinfo as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq ");
                             stmt.setInt(1,result.getInt(1));
                             contentResult = stmt.executeQuery();
                             while (contentResult.next())
@@ -556,7 +559,8 @@ public class CycleMeetingAgenda {
 
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.title , c1. description " +
-                                    " FROM "+schemaName+".cyclemeetingsessioncontenttest as c1 WHERE  c1.agendaid = ?");
+                                    " FROM "+schemaName+".cyclemeetingsessioncontenttest as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq");
                             stmt.setInt(1,result.getInt(1));
                             contentResult = stmt.executeQuery();
                             while (contentResult.next())
@@ -637,6 +641,7 @@ public class CycleMeetingAgenda {
                 resultSet = stmt.executeQuery();
                 if (!resultSet.next()) {
                     ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
+                    DeliveryMode deliveryMode = DeliveryMode.APP;
                     stmt = con
                             .prepareStatement(
                                     "INSERT INTO "
@@ -730,8 +735,9 @@ public class CycleMeetingAgenda {
                                 ".cyclemeetingsessioncontenttest(title,description,agendaid,contenttype,contentseq, " +
                                 " createdon,createdby,updateon, updatedby,scorecorrect,scoreincorrect,duration,timeperquestion, " +
                                 " testinstruction, testendnote, applyscoring,showfeedback,applyinterval," +
-                                " applytimeperquestion, allowreview,testdescription ) " +
-                                " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
+                                " applytimeperquestion, allowreview,testdescription,deliverymode ) " +
+                                " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?," +
+                                " CAST(? AS master.deliveryformat))");
 
                         stmt.setString(1,null);
                         stmt.setString(2,null);
@@ -754,6 +760,7 @@ public class CycleMeetingAgenda {
                         stmt.setBoolean(19,false);
                         stmt.setBoolean(20,false);
                         stmt.setString(21,null);
+                        stmt.setString(22,deliveryMode.name());
 
                         result = stmt.executeUpdate();
                     }
@@ -827,8 +834,9 @@ public class CycleMeetingAgenda {
                                         ".cyclemeetingsessioncontenttest(title,description,agendaid,contenttype,contentseq, " +
                                         " createdon,createdby,updateon, updatedby,scorecorrect,scoreincorrect,duration,timeperquestion, " +
                                         " testinstruction, testendnote, applyscoring,showfeedback,applyinterval," +
-                                        " applytimeperquestion, allowreview,testdescription ) " +
-                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
+                                        " applytimeperquestion, allowreview,testdescription,deliverymode ) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?," +
+                                        " CAST(? AS master.deliveryformat)) ");
 
                                 stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
 
@@ -857,6 +865,7 @@ public class CycleMeetingAgenda {
                                 stmt.setBoolean(19,false);
                                 stmt.setBoolean(20,false);
                                 stmt.setString(21,null);
+                                stmt.setString(22,deliveryMode.name());
 
                                 result = stmt.executeUpdate();
                             }
@@ -1174,7 +1183,8 @@ public class CycleMeetingAgenda {
                         {
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
-                                    " FROM "+schemaName+".cyclemeetingsessioncontentinfo as c1 WHERE  c1.agendaid = ?");
+                                    " FROM "+schemaName+".cyclemeetingsessioncontentinfo as c1 WHERE  c1.agendaid = ?" +
+                                    " ORDER BY c1.contentseq ");
                             stmt.setInt(1,result.getInt(1));
                             contentResult = stmt.executeQuery();
                             while (contentResult.next())
@@ -1196,7 +1206,8 @@ public class CycleMeetingAgenda {
 
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.title , c1. description " +
-                                    " FROM "+schemaName+".cyclemeetingsessioncontenttest as c1 WHERE  c1.agendaid = ?");
+                                    " FROM "+schemaName+".cyclemeetingsessioncontenttest as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq ");
                             stmt.setInt(1,result.getInt(1));
                             contentResult = stmt.executeQuery();
                             while (contentResult.next())

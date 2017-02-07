@@ -42,7 +42,7 @@ public class QuestionCollections {
     @Produces("application/json")
     @Secured
     @Path("{agendaId}")
-    public Response getquestioncollections(@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
+    public Response getquestioncollections(@QueryParam("isGroup") boolean isGroup,@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -50,7 +50,7 @@ public class QuestionCollections {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.collectionView.class).writeValueAsString(QuestionCollection
-                            .getAllQuestionCollection(agendaId, (LoggedInUser) crc
+                            .getAllQuestionCollection(agendaId,isGroup, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
@@ -87,10 +87,17 @@ public class QuestionCollections {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.quesSetView.class).writeValueAsString(QuestionCollection
-                            .getQuesionSet(agendaId, (LoggedInUser) crc
+                            .getQuestionSet(agendaId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
-
-        } catch (NotAuthorizedException na) {
+        }
+        catch (BadRequestException e) {
+            logger.error("BadRequestException", e);
+            resp = Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"Message\":" + "\" You are not authorized for this test right now.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Questions Collections\"}")
@@ -101,7 +108,6 @@ public class QuestionCollections {
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
-
         return resp;
     }
 
@@ -117,7 +123,7 @@ public class QuestionCollections {
     @Produces("application/json")
     @Secured
     @Path("settings/{agendaId}")
-    public Response getcollectionsSettings(@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
+    public Response getcollectionsSettings(@QueryParam("isGroup") boolean isGroup,@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -125,7 +131,7 @@ public class QuestionCollections {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.settingView.class).writeValueAsString(QuestionCollection
-                            .getSettingDetails(agendaId, (LoggedInUser) crc
+                            .getSettingDetails(agendaId,isGroup, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
@@ -205,14 +211,14 @@ public class QuestionCollections {
     @Produces("application/json")
     @Secured
     @Path("{id}")
-    public Response deleteQuesCollection(@PathParam("id") Integer id,
+    public Response deleteQuesCollection(@PathParam("id") Integer id,@QueryParam("isGroup") boolean isGroup,
                                @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
-            int affectedRow = QuestionCollection.deleteQuestionCollections(id,
+            int affectedRow = QuestionCollection.deleteQuestionCollections(id,isGroup,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (affectedRow > 0)
                 resp = Response.ok().build();
@@ -412,4 +418,302 @@ public class QuestionCollections {
         return resp;
     }
 
+    /***
+     *  Add User's all answer at a time.
+     * @param input
+     * @param crc
+     * @return
+     */
+    @POST
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("allanswers")
+    public Response addAllAnswers(InputStream input,
+                                         @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int totalAffectedRows = QuestionCollection.addUsersAllAnswer(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"totalAffectedRows\":" + totalAffectedRows + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Add user's all answers.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (SQLException s)
+        {
+            logger.error("SQLException",s);
+            resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            logger.error("IOException",e);
+            if (resp == null) {
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            logger.error("Exception " , e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Add User's Single answer.
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @POST
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("singleanswer")
+    public Response addSingleAnswer(InputStream input,
+                                  @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int resultId = QuestionCollection.addUsersAnswer(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"resultId\":" + resultId + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to add User answer. \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (SQLException s)
+        {
+            logger.error("SQLException",s);
+            resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            logger.error("IOException",e);
+            if (resp == null) {
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            logger.error("Exception " , e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Produces User's Total Score
+     *
+     * @param agendaId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("userwiseresult/{agendaId}")
+    public Response getUserWiseResult(@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(QuestionCollection
+                            .getUsersWiseResult(agendaId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Total Score\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Produces User's Total Score
+     *
+     * @param agendaId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("questionwiseresult/{agendaId}")
+    public Response getQuestionWiseResult(@PathParam("agendaId") int agendaId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(QuestionCollection
+                            .getQuestionWiseResult(agendaId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Total Score\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Produces User's Questionwise Score.
+     *
+     * @param userId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("questionwisescore/{userId}")
+    public Response getQuestionWiseScore(@PathParam("userId") int userId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(QuestionCollection
+                            .getUsersQuestionWiseScore(userId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Score \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("usersparticularscore/{userId}/{agendaId}/{mode}")
+    public Response getUsersParticalurScore(@PathParam("userId") int userId,@PathParam("agendaId") int agendaId,
+                                            @PathParam("mode") String mode,@Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            System.out.println("Mode : " + mode);
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(QuestionCollection
+                            .getUserWiseParticularScore(userId,agendaId,mode, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Score \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("questionwiseuserstatus/{questionId}/{agendaId}/{mode}")
+    public Response getQuestionWiseUserStatus(@PathParam("questionId") int questionId,@PathParam("agendaId") int agendaId,
+                                            @PathParam("mode") String mode,@Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(QuestionCollection
+                            .getQuestionWiseUserStatus(questionId,agendaId,mode, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Score \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("userstotalscore/{userId}/{agendaId}")
+    public Response getUserTotalScore(@PathParam("userId") int userId,@PathParam("agendaId") int agendaId,
+                                              @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(QuestionCollection
+                            .getUserTotalScore(userId,agendaId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Score \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
 }

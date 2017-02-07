@@ -35,7 +35,6 @@ public class Permissions {
                 if (result.next()) {
                     permissionName = result.getString(1);
                 }
-
             }
 
             return "Write";

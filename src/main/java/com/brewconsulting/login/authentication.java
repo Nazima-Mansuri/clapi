@@ -1,12 +1,16 @@
 package com.brewconsulting.login;
 
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
-import java.util.*;
+import com.brewconsulting.DB.masters.ForgotPassword;
+import com.brewconsulting.DB.masters.LoggedInUser;
+import com.brewconsulting.DB.masters.User;
+import com.brewconsulting.DB.masters.UserViews;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.jsonwebtoken.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
-import javax.mail.MessagingException;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.ServletContext;
@@ -15,24 +19,14 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import com.brewconsulting.DB.masters.ForgotPassword;
-import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.masters.Mem;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.jsonwebtoken.*;
-
 import java.io.IOException;
-import java.sql.*;
-
-import com.brewconsulting.DB.masters.User;
-import com.brewconsulting.DB.masters.UserViews;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-
-import static com.brewconsulting.DB.masters.ForgotPassword.generateAndSendEmail;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Path("login")
 public class authentication {
@@ -51,6 +45,8 @@ public class authentication {
 
             String username = credentials.getUsername();
             String password = credentials.getPassword();
+            String deviceToken = credentials.getDeviceToken();
+            String deviceOS = credentials.getDeviceOS();
 
             MessageDigest md = MessageDigest.getInstance("MD5");
             md.update(password.getBytes());
@@ -72,7 +68,7 @@ public class authentication {
                 throw new Exception("Password not specified");
             }
 
-            User user = User.authenticate(username, sb.toString());
+            User user = User.authenticate(username, sb.toString(),deviceToken,deviceOS);
 
             if (user == null) {
 
@@ -191,7 +187,8 @@ public class authentication {
             else
             {
                 try {
-                    boolean isExist = Mem.getToken("refreshToken",refreshToken);
+//                    boolean isExist = Mem.getToken("refreshToken",refreshToken);
+                    boolean isExist = false;
                     if(!isExist) {
                         Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
                         JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
@@ -233,8 +230,8 @@ public class authentication {
 
                             node.put("accessToken", bldr.compact());
 
-                            Mem.deleteData(user.id + "#DEACTIVATED");
-                            Mem.deleteData(user.username + "#ROLECHANGED");
+//                            Mem.deleteData(user.id + "#DEACTIVATED");
+//                            Mem.deleteData(user.username + "#ROLECHANGED");
                             resp = Response.ok(node.toString()).build();
 
                         } else {

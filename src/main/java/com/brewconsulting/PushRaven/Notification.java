@@ -18,9 +18,9 @@ public class Notification {
 	private Collection<String> multicast;
 	private HashMap<String, Object> requestAttributes;
 	private HashMap<String, Object> notificationAttributes;
-	
 
-	
+
+
 	public Notification(){
 		clear();
 	}
@@ -40,7 +40,7 @@ public class Notification {
 		not.putAll(notificationAttributes);
 		
 		// add notification object to parent
-		obj.put("notification", not);
+		obj.put("data", not);
 
 		// add request attributes to parent
 		obj.putAll(requestAttributes);
@@ -283,6 +283,14 @@ public class Notification {
 	 */
 	public Notification tag(String tag){
 		return addNotificationAttribute("tag", tag);
+	}
+
+	public Notification testId(int testId){
+		return addNotificationAttribute("testId", testId);
+	}
+
+	public Notification action(String action){
+		return addNotificationAttribute("action", action);
 	}
 	/**
 	 * Indicates color of the icon, expressed in #rrggbb format

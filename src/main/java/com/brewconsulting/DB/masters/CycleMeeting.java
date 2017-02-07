@@ -74,6 +74,12 @@ public class CycleMeeting {
     @JsonProperty("status")
     public String status;
 
+    @JsonProperty("joinStatus")
+    public String joinStatus;
+
+    @JsonProperty("isJoin")
+    public boolean isJoin;
+
     // make the default constructor visible to package only.
     public CycleMeeting() {
     }
@@ -499,5 +505,144 @@ public class CycleMeeting {
         } else {
             throw new NotAuthorizedException("");
         }
+    }
+
+
+    /***
+     *  Method is used to get all meetings of logged in user.
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeeting> getAllSubMeetingsOfLogInUser(LoggedInUser loggedInUser)
+            throws Exception {
+        // TODO: check authorization of the user to see this data
+        int userRole = loggedInUser.roles.get(0).roleId;
+
+        if (Permissions.isAuthorised(userRole, CycleMeeting).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeeting).equals("Write") ) {
+
+            String schemaName = loggedInUser.schemaName;
+
+            Connection con = DBConnectionProvider.getConn();
+            ArrayList<CycleMeeting> cycleMeetings = new ArrayList<CycleMeeting>();
+            PreparedStatement stmt = null;
+            ResultSet result = null;
+            ResultSet attendSet = null;
+
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement("SELECT c.id, title, groupid, venue, startdate, enddate,  "
+                                    +" organiser, c.createdon, c.createdby, c.updatedon, c.updatedby "
+                                    +" FROM "+ schemaName+".cyclemeeting c "
+                                    +" left join "+ schemaName +".cyclemeetingterritories ct on c.id = ct.cyclemeetingid "
+                                    +" left join "+ schemaName +".userterritorymap um on um.terrid = ct.territoryid "
+                                    +" where um.userid = ? OR organiser = ?  GROUP BY c.id,um.userid "
+                                    +" ORDER BY startdate DESC ");
+                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(2,loggedInUser.id);
+                    result = stmt.executeQuery();
+                    System.out.print(result);
+                    while (result.next()) {
+                        CycleMeeting subMeeting = new CycleMeeting();
+                        subMeeting.id = result.getInt(1);
+                        subMeeting.title = result.getString(2);
+                        subMeeting.groupId = result.getInt(3);
+                        subMeeting.venue = result.getString(4);
+                        subMeeting.startDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
+                        subMeeting.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        subMeeting.organiser = result.getInt(7);
+                        subMeeting.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        subMeeting.createBy = result.getInt(9);
+                        subMeeting.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
+                        subMeeting.updateBy = result.getInt(11);
+
+                        if(subMeeting.endDate.before(new Date()) && !subMeeting.endDate.equals(new Date()))
+                            subMeeting.status = "Past";
+                        else if(subMeeting.startDate.after(new Date()) && subMeeting.endDate.after(new Date()) && !subMeeting.endDate.equals(new Date()))
+                            subMeeting.status = "Future";
+                        else
+                            subMeeting.status = "Current";
+
+                        stmt = con.prepareStatement(" SELECT count(*) AS Count FROM "+schemaName+".cyclemeetingattendance " +
+                                " WHERE cyclemeetingid = ? AND ? = ANY(userid :: int[]) ");
+                        stmt.setInt(1,subMeeting.id);
+                        stmt.setInt(2,loggedInUser.id);
+                        attendSet = stmt.executeQuery();
+                        while (attendSet.next())
+                        {
+                            if(attendSet.getInt("Count") > 0)
+                            {
+                                System.out.println("In IF..");
+                                if(subMeeting.status.equals("Past"))
+                                    subMeeting.joinStatus = "Attended";
+
+                                if(subMeeting.status.equals("Current")) {
+                                    subMeeting.joinStatus = "Join";
+                                    subMeeting.isJoin = false;
+                                }
+                            }
+                            else
+                            {
+                                System.out.println(" In ELSE..");
+                                if(subMeeting.status.equals("Past"))
+                                    subMeeting.joinStatus = "Not Attended";
+
+                                if(subMeeting.status.equals("Current")) {
+                                    subMeeting.joinStatus = "Join";
+                                    subMeeting.isJoin = true;
+                                }
+                            }
+                        }
+
+                        if(subMeeting.status.equals("Future"))
+                            subMeeting.joinStatus = "Scheduled";
+
+                        int index = findMeeting(subMeeting.id,cycleMeetings);
+
+                            if (index ==-1)
+                                cycleMeetings.add(subMeeting);
+
+                        System.out.println("Status : " + subMeeting.status);
+                        System.out.println("Join Status : " + subMeeting.joinStatus);
+                        System.out.println(" Is Join : " + subMeeting.isJoin);
+//                        cycleMeetings.add(subMeeting);
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
+                        result.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return cycleMeetings;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+
+    }
+
+    /***
+     *
+     * @param meetingid
+     * @param list
+     * @return
+     */
+    public static int findMeeting(int meetingid, List<CycleMeeting> list) {
+        for (CycleMeeting cycleMeeting : list) {
+            if (cycleMeeting.id == meetingid) {
+                return list.indexOf(cycleMeeting);
+            }
+        }
+        return -1;
     }
 }

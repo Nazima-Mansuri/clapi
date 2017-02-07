@@ -91,7 +91,16 @@ public class CycleMeetingAgendas {
             int id = CycleMeetingAgenda.addCycleMeetingAgenda(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + id + "}").build();
-        } catch (NotAuthorizedException na) {
+        }
+        catch (BadRequestException na) {
+            logger.error("BadRequestException " ,na);
+
+            resp = Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"Message\":" + "\"Agenda is already exist with same time.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException " ,na);
 
             resp = Response.status(Response.Status.FORBIDDEN)

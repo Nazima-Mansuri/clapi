@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.logging.Log;
+import org.glassfish.jersey.server.JSONP;
 import org.omg.CORBA.PERSIST_STORE;
 
 import javax.naming.NamingException;
@@ -41,6 +42,9 @@ public class Question {
 
     @JsonProperty("division")
     public int division;
+
+    @JsonProperty("divName")
+    public String divName;
 
     @JsonProperty("questionType")
     public String questionType;
@@ -92,6 +96,7 @@ public class Question {
     @JsonProperty("fileType")
     public String fileType;
 
+
     // make the default constructor visible to package only.
     public Question() {
     }
@@ -136,14 +141,16 @@ public class Question {
                 if (con != null) {
                     if (divId != -1) {
                         stmt = con
-                                .prepareStatement(" SELECT q.id, questiontext, pollable, division," +
+                                .prepareStatement(" SELECT q.id, questiontext, pollable, q.division," +
                                         " questiontype, complexitylevel, products, keywords, feedbackright, " +
                                         " feedbackwrong, q.isactive, q.createby, q.createdate, q.updatedate, " +
                                         " q.updateby, questionjson, answerjson , u.username,u.firstname,u.lastname," +
-                                        " (uf.address).city city,(uf.address).state state,(uf.address).phone phone,uf.profileimage,q.imageurl,q.filetype " +
+                                        " (uf.address).city city,(uf.address).state state,(uf.address).phone phone," +
+                                        " uf.profileimage,q.imageurl,q.filetype,d.name " +
                                         " FROM " + schemaName + ".question q " +
                                         " left join master.users u on u.id = q.updateby" +
                                         " left join " + schemaName + ".userprofile uf on uf.userid = q.updateby " +
+                                        " left join " + schemaName + ".divisions d on d.id = q.division " +
                                         " WHERE division = ? " +
                                         " ORDER BY q.createdate DESC ");
                         stmt.setInt(1, divId);
@@ -174,18 +181,21 @@ public class Question {
                             question.userDetails.add(new UserDetail(result.getInt(15), result.getString(18), result.getString(19), result.getString(20), result.getString(21), result.getString(22), (String[]) result.getArray(23).getArray()));
                             question.questionImage = result.getString(25);
                             question.fileType = result.getString(26);
+                            question.divName = result.getString(27);
                             questionsList.add(question);
                         }
                     } else {
                         stmt = con
-                                .prepareStatement(" SELECT q.id, questiontext, pollable, division," +
+                                .prepareStatement(" SELECT q.id, questiontext, pollable, q.division," +
                                         " questiontype, complexitylevel, products, keywords, feedbackright, " +
                                         " feedbackwrong, q.isactive, q.createby, q.createdate, q.updatedate, " +
                                         " q.updateby, questionjson, answerjson , u.username,u.firstname,u.lastname," +
-                                        " (uf.address).city city,(uf.address).state state,(uf.address).phone phone,uf.profileimage,q.imageurl,q.filetype " +
+                                        " (uf.address).city city,(uf.address).state state,(uf.address).phone phone," +
+                                        " uf.profileimage,q.imageurl,q.filetype,d.name " +
                                         " FROM " + schemaName + ".question q " +
                                         " left join master.users u on u.id = q.updateby" +
                                         " left join " + schemaName + ".userprofile uf on uf.userid = q.updateby " +
+                                        " left join " + schemaName + ".divisions d on d.id = q.division " +
                                         " ORDER BY q.createdate DESC ");
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -214,6 +224,7 @@ public class Question {
                             question.userDetails.add(new UserDetail(result.getInt(15), result.getString(18), result.getString(19), result.getString(20), result.getString(21), result.getString(22), (String[]) result.getArray(23).getArray()));
                             question.questionImage = result.getString(25);
                             question.fileType = result.getString(26);
+                            question.divName = result.getString(27);
                             questionsList.add(question);
                         }
                     }
@@ -262,7 +273,8 @@ public class Question {
      */
     public static int insertQuestion(String questionText, boolean pollable, int division,
                                      String questionType, String complexityLevel, String products, String keywords, String feedbackRight, String feedbackWrong,
-                                     boolean isActive, String questionJson, String answerJson, String imageUrl, String filetype, LoggedInUser loggedInUser) throws Exception {
+                                     boolean isActive, String questionJson, String answerJson, String imageUrl,
+                                     String filetype, boolean isReview, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Question).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
@@ -272,7 +284,6 @@ public class Question {
 
             try {
                 con.setAutoCommit(false);
-
                 QuestionType quesType = QuestionType.valueOf(questionType.toUpperCase());
                 ComplexityLevel level = ComplexityLevel.valueOf(complexityLevel.toUpperCase());
                 Array prdarr = null;
@@ -307,9 +318,9 @@ public class Question {
                                         + schemaName
                                         + ".question(questionText,pollable,division,questionType," +
                                         " complexityLevel,products,keywords,feedbackRight,feedbackWrong," +
-                                        " isActive,createBy,createDate,updatedate,updateby,questionjson,answerjson,imageurl,filetype) values " +
+                                        " isActive,createBy,createDate,updatedate,updateby,questionjson,answerjson,imageurl,filetype,isreview) values " +
                                         " (?,?,?," +
-                                        " CAST(? AS master.questionType),CAST(? AS master.complexityLevel),?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                        " CAST(? AS master.questionType),CAST(? AS master.complexityLevel),?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                 Statement.RETURN_GENERATED_KEYS);
 
                 if (questionText != null || questionText != "")
@@ -349,6 +360,7 @@ public class Question {
                 stmt.setString(16, String.valueOf(answerJson));
                 stmt.setString(17, imageUrl);
                 stmt.setString(18, filetype);
+                stmt.setBoolean(19, isReview);
 
                 result = stmt.executeUpdate();
 
@@ -380,7 +392,6 @@ public class Question {
             throw new NotAuthorizedException("");
         }
     }
-
 
 
     /***
@@ -493,7 +504,7 @@ public class Question {
                 stmt.setString(13, String.valueOf(answerJson));
                 stmt.setString(14, quesType.name());
                 stmt.setString(15, imageUrl);
-                stmt.setString(16,filetype);
+                stmt.setString(16, filetype);
                 stmt.setInt(17, questionId);
 
                 affectedRows = stmt.executeUpdate();
@@ -577,87 +588,93 @@ public class Question {
             ArrayList<Question> questionsList = new ArrayList<Question>();
             PreparedStatement stmt = null;
             ResultSet result = null;
-            boolean isDate = false, isKeyword= false,isProduct= false,isAuthor= false;
+            boolean isDate = false, isKeyword = false, isProduct = false, isAuthor = false;
             int index = 1;
 
             try {
                 if (con != null) {
 
+                    String query = "SELECT q.id, questiontext, pollable, q.division, complexitylevel, products, " +
+                            " keywords, feedbackright, feedbackwrong, q.isactive, q.createby, q.createdate, " +
+                            " q.updatedate, q.updateby, questionjson, answerjson, questiontype, " +
+                            " imageurl, filetype,u.username,u.firstname,u.lastname,(uf.address).city," +
+                            " (uf.address).state,(uf.address).phone " +
+                            " FROM " + schemaName + ".question q " +
+                            " left join master.users u on u.id = q.updateby " +
+                            " left join " + schemaName + ".userprofile uf on uf.userid = q.updateby " +
+                            " WHERE q.division = ? ";
 
-                    String query = "SELECT id, questiontext, pollable, division, complexitylevel, products, " +
-                            " keywords, feedbackright, feedbackwrong, isactive, createby, createdate, " +
-                            " updatedate, updateby, questionjson, answerjson, questiontype, " +
-                            " imageurl, filetype " +
-                            " FROM "+schemaName+".question WHERE division = ? ";
-
-
-
-                    if(node.has("FromDate") && node.has("ToDate"))
-                    {
-                        if(node.get("FromDate").asText() != "" || node.get("ToDate").asText() != "") {
-                                query = query.concat(" AND createdate >= ? AND createdate <= ( ? ::date + '1 day'::interval) ");
-                                isDate = true;
-
+                    if (node.has("FromDate") && node.has("ToDate")) {
+                        if (node.get("FromDate").asText() != "" || node.get("ToDate").asText() != "") {
+                            query = query.concat(" AND createdate >= ? AND createdate <= ( ? ::date + '1 day'::interval) ");
+                            isDate = true;
                         }
-
                     }
-                    if(node.has("Keyword"))
-                    {
-                        if(node.withArray("Keyword").size() > 0) {
+                    if (node.has("Keyword")) {
+                        if (node.withArray("Keyword").size() > 0) {
                             query = query.concat(" AND keywords = ? ");
                             isKeyword = true;
                         }
                     }
 
-                    if(node.has("Product"))
-                    {
-                        if(node.withArray("Product").size() > 0) {
+                    if (node.has("Product")) {
+                        if (node.withArray("Product").size() > 0) {
                             query = query.concat(" AND products = ? ");
                             isProduct = true;
                         }
                     }
 
-                    if(node.has("Author"))
-                    {
-                        if(node.get("Author").asInt() > 0) {
-                            query = query.concat(" AND createby = ? ");
+                    if (node.has("Author")) {
+                        if (node.get("Author").asInt() > 0) {
+                            query = query.concat(" AND q.createby = ? ");
                             isAuthor = true;
                         }
                     }
+                    if (node.get("isGroup").asBoolean()) {
+                        query = query.concat(" AND NOT EXISTS (SELECT questions from " + schemaName + ".groupsessioncontenttestquestioncollection WHERE agendaid = ? AND q.id = ANY(questions::int[])) ");
+                    } else {
+                        if (node.get("isAssesment").asBoolean()) {
+                            query = query.concat(" AND NOT EXISTS (SELECT questions from " + schemaName + ".onthegocontenttestquestioncollection WHERE testid = ? AND q.id = ANY(questions::int[])) ");
+                        } else {
+                            query = query.concat(" AND NOT EXISTS (SELECT questions from " + schemaName + ".cyclemeetingsessioncontenttestquestioncollection WHERE agendaid = ? AND q.id = ANY(questions::int[]))");
+                        }
+                    }
 
+                    query = query.concat(" ORDER BY updatedate DESC");
                     stmt = con.prepareStatement(query);
                     System.out.println(" QUERY : " + query);
-                    stmt.setInt(index++,node.get("divisionId").asInt());
 
-                    if(isDate)
-                    {
+                    stmt.setInt(index++, node.get("divisionId").asInt());
+
+                    if (isDate) {
                         stmt.setDate(index++, java.sql.Date.valueOf(node.get("FromDate").asText()));
                         stmt.setDate(index++, java.sql.Date.valueOf(node.get("ToDate").asText()));
                     }
-                    if(isKeyword)
-                    {
+                    if (isKeyword) {
                         String arr[] = new String[node.withArray("Keyword").size()];
-                        for (int i = 0;i<node.withArray("Keyword").size();i++)
-                        {
+                        for (int i = 0; i < node.withArray("Keyword").size(); i++) {
                             arr[i] = node.withArray("Keyword").get(i).asText();
                         }
-                        Array array = con.createArrayOf("text",arr);
-                        stmt.setArray(index++,array);
+                        Array array = con.createArrayOf("text", arr);
+                        stmt.setArray(index++, array);
                     }
 
-                    if(isProduct)
-                    {
+                    if (isProduct) {
                         Integer arr[] = new Integer[node.withArray("Product").size()];
-                        for (int i = 0;i<node.withArray("Product").size();i++)
-                        {
+                        for (int i = 0; i < node.withArray("Product").size(); i++) {
                             arr[i] = node.withArray("Product").get(i).asInt();
                         }
-                        Array array = con.createArrayOf("int",arr);
-                        stmt.setArray(index++,array);
+                        Array array = con.createArrayOf("int", arr);
+                        stmt.setArray(index++, array);
                     }
-                    if(isAuthor)
-                    {
-                        stmt.setInt(index++,node.get("Author").asInt());
+                    if (isAuthor) {
+                        stmt.setInt(index++, node.get("Author").asInt());
+                    }
+
+                    if (node.get("isAssesment").asBoolean()) {
+                        stmt.setInt(index++, node.get("testId").asInt());
+                    } else {
+                        stmt.setInt(index++, node.get("agendaId").asInt());
                     }
 
                     result = stmt.executeQuery();
@@ -686,6 +703,8 @@ public class Question {
                         question.questionType = result.getString(17);
                         question.questionImage = result.getString(18);
                         question.fileType = result.getString(19);
+                        question.userDetails = new ArrayList<>();
+                        question.userDetails.add(new UserDetail(result.getInt(14), result.getString(20), result.getString(21), result.getString(22), result.getString(23), result.getString(24), (String[]) result.getArray(25).getArray()));
                         questionsList.add(question);
                     }
 
@@ -708,9 +727,7 @@ public class Question {
         } else {
             throw new NotAuthorizedException("");
         }
-
     }
-
 
     /***
      * save uploaded file to new location
@@ -760,52 +777,46 @@ public class Question {
      * @return
      * @throws Exception
      */
-    public static Question getQuestionById(int id,LoggedInUser loggedInUser) throws Exception {
+    public static Question getQuestionById(int id, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,Question).equals("Read") ||
-                Permissions.isAuthorised(userRole,Question).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, Question).equals("Read") ||
+                Permissions.isAuthorised(userRole, Question).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet result = null;
             Question question = new Question();
-            try
-            {
+            try {
                 stmt = con
                         .prepareStatement(" SELECT q.id, complexitylevel, questionjson, q.imageurl,q.filetype " +
                                 " FROM " + schemaName + ".question q " +
                                 " WHERE id = ? " +
                                 " ORDER BY q.createdate DESC ");
-                        stmt.setInt(1,id);
-                        result = stmt.executeQuery();
+                stmt.setInt(1, id);
+                result = stmt.executeQuery();
 
-                        while (result.next())
-                        {
-                            question.id = result.getInt(1);
-                            question.complexityLevel = result.getString(2);
-                            question.questionJson = result.getString(3);
-                            question.questionImage = result.getString(4);
-                            question.fileType = result.getString(5);
-                        }
+                while (result.next()) {
+                    question.id = result.getInt(1);
+                    question.complexityLevel = result.getString(2);
+                    question.questionJson = result.getString(3);
+                    question.questionImage = result.getString(4);
+                    question.fileType = result.getString(5);
+                }
 
-            }
-            finally {
-                if(result != null)
-                    if(!result.isClosed())
+            } finally {
+                if (result != null)
+                    if (!result.isClosed())
                         result.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(con != null)
-                    if(!con.isClosed())
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
             }
 
             return question;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -821,7 +832,7 @@ public class Question {
      * @throws NamingException
      * @throws ClassNotFoundException
      */
-    public static List<Question> getQuestionsByListAndComplexity(Integer[] Questions , String complexitylevel) throws SQLException, NamingException, ClassNotFoundException {
+    public static List<Question> getQuestionsByListAndComplexity(Integer[] Questions, String complexitylevel) throws Exception {
 
         PreparedStatement stmt = null;
         List<Question> quesList = new ArrayList<>();
@@ -829,37 +840,39 @@ public class Question {
         ResultSet result = null;
 
         try {
-            for (int i = 0; i < Questions.length; i++) {
+            if (con != null) {
+                for (int i = 0; i < Questions.length; i++) {
 
-                stmt = con.prepareStatement("SELECT q.id,complexitylevel, questionjson, q.imageurl,q.filetype " +
-                        " FROM client1.question q WHERE complexitylevel = CAST(? AS master.complexitylevel) " +
-                        " AND id = ? ORDER BY q.createdate DESC ");
-                stmt.setString(1, complexitylevel);
-                stmt.setInt(2, Questions[i]);
-                result = stmt.executeQuery();
+                    stmt = con.prepareStatement("SELECT q.id,complexitylevel, questionjson, q.imageurl,q.filetype " +
+                            " FROM client1.question q WHERE complexitylevel = CAST(? AS master.complexitylevel) " +
+                            " AND id = ? ORDER BY q.createdate DESC ");
+                    stmt.setString(1, complexitylevel);
+                    stmt.setInt(2, Questions[i]);
+                    result = stmt.executeQuery();
 
-                while (result.next()) {
-                    Question question = new Question();
-                    question.id = result.getInt(1);
-                    question.complexityLevel = result.getString(2);
-                    question.questionJson = result.getString(3);
-                    question.questionImage = result.getString(4);
-                    question.fileType = result.getString(5);
-                    quesList.add(question);
+                    while (result.next()) {
+                        Question question = new Question();
+                        question.id = result.getInt(1);
+                        question.complexityLevel = result.getString(2);
+                        question.questionJson = result.getString(3);
+                        question.questionImage = result.getString(4);
+                        question.fileType = result.getString(5);
+                        quesList.add(question);
+                    }
                 }
-            }
+            } else
+                throw new Exception("DB connection is null");
 
             return quesList;
-        }
-        finally {
-            if(result != null)
-                if(!result.isClosed())
+        } finally {
+            if (result != null)
+                if (!result.isClosed())
                     result.close();
-            if(con != null)
-                if(!con.isClosed())
+            if (con != null)
+                if (!con.isClosed())
                     con.close();
-            if(stmt != null)
-                if(!stmt.isClosed())
+            if (stmt != null)
+                if (!stmt.isClosed())
                     stmt.close();
         }
     }
@@ -912,17 +925,110 @@ public class Question {
             }
 
             return quesList;
-        }
-        finally {
-            if(result != null)
-                if(!result.isClosed())
+        } finally {
+            if (result != null)
+                if (!result.isClosed())
                     result.close();
-            if(con != null)
-                if(!con.isClosed())
+            if (con != null)
+                if (!con.isClosed())
                     con.close();
-            if(stmt != null)
-                if(!stmt.isClosed())
+            if (stmt != null)
+                if (!stmt.isClosed())
                     stmt.close();
+        }
+    }
+
+    /***
+     *  Method is used to clone question.
+     *
+     * @param id
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int cloneQuestion(int id, LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if (Permissions.isAuthorised(userRole, Question).equals("Write")) {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            int affectedRows = 0;
+            ResultSet resultSet = null;
+            String schemaName = loggedInUser.schemaName;
+            int questionId = 0;
+
+            try {
+                con.setAutoCommit(false);
+
+                stmt = con.prepareStatement(" SELECT questionText,pollable,division,questionType," +
+                        " complexityLevel,products,keywords,feedbackRight,feedbackWrong," +
+                        " isActive,questionjson,answerjson," +
+                        " imageurl,filetype,isreview FROM " + schemaName + ".question WHERE id = ? ");
+                stmt.setInt(1, id);
+                resultSet = stmt.executeQuery();
+
+                if (resultSet.next()) {
+                    QuestionType quesType = QuestionType.valueOf(resultSet.getString(4));
+                    ComplexityLevel level = ComplexityLevel.valueOf(resultSet.getString(5));
+
+                    stmt = con
+                            .prepareStatement(
+                                    "INSERT INTO "
+                                            + schemaName
+                                            + ".question(questionText,pollable,division,questionType," +
+                                            " complexityLevel,products,keywords,feedbackRight,feedbackWrong," +
+                                            " isActive,createBy,createdate,updatedate,updateby,questionjson,answerjson," +
+                                            " imageurl,filetype,isreview) values " +
+                                            " (?,?,?," +
+                                            " CAST(? AS master.questionType),CAST(? AS master.complexityLevel),?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                    Statement.RETURN_GENERATED_KEYS);
+
+                    stmt.setString(1, resultSet.getString(1));
+                    stmt.setBoolean(2, resultSet.getBoolean(2));
+                    stmt.setInt(3, resultSet.getInt(3));
+                    stmt.setString(4, quesType.name());
+                    stmt.setString(5, level.name());
+                    stmt.setArray(6, resultSet.getArray(6));
+                    stmt.setArray(7, resultSet.getArray(7));
+                    stmt.setString(8, resultSet.getString(8));
+                    stmt.setString(9, resultSet.getString(9));
+                    stmt.setBoolean(10, resultSet.getBoolean(10));
+                    stmt.setInt(11, loggedInUser.id);
+                    stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
+                    stmt.setTimestamp(13, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(14, loggedInUser.id);
+                    stmt.setString(15, resultSet.getString(11));
+                    stmt.setString(16, resultSet.getString(12));
+                    stmt.setString(17, resultSet.getString(13));
+                    stmt.setString(18, resultSet.getString(14));
+                    stmt.setBoolean(19, resultSet.getBoolean(15));
+
+                    affectedRows = stmt.executeUpdate();
+
+                    if (affectedRows == 0)
+                        throw new SQLException("Add Questions Failed.");
+
+                    ResultSet generatedKeys = stmt.getGeneratedKeys();
+
+                    if (generatedKeys.next())
+                        // It gives last inserted Id in questionId
+                        questionId = generatedKeys.getInt(1);
+                    else
+                        throw new SQLException("No ID obtained");
+
+                    con.commit();
+                }
+                return questionId;
+            } catch (Exception ex) {
+                if (con != null)
+                    con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(false);
+                if (con != null)
+                    con.close();
+            }
+        } else {
+            throw new NotAuthorizedException("");
         }
     }
 }

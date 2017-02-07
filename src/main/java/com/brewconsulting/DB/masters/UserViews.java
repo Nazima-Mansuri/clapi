@@ -15,4 +15,9 @@ public class UserViews {
 	public static class settingView{};
 	public static class quesSetView{};
 	public static class quesAgendaView{};
+	public static class scoreView{};
+	public static class sessionView{};
+	public static class feedScheduleView{};
+	public static class feedDeliveryView{};
+	public static class assesmentView{};
 }

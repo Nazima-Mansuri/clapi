@@ -217,8 +217,6 @@ public class Users {
         return resp;
     }
 
-
-
     /***
      * Produces list of Activate users for specific Division.
      *
@@ -240,6 +238,42 @@ public class Users {
             resp = Response.ok(
                     mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
                             .getAllActivateUsersByDivId(id, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        }   catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Users. \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     * Produces list of ROOT level Users.
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("rootlevelusers/{divId}")
+    public Response getAllRootLevelUsers(@PathParam("divId") int divId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.profileView.class).writeValueAsString(User
+                            .getAllRootLevelUser(divId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);
@@ -511,7 +545,8 @@ public class Users {
                 // This method is used to store image in AWS bucket.
                 uploadFilePath = User.writeToFile(fileInputStream, fileName);
             } else {
-                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Profile/1479199419218_default_image.jpg";
+//                uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Profile/1479199419218_default_image.jpg";
+                uploadFilePath = "";
             }
 
             int userId = User.addUser(firstname,lastname,username,isActive,addLine1,addLine2,addLine3,city,state,phones,
@@ -749,6 +784,79 @@ public class Users {
         } catch (Exception e) {
             logger.error("Exception ",e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Change password of User When user logged in First Time.
+     *
+     * @param id
+     * @param input
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("logout")
+    public Response removeDeviceDetails(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            int affectedRow = User.removeDeviceDetails((LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"affectedRow\":" + affectedRow + "}").build();
+
+        }catch (IOException e) {
+            logger.error("IOException ",e);
+            if (resp == null)
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}")
+                        .type(MediaType.APPLICATION_JSON).build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Update device details
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("devicedetails")
+    public Response updateDeviceDetails(InputStream input,@Context ContainerRequestContext crc) {
+        Response resp = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int affectedRow = User.updateDeviceDetails(node,(LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"affectedRow\":" + affectedRow + "}").build();
+
+        }catch (IOException e) {
+            logger.error("IOException ",e);
+            if (resp == null)
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}")
+                        .type(MediaType.APPLICATION_JSON).build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception ",e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

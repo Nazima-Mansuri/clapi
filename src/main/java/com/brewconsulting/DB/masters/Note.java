@@ -109,8 +109,9 @@ public class Note
                                     " FROM "+schemaName + ".groupNotes g " +
                                     " left join master.users u on u.id = g.updateby " +
                                     " left join "+schemaName+".userprofile uf on uf.userid = g.updateby" +
-                                    " where groupid = ? ORDER BY g.createdon DESC");
+                                    " where groupid = ? AND g.createdby = ? ORDER BY g.createdon DESC");
                     stmt.setInt(1, id);
+                    stmt.setInt(2,loggedInUser.id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Note note = new Note();
@@ -500,8 +501,9 @@ public class Note
                                     "  FROM " +
                                     schemaName + ".cycleMeetingNotes c1 left join master.users u on u.id = createdby " +
                                     " left join "+schemaName+".userprofile uf ON uf.userid = c1.updateby " +
-                                    "where cycleMeetingId = ? ORDER BY c1.createdon DESC ");
+                                    "where cycleMeetingId = ? AND c1.createdby = ? ORDER BY c1.createdon DESC ");
                     stmt.setInt(1, cycleMeetingId);
+                    stmt.setInt(2,loggedInUser.id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         childNote = new Note();

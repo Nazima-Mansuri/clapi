@@ -157,6 +157,7 @@ public class Questions {
                             @FormDataParam("isActive") boolean isActive,
                             @FormDataParam("questionJson") String questionJson,
                             @FormDataParam("correctAnswer") String correctAnswer,
+                            @FormDataParam("isReview") boolean isReview,
                             @Context ContainerRequestContext crc) {
 
         Response resp = null;
@@ -180,16 +181,15 @@ public class Questions {
                     // This method is used to store image in AWS bucket.
                     uploadFilePath = Question.writeToFile(fileInputStream, fileName);
                 } else {
-                    uploadFilePath = null;
+                    uploadFilePath = "";
                 }
-
             } else {
-                uploadFilePath = null;
+                uploadFilePath = "";
             }
 
             int questionId = Question.insertQuestion(questionText, pollable, division, questionType,
                     complexityLevel, Product, keywords, feedbackRight, feedbackWrong, isActive, questionJson, correctAnswer,
-                    uploadFilePath, fileType, (LoggedInUser) crc.getProperty("userObject"));
+                    uploadFilePath, fileType,isReview, (LoggedInUser) crc.getProperty("userObject"));
 
             if (questionId != 0)
                 resp = Response.ok("{\"id\":" + questionId + "}").build();
@@ -374,4 +374,54 @@ public class Questions {
         return resp;
     }
 
+    /***
+     *  Clonbe question.
+     *
+     * @param id
+     * @param crc
+     * @return
+     */
+    @POST
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("{id}")
+    public Response cloneQuestion(@PathParam("id") int id,
+                              @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            int questionId = Question.cloneQuestion(id,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"id\":" + questionId + "}").build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to clone Question\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (SQLException s)
+        {
+            logger.error("SQLException",s);
+            resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            logger.error("IOException",e);
+            if (resp == null) {
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            logger.error("Exception " , e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
 }

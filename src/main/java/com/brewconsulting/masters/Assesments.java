@@ -1,8 +1,9 @@
 package com.brewconsulting.masters;
 
-import com.brewconsulting.DB.masters.CycleMeeting;
+import com.brewconsulting.DB.masters.Assesment;
 import com.brewconsulting.DB.masters.LoggedInUser;
-import com.brewconsulting.exceptions.NoDataFound;
+import com.brewconsulting.DB.masters.QuestionCollection;
+import com.brewconsulting.DB.masters.UserViews;
 import com.brewconsulting.login.Secured;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,136 +18,99 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.Properties;
 
 /**
- * Created by lcom53 on 7/10/16.
+ * Created by lcom62_one on 2/2/2017.
  */
 
-@Path("cyclemeeting")
+@Path("assesments")
 @Secured
-public class CycleMeetings {
+public class Assesments {
 
     ObjectMapper mapper = new ObjectMapper();
-
-    static final Logger logger = Logger.getLogger(CycleMeetings.class);
+    static final Logger logger = Logger.getLogger(Assesments.class);
     Properties properties = new Properties();
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     * Produces a list of all Meetings.
+     *  Produces All Assesment details.
      *
+     * @param isGroup
+     * @param agendaId
      * @param crc
      * @return
      */
     @GET
     @Produces("application/json")
     @Secured
-    @Path("{groupid}")
-    public Response meetings(@PathParam("groupid") int id , @Context ContainerRequestContext crc) {
+    @Path("{divId}")
+    public Response getAllAssesments(@PathParam("divId") int divId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             resp = Response.ok(
-                    mapper.writeValueAsString(CycleMeeting
-                            .getAllSubMeetings(id,(LoggedInUser) crc
+                    mapper.writerWithView(UserViews.assesmentView.class).writeValueAsString(Assesment
+                            .getAllAssesments(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeetings\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to get Assesments\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-
-        catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
+
         return resp;
     }
 
     /***
-     *  Produces specific Cycle meeting.
+     *  Produces Assesment Setting details.
      *
-     * @param id
+     * @param testId
      * @param crc
      * @return
      */
     @GET
     @Produces("application/json")
     @Secured
-    @Path("meetingbyid/{id}")
-    public Response meetingsById(@PathParam("id") int id , @Context ContainerRequestContext crc) {
+    @Path("setting/{testId}")
+    public Response getAssesmentSettings(@PathParam("testId") int testId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             resp = Response.ok(
-                    mapper.writeValueAsString(CycleMeeting
-                            .getSubMeetingById(id,(LoggedInUser) crc
+                    mapper.writerWithView(UserViews.settingView.class).writeValueAsString(Assesment
+                            .getSettingDetails(testId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
         } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get particular Cyclemeeting\"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to get Assesments\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-
-        catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
+
         return resp;
     }
 
     /***
-     * Produces a list of all Meetings of specific month.
-     *
-     * @param crc
-     * @return
-     */
-    @GET
-    @Produces("application/json")
-    @Secured
-    @Path("monthofmeetings/{month}")
-    public Response monthmeetings(@PathParam("month") int month , @Context ContainerRequestContext crc) {
-        Response resp = null;
-        try {
-            properties.load(inp);
-            PropertyConfigurator.configure(properties);
-
-            resp = Response.ok(
-                    mapper.writeValueAsString(CycleMeeting
-                            .getAllSubMeetingsOfMonth(month,(LoggedInUser) crc
-                                    .getProperty("userObject")))).build();
-
-        } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
-            resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeetings\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        }
-
-        catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-            e.printStackTrace();
-        }
-        return resp;
-    }
-
-    /***
-     * Add cycle Meeting
+     *  Add Assesments
      *
      * @param input
      * @param crc
@@ -156,46 +120,48 @@ public class CycleMeetings {
     @Produces("application/json")
     @Secured
     @Consumes("application/json")
-    public Response createSubMeeting(InputStream input,
-                                @Context ContainerRequestContext crc) {
+    public Response createAssesment(InputStream input,
+                                         @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             JsonNode node = mapper.readTree(input);
-            int MeetingId = CycleMeeting.addSubCycleMeeting(node,
+            int assesmentId = Assesment.addOnTheGoAssesment(node,
                     (LoggedInUser) crc.getProperty("userObject"));
-            if (MeetingId != 0)
-                resp = Response.ok("{\"id\":" + MeetingId + "}").build();
-            else
-                resp = Response
-                        .noContent()
-                        .entity(new NoDataFound("Unable to Insert Cycle Meeting")
-                                .getJsonString()).build();
+            resp = Response.ok("{\"id\":" + assesmentId + "}").build();
         } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+            logger.error("NotAuthorizedException",na);
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to add Cyclemeeting \"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to create On The Gp Assesment\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
-            logger.error("IOException ",e);
+        }
+        catch (SQLException s)
+        {
+            logger.error("SQLException",s);
+            resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            logger.error("IOException",e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
-            logger.error("Exception ",e);
-            // TODO Auto-generated catch block
+            logger.error("Exception " , e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         }
         return resp;
     }
 
-
-    /**
-     * Update cycle Meeting
+    /***
+     * Update Assesment
      *
      * @param input
      * @param crc
@@ -205,31 +171,34 @@ public class CycleMeetings {
     @Produces("application/json")
     @Secured
     @Consumes("application/json")
-    public Response updateSubMeeting(InputStream input,
-                                  @Context ContainerRequestContext crc) {
+    public Response updateAssesment(InputStream input,
+                                             @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
             JsonNode node = mapper.readTree(input);
-            CycleMeeting.updateSubCycleMeeting(node,
+            int affectedRow = Assesment.updateAssesment(node,
                     (LoggedInUser) crc.getProperty("userObject"));
-            resp = Response.ok().build();
-        }catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+
+            resp = Response.ok("{\"affectedRow\":" + affectedRow + "}").build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to update Cyclemeeting \"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to update Assesment\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
         catch (IOException e) {
-            logger.error("IOException ",e);
+            logger.error("IOException " ,e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
-            logger.error("Exception ",e);
+            logger.error("Exception " ,e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -237,7 +206,52 @@ public class CycleMeetings {
     }
 
     /***
-     * Delete cycle Meeting
+     *  Update Assesment Setting
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("setting")
+    public Response updateAssesmentSettings(InputStream input,
+                                    @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int affectedRow = Assesment.updateSettings(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+
+            resp = Response.ok("{\"affectedRow\":" + affectedRow + "}").build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to update Assesment Settings\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            logger.error("IOException " ,e);
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception " ,e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
      *
      * @param id
      * @param crc
@@ -247,12 +261,15 @@ public class CycleMeetings {
     @Produces("application/json")
     @Secured
     @Path("{id}")
-    public Response deleteSubMeeting(@PathParam("id") Integer id,
-                                  @Context ContainerRequestContext crc) {
+    public Response deleteAssesment(@PathParam("id") Integer id,
+                                             @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
             // affectedRow given how many rows deleted from database.
-            int affectedRow = CycleMeeting.deleteSubCycleMeeting(id,
+            int affectedRow = Assesment.deleteAssesment(id,
                     (LoggedInUser) crc.getProperty("userObject"));
             if (affectedRow > 0)
                 resp = Response.ok().build();
@@ -261,64 +278,25 @@ public class CycleMeetings {
                 // 204(NO_CONTENT).
                 resp = Response.status(204).build();
 
-        }catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException " ,na);
+
             resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to delete Cyclemeeting \"}")
+                    .entity("{\"Message\":" + "\"You are not authorized to delete Assesment\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (PSQLException ex) {
-            logger.error("PSQLException ",ex);
+        } catch (PSQLException ex) {
+            logger.error("PSQLException " ,ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
-            logger.error("Exception ",e);
+            logger.error("Exception " ,e);
             if (resp == null)
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-            e.printStackTrace();
-
-        }
-        return resp;
-    }
-
-    /***
-     *  Produces Logged in users all meetings.
-     *
-     * @param id
-     * @param crc
-     * @return
-     */
-    @GET
-    @Produces("application/json")
-    @Secured
-    public Response usersallmeetings(@Context ContainerRequestContext crc) {
-        Response resp = null;
-        try {
-            properties.load(inp);
-            PropertyConfigurator.configure(properties);
-
-            resp = Response.ok(
-                    mapper.writeValueAsString(CycleMeeting
-                            .getAllSubMeetingsOfLogInUser((LoggedInUser) crc
-                                    .getProperty("userObject")))).build();
-
-        } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
-            resp = Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"Message\":" + "\"You are not authorized to get Cyclemeetings\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        }
-
-        catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
-            e.printStackTrace();
-        }
+            e.printStackTrace();        }
         return resp;
     }
 }
