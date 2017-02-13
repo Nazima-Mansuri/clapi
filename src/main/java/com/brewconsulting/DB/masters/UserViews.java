@@ -20,4 +20,5 @@ public class UserViews {
 	public static class feedScheduleView{};
 	public static class feedDeliveryView{};
 	public static class assesmentView{};
+	public static class deliveredFeedsView{};
 }

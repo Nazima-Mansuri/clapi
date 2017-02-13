@@ -76,6 +76,7 @@ public class CycleMeetingTerritories {
     }
 
     /***
+     * Produces feedschedule user details.
      *
      * @param feedScheduleId
      * @param crc
@@ -100,6 +101,78 @@ public class CycleMeetingTerritories {
             logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get Feed schedule user details.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *
+     *
+     * @param feedDeliveryId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("feeddeliveryusers/{feedDeliveryId}")
+    public Response feedDeliveryUserDetails(@PathParam("feedDeliveryId") int feedDeliveryId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(CycleMeetingTerritory
+                            .getAllUserDetailsOfFeedDelivery(feedDeliveryId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Feed schedule user details.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *  Produces Assesment user details.
+     *
+     * @param assesmentId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("assesmentusers/{assesmentId}")
+    public Response assesmentUserDetails(@PathParam("assesmentId") int assesmentId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(CycleMeetingTerritory
+                            .getAllUserDetailsOfAssesment(assesmentId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Assessment user details.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
@@ -363,17 +436,16 @@ public class CycleMeetingTerritories {
                     }
 
                     if (deviceOS.equalsIgnoreCase("iOS")) {
-                       /* ApnsService service =
+                        ApnsService service =
                                 APNS.newService()
                                         .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_APNS_Production.p12"), "lanetteam1")
-                                        .wit    hProductionDestination()
+                                        .withProductionDestination()
                                         .build();
-*/
-                        ApnsService service =
+                       /* ApnsService service =
                                 APNS.newService()
                                         .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_APNS_Development.p12"), "lanetteam1")
                                         .withSandboxDestination()
-                                        .build();
+                                        .build();*/
 
                         String payload = APNS.newPayload().alertBody("Exam Started.!").alertAction("Test").category("" + agendaId).build();
                         System.out.println("Payload : " + payload);

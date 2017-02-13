@@ -73,7 +73,7 @@ public class Feed {
                             " FROM " + schemaName + ".feeds f " +
                             " left join master.users u on u.id = f.createby " +
                             " left join "+schemaName+".userprofile uf on uf.userid = f.createby " +
-                            " WHERE f.divid = ? ORDER BY f.createdate");
+                            " WHERE f.divid = ? ORDER BY f.createdate DESC");
                     stmt.setInt(1, divId);
                     resultSet = stmt.executeQuery();
                     while (resultSet.next()) {

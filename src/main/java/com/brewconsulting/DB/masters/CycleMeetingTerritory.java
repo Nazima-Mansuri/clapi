@@ -196,6 +196,86 @@ public class CycleMeetingTerritory {
                         userDetail.profileImage = resultSet.getString(11);
                         userDetailList.add(userDetail);
                     }
+                } else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
+                        resultSet.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return userDetailList;
+        }
+        else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     *
+     * @param feedScheduleId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeetingTerritory> getAllUserDetailsOfFeedDelivery(int pillId,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            List<CycleMeetingTerritory> userDetailList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+            List<Integer> pillIdList = new ArrayList<>();
+
+            try {
+                if (con != null) {
+
+                    stmt = con.prepareStatement(" SELECT userid FROM "+schemaName+".feeddelivery WHERE pillid = ? GROUP BY userid ");
+                    stmt.setInt(1,pillId);
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next())
+                    {
+                        pillIdList.add(resultSet.getInt(1));
+                    }
+
+                    stmt = con
+                            .prepareStatement(" SELECT u.id,u.username,u.firstname,u.lastname,(uf.address).addline1," +
+                                    " (uf.address).addline2,(uf.address).addline3,(uf.address).city," +
+                                    " (uf.address).state,(uf.address).phone,uf.profileimage" +
+                                    " from master.users u " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = u.id" +
+                                    " WHERE id = ? ");
+                    for(int i =0;i< pillIdList.size();i++)
+                    {
+                        stmt.setInt(1, pillIdList.get(i));
+                        resultSet = stmt.executeQuery();
+                        while (resultSet.next())
+                        {
+                            CycleMeetingTerritory userDetail = new CycleMeetingTerritory();
+                            userDetail.userId = resultSet.getInt(1);
+                            userDetail.username = resultSet.getString(2);
+                            userDetail.fullname = resultSet.getString(3) + " " + resultSet.getString(4);
+                            userDetail.addLine1 = resultSet.getString(5);
+                            userDetail.addLine2 = resultSet.getString(6);
+                            userDetail.addLine3 = resultSet.getString(7);
+                            userDetail.city = resultSet.getString(8);
+                            userDetail.state = resultSet.getString(9);
+                            userDetail.phones = (String[]) resultSet.getArray(10).getArray();
+                            userDetail.profileImage = resultSet.getString(11);
+                            userDetailList.add(userDetail);
+                        }
+                    }
 
                 } else
                     throw new Exception("DB connection is null");
@@ -217,6 +297,76 @@ public class CycleMeetingTerritory {
             throw new NotAuthorizedException("");
         }
     }
+
+    /***
+     *  Method is used to get All Assesments user's details.
+     *
+     * @param assesmentId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<CycleMeetingTerritory> getAllUserDetailsOfAssesment(int assesmentId,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            List<CycleMeetingTerritory> userDetailList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+
+            try {
+                if (con != null) {
+                    stmt = con
+                            .prepareStatement(" SELECT u.id,u.username,u.firstname,u.lastname,(uf.address).addline1," +
+                                    " (uf.address).addline2,(uf.address).addline3,(uf.address).city," +
+                                    " (uf.address).state,(uf.address).phone,uf.profileimage" +
+                                    " from master.users u " +
+                                    " left join "+schemaName+".userprofile uf on uf.userid = u.id" +
+                                    " WHERE id = ANY((SELECT userid from "+schemaName+".onthegocontenttest WHERE id = ?) :: int[]) ");
+                    stmt.setInt(1, assesmentId);
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next())
+                    {
+                        CycleMeetingTerritory userDetail = new CycleMeetingTerritory();
+                        userDetail.userId = resultSet.getInt(1);
+                        userDetail.username = resultSet.getString(2);
+                        userDetail.fullname = resultSet.getString(3) + " " + resultSet.getString(4);
+                        userDetail.addLine1 = resultSet.getString(5);
+                        userDetail.addLine2 = resultSet.getString(6);
+                        userDetail.addLine3 = resultSet.getString(7);
+                        userDetail.city = resultSet.getString(8);
+                        userDetail.state = resultSet.getString(9);
+                        userDetail.phones = (String[]) resultSet.getArray(10).getArray();
+                        userDetail.profileImage = resultSet.getString(11);
+                        userDetailList.add(userDetail);
+                    }
+
+                } else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
+                        resultSet.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+            }
+            return userDetailList;
+        }
+        else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+
     /***
      *  Insert Cyclemeeting Territory in database
      *  if Cyclemeeting id already exist then delete that records first

@@ -154,7 +154,7 @@ public class Pills {
 
             resp = Response.ok(
                     mapper.writeValueAsString(Pill
-                            .getAllPillsOfUser(divId, (LoggedInUser) crc
+                            .getAllPillsOfUser((LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);

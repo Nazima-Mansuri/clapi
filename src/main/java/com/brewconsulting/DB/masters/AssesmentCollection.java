@@ -587,21 +587,21 @@ public class AssesmentCollection {
 
                 Array quesArr = con.createArrayOf("int", quesId);
 
-                stmt = con.prepareStatement("SELECT id,questionids FROM " + schemaName + ".onthegoassessmentactual" +
+                stmt = con.prepareStatement("SELECT id,questionids FROM " + schemaName + ".onthegoassesmentactual" +
                         " WHERE testid = ? ");
                 stmt.setInt(1, testId);
                 resultSet = stmt.executeQuery();
                 if (!resultSet.next()) {
                     System.out.println(" In IF ...");
                     stmt = con.prepareStatement(" INSERT  INTO " + schemaName
-                            + ".onthegoassessmentactual( testid, questionids,israndom)" +
+                            + ".onthegoassesmentactual( testid, questionids,israndom)" +
                             " VALUES (?, ?, ?)");
                     stmt.setInt(1,testId );
                     stmt.setArray(2, quesArr);
                     stmt.setBoolean(3, isRandom);
                     stmt.executeUpdate();
                 } else {
-                    stmt = con.prepareStatement(" UPDATE " + schemaName + ".onthegoassessmentactual" +
+                    stmt = con.prepareStatement(" UPDATE " + schemaName + ".onthegoassesmentactual" +
                             " SET questionids = ?, israndom = ? " +
                             " WHERE  id = ? ");
                     stmt.setArray(1, quesArr);

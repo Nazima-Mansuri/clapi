@@ -230,13 +230,14 @@ public class Assesment {
                 stmt = con.prepareStatement(" INSERT  INTO " +schemaName+
                         ".onthegocontenttest( assesmentname, testinstruction, testendnote, " +
                         " startdate, enddate, scorecorrect, scoreincorrect, " +
-                        "  duration,userid, " +
-                        " territories, divid, createdon, createdby) VALUES(?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);
+                        "  duration,userid,territories, divid, createdon, createdby,timeperquestion," +
+                        " applyscoring,showfeedback,allowreview,applyinterval) " +
+                        " VALUES(?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);
                 stmt.setString(1,node.get("name").asText());
                 stmt.setString(2,"");
                 stmt.setString(3,"");
-                stmt.setTimestamp(4, Timestamp.valueOf(node.get("startDate").asText()+":00"));
-                stmt.setTimestamp(5, Timestamp.valueOf(node.get("endDate").asText()+":00"));
+                stmt.setTimestamp(4, Timestamp.valueOf(node.get("startDate").asText()));
+                stmt.setTimestamp(5, Timestamp.valueOf(node.get("endDate").asText()));
                 stmt.setArray(6,scoreCrArr);
                 stmt.setArray(7,scoreInCrArr);
                 stmt.setObject(8, "00:00");
@@ -245,6 +246,12 @@ public class Assesment {
                 stmt.setInt(11,node.get("divId").asInt());
                 stmt.setTimestamp(12, new Timestamp((new java.util.Date()).getTime()));
                 stmt.setInt(13, loggedInUser.id);
+                stmt.setArray(14,scoreCrArr);
+                stmt.setBoolean(15,false);
+                stmt.setBoolean(16,false);
+                stmt.setBoolean(17,false);
+                stmt.setBoolean(18,false);
+
 
                 result = stmt.executeUpdate();
                 if (result == 0)
@@ -371,8 +378,8 @@ public class Assesment {
                     stmt.setString(1,node.get("name").asText());
                     stmt.setArray(2,terrArr);
                     stmt.setArray(3,userIdArr);
-                    stmt.setTimestamp(4, Timestamp.valueOf(node.get("startDate").asText()+":00"));
-                    stmt.setTimestamp(5, Timestamp.valueOf(node.get("endDate").asText()+":00"));
+                    stmt.setTimestamp(4, Timestamp.valueOf(node.get("startDate").asText()));
+                    stmt.setTimestamp(5, Timestamp.valueOf(node.get("endDate").asText()));
                     stmt.setInt(6,node.get("id").asInt());
 
                     affectedRows = stmt.executeUpdate();
@@ -420,11 +427,12 @@ public class Assesment {
                 {
                     Array correctScoreArray = null;
                     Array inCorrectScoreArray = null;
+                    Array diffTimeArray = null;
 
                     stmt = con.prepareStatement(" UPDATE "+schemaName+".onthegocontenttest " +
                             " SET  testinstruction=?, testendnote=?, testdescription = ?, " +
-                            " applyscoring=?, scorecorrect=?, scoreincorrect=?, showfeedback=?, duration=?," +
-                            " applytimeperquestion=?, allowreview=?, randomdelivery = ? " +
+                            " applyscoring=?, scorecorrect=?, scoreincorrect=?, showfeedback=?, duration=CAST (? as INTERVAL )," +
+                            " applytimeperquestion=?, allowreview=?, randomdelivery = ?,timeperquestion=? " +
                             " WHERE id = ? ");
 
                     if (node.has("Instruction"))
@@ -471,18 +479,40 @@ public class Assesment {
 
                     stmt.setBoolean(7, node.get("showFeedBack").asBoolean());
 
+                    stmt.setBoolean(9, node.get("TimeLimitation").get("IsApplyTimePerQuestion").asBoolean());
+
+                    if (node.get("TimeLimitation").get("IsTimeLimitation").asBoolean()) {
+
+                        if (node.get("TimeLimitation").get("IsApplyTimePerQuestion").asBoolean()) {
+                            Integer[] differentTime = new Integer[node.get("TimeLimitation").get("DifferentTime").size()];
+
+                            for (int i = 0; i < node.get("TimeLimitation").get("DifferentTime").size(); i++) {
+                                differentTime[i] = node.get("TimeLimitation").get("DifferentTime").get(i).asInt();
+                            }
+                            diffTimeArray = con.createArrayOf("int", differentTime);
+                        } else {
+                            Integer[] differentTime = new Integer[]{};
+                            diffTimeArray = con.createArrayOf("int", differentTime);
+                        }
+                    } else {
+                        Integer[] differentTime = new Integer[]{};
+                        diffTimeArray = con.createArrayOf("int", differentTime);
+                    }
+
+                    stmt.setArray(12, diffTimeArray);
+
                     if (node.get("TimeLimitation").has("FixedTime"))
                         stmt.setObject(8, node.get("TimeLimitation").get("FixedTime").asText());
                     else
                         stmt.setObject(8, "00:00");
 
-                    stmt.setBoolean(9, node.get("TimeLimitation").get("IsApplyTimePerQuestion").asBoolean());
+
 
                     stmt.setBoolean(10, node.get("AllowReview").asBoolean());
 
                     stmt.setBoolean(11,node.get("randomDelivery").asBoolean());
 
-                    stmt.setInt(12,node.get("id").asInt());
+                    stmt.setInt(13,node.get("id").asInt());
 
                     affectedRows = stmt.executeUpdate();
 
@@ -509,9 +539,9 @@ public class Assesment {
     }
 
     /***
-     *  Method is used to get All setting details of Assesment.
+     * Method is used to get All setting details of Assesment.
      *
-     * @param assesmentId
+     * @param testId
      * @param loggedInUser
      * @return
      * @throws Exception
@@ -530,7 +560,8 @@ public class Assesment {
             Assesment assesmentSetting;
             try {
                     stmt = con.prepareStatement("SELECT testinstruction, testendnote,testdescription, applyscoring, " +
-                            " scorecorrect, scoreincorrect, showfeedback, duration, applytimeperquestion, allowreview,randomdelivery " +
+                            " scorecorrect, scoreincorrect, showfeedback, duration, applytimeperquestion," +
+                            " allowreview,randomdelivery,applyinterval,timeperquestion " +
                             " FROM " + schemaName + ".onthegocontenttest " +
                             " WHERE  id = ? ");
                     stmt.setInt(1, testId);
@@ -570,6 +601,16 @@ public class Assesment {
                         assesmentSetting.TimeLimitation = new HashMap();
                         assesmentSetting.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(9));
                         assesmentSetting.TimeLimitation.put("FixedTime", resultSet.getString(8));
+
+                        HashMap DifferentTime = new HashMap();
+                        Integer[] diffArr = (Integer[]) resultSet.getArray(13).getArray();
+                        if (diffArr.length > 0 && diffArr.length == 3) {
+                            DifferentTime.put("Low", diffArr[0]);
+                            DifferentTime.put("Medium", diffArr[1]);
+                            DifferentTime.put("High", diffArr[2]);
+                        }
+
+                        assesmentSetting.TimeLimitation.put("DifferentTime", DifferentTime);
 
                         assesmentSetting.AllowReview = resultSet.getBoolean(10);
                         assesmentSetting.randomDelivery = resultSet.getBoolean(11);

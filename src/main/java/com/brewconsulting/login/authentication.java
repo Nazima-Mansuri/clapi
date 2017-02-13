@@ -4,6 +4,7 @@ import com.brewconsulting.DB.masters.ForgotPassword;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.DB.masters.User;
 import com.brewconsulting.DB.masters.UserViews;
+import com.brewconsulting.masters.Mem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -187,8 +188,8 @@ public class authentication {
             else
             {
                 try {
-//                    boolean isExist = Mem.getToken("refreshToken",refreshToken);
-                    boolean isExist = false;
+                    boolean isExist = Mem.getToken("refreshToken",refreshToken);
+//                    boolean isExist = false;
                     if(!isExist) {
                         Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
                         JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
@@ -230,8 +231,8 @@ public class authentication {
 
                             node.put("accessToken", bldr.compact());
 
-//                            Mem.deleteData(user.id + "#DEACTIVATED");
-//                            Mem.deleteData(user.username + "#ROLECHANGED");
+                            Mem.deleteData(user.id + "#DEACTIVATED");
+                            Mem.deleteData(user.username + "#ROLECHANGED");
                             resp = Response.ok(node.toString()).build();
 
                         } else {

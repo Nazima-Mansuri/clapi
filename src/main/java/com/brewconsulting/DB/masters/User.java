@@ -347,7 +347,7 @@ public class User {
             stmt.setInt(1, loggedInUser.id);
             ResultSet resultSet = stmt.executeQuery();
 
-//            boolean data = Mem.getData(loggedInUser.id + "#DEACTIVATED");
+            boolean data = Mem.getData(loggedInUser.id + "#DEACTIVATED");
 
                 if (resultSet.next()) {
                     isActive = resultSet.getBoolean(1);
@@ -390,7 +390,9 @@ public class User {
                         return null;
                     }
                 }
-        }  finally {
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
             if (stmt != null)
                 if (!stmt.isClosed())
                     stmt.close();

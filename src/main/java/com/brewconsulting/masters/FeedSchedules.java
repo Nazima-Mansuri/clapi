@@ -70,7 +70,51 @@ public class FeedSchedules {
         return resp;
     }
 
+    /***
+     *
+     *
+     * @param feedScheduleId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("{feedScheduleId}/{status}")
+    public Response getAllDeliveredPills(@PathParam("feedScheduleId") int feedScheduleId,
+                                         @PathParam("status") String status,
+                                         @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
 
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.deliveredFeedsView.class).writeValueAsString(FeedSchedule
+                            .getDeliveredData(feedScheduleId,status,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Feeds \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+
+
+    /***
+     *
+     *
+     * @param crc
+     * @return
+     */
     @GET
     @Produces("application/json")
     @Secured

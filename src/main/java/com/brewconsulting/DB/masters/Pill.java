@@ -142,13 +142,19 @@ public class Pill {
             try {
                 if (con != null) {
 
-                    stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                    /*stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
                             " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
                             " FROM " + schemaName + ".pills p " +
                             " WHERE id = ANY(SELECT pillid " +
                             "  FROM "+schemaName+".feeddelivery WHERE userid = ?)" +
                             " ORDER BY createdate ");
-                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(1,loggedInUser.id);*/
+
+
+                    stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                            " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
+                            " FROM " + schemaName + ".pills p " +
+                            " ORDER BY createdate ");
                     resultSet = stmt.executeQuery();
                     while (resultSet.next()) {
                         Pill pill = new Pill();
@@ -164,14 +170,14 @@ public class Pill {
 
                         String options = resultSet.getString(7);
                         pill.question = new HashMap();
-                        pill.question.put("questiontext",resultSet.getString(6));
+                        pill.question.put("questiontext", resultSet.getString(6));
 
-                        if(options != null)
-                            pill.question.put("answeroptions",options.split(","));
+                        if (options != null)
+                            pill.question.put("answeroptions", options.split(","));
 
-                        pill.question.put("answertext",resultSet.getString(8));
-                        pill.question.put("scorecorrect",resultSet.getString(9));
-                        pill.question.put("scoreincorrect",resultSet.getDouble(10));
+                        pill.question.put("answertext", resultSet.getString(8));
+                        pill.question.put("scorecorrect", resultSet.getString(9));
+                        pill.question.put("scoreincorrect", resultSet.getDouble(10));
                         pill.products = (Integer[]) resultSet.getArray(11).getArray();
                         pill.keywords = (String[]) resultSet.getArray(12).getArray();
                         pill.createdate = resultSet.getTimestamp(13);
@@ -224,7 +230,7 @@ public class Pill {
      * @return
      * @throws Exception
      */
-    public static Pill getPillById(int pillId,LoggedInUser loggedInUser) throws Exception {
+    public static Pill getPillById(int pillId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Read") ||
                 Permissions.isAuthorised(userRole, Pill).equals("Write")) {
@@ -243,7 +249,7 @@ public class Pill {
                             " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
                             " FROM " + schemaName + ".pills p " +
                             " WHERE id = ? ");
-                    stmt.setInt(1,pillId);
+                    stmt.setInt(1, pillId);
                     resultSet = stmt.executeQuery();
                     while (resultSet.next()) {
                         pill = new Pill();
@@ -259,14 +265,14 @@ public class Pill {
 
                         String options = resultSet.getString(7);
                         pill.question = new HashMap();
-                        pill.question.put("questiontext",resultSet.getString(6));
+                        pill.question.put("questiontext", resultSet.getString(6));
 
-                        if(options != null)
-                            pill.question.put("answeroptions",options.split(","));
+                        if (options != null)
+                            pill.question.put("answeroptions", options.split(","));
 
-                        pill.question.put("answertext",resultSet.getString(8));
-                        pill.question.put("scorecorrect",resultSet.getString(9));
-                        pill.question.put("scoreincorrect",resultSet.getDouble(10));
+                        pill.question.put("answertext", resultSet.getString(8));
+                        pill.question.put("scorecorrect", resultSet.getString(9));
+                        pill.question.put("scoreincorrect", resultSet.getDouble(10));
                         pill.products = (Integer[]) resultSet.getArray(11).getArray();
                         pill.keywords = (String[]) resultSet.getArray(12).getArray();
                         pill.createdate = resultSet.getTimestamp(13);
@@ -318,7 +324,7 @@ public class Pill {
      * @return
      * @throws Exception
      */
-    public static List<Pill> getAllPillsByDivision(int divId,LoggedInUser loggedInUser) throws Exception {
+    public static List<Pill> getAllPillsByDivision(int divId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Read") ||
                 Permissions.isAuthorised(userRole, Pill).equals("Write")) {
@@ -331,17 +337,16 @@ public class Pill {
 
             try {
                 if (con != null) {
-                    if(divId != -1)
-                    {
+                    if (divId != -1) {
                         stmt = con.prepareStatement(" SELECT p.id, p.divid, title, body, questiontype, questiontext, answeroptions, " +
                                 " answertext, scorecorrect, scoreincorrect, products, keywords, p.createdate, p.createby," +
                                 " u.username,u.firstname,u.lastname,(uf.address).city,(uf.address).state,(uf.address).phone,d.name " +
                                 " FROM " + schemaName + ".pills p " +
                                 " left join master.users u on u.id = p.createby " +
-                                " left join "+schemaName+".userprofile uf on uf.userid = p.createby " +
-                                " left join "+schemaName+".divisions d on d.id = p.divid " +
+                                " left join " + schemaName + ".userprofile uf on uf.userid = p.createby " +
+                                " left join " + schemaName + ".divisions d on d.id = p.divid " +
                                 " WHERE divid = ? ORDER BY p.createdate ");
-                        stmt.setInt(1,divId);
+                        stmt.setInt(1, divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             Pill pill = new Pill();
@@ -358,20 +363,20 @@ public class Pill {
                             String options = resultSet.getString(7);
 
                             pill.question = new HashMap();
-                            pill.question.put("questiontext",resultSet.getString(6));
+                            pill.question.put("questiontext", resultSet.getString(6));
 
-                            if(options != null)
-                                pill.question.put("answeroptions",options.split(","));
+                            if (options != null)
+                                pill.question.put("answeroptions", options.split(","));
 
-                            pill.question.put("answertext",resultSet.getString(8));
-                            pill.question.put("scorecorrect",resultSet.getString(9));
-                            pill.question.put("scoreincorrect",resultSet.getDouble(10));
+                            pill.question.put("answertext", resultSet.getString(8));
+                            pill.question.put("scorecorrect", resultSet.getString(9));
+                            pill.question.put("scoreincorrect", resultSet.getDouble(10));
                             pill.products = (Integer[]) resultSet.getArray(11).getArray();
                             pill.keywords = (String[]) resultSet.getArray(12).getArray();
                             pill.createdate = resultSet.getTimestamp(13);
                             pill.createby = resultSet.getInt(14);
                             pill.userDetails = new ArrayList<>();
-                            pill.userDetails.add(new UserDetail(resultSet.getInt(14),resultSet.getString(15),resultSet.getString(16),resultSet.getString(17),resultSet.getString(18),resultSet.getString(19), (String[]) resultSet.getArray(20).getArray()));
+                            pill.userDetails.add(new UserDetail(resultSet.getInt(14), resultSet.getString(15), resultSet.getString(16), resultSet.getString(17), resultSet.getString(18), resultSet.getString(19), (String[]) resultSet.getArray(20).getArray()));
                             pill.divName = resultSet.getString(21);
 
                             pill.pillImages = new ArrayList<>();
@@ -395,16 +400,14 @@ public class Pill {
                             }
                             pillList.add(pill);
                         }
-                    }
-                    else
-                    {
+                    } else {
                         stmt = con.prepareStatement(" SELECT p.id, p.divid, title, body, questiontype, questiontext, answeroptions, " +
                                 " answertext, scorecorrect, scoreincorrect, products, keywords, p.createdate, p.createby," +
                                 " u.username,u.firstname,u.lastname,(uf.address).city,(uf.address).state,(uf.address).phone,d.name " +
                                 " FROM " + schemaName + ".pills p " +
                                 " left join master.users u on u.id = p.createby " +
-                                " left join "+schemaName+".userprofile uf on uf.userid = p.createby " +
-                                " left join "+schemaName+".divisions d on d.id = p.divid ");
+                                " left join " + schemaName + ".userprofile uf on uf.userid = p.createby " +
+                                " left join " + schemaName + ".divisions d on d.id = p.divid ");
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             Pill pill = new Pill();
@@ -420,20 +423,20 @@ public class Pill {
 
                             String options = resultSet.getString(7);
                             pill.question = new HashMap();
-                            pill.question.put("questiontext",resultSet.getString(6));
+                            pill.question.put("questiontext", resultSet.getString(6));
 
-                            if(options != null)
-                                pill.question.put("answeroptions",options.split(","));
+                            if (options != null)
+                                pill.question.put("answeroptions", options.split(","));
 
-                            pill.question.put("answertext",resultSet.getString(8));
-                            pill.question.put("scorecorrect",resultSet.getString(9));
-                            pill.question.put("scoreincorrect",resultSet.getDouble(10));
+                            pill.question.put("answertext", resultSet.getString(8));
+                            pill.question.put("scorecorrect", resultSet.getString(9));
+                            pill.question.put("scoreincorrect", resultSet.getDouble(10));
                             pill.products = (Integer[]) resultSet.getArray(11).getArray();
                             pill.keywords = (String[]) resultSet.getArray(12).getArray();
                             pill.createdate = resultSet.getTimestamp(13);
                             pill.createby = resultSet.getInt(14);
                             pill.userDetails = new ArrayList<>();
-                            pill.userDetails.add(new UserDetail(resultSet.getInt(14),resultSet.getString(15),resultSet.getString(16),resultSet.getString(17),resultSet.getString(18),resultSet.getString(19), (String[]) resultSet.getArray(20).getArray()));
+                            pill.userDetails.add(new UserDetail(resultSet.getInt(14), resultSet.getString(15), resultSet.getString(16), resultSet.getString(17), resultSet.getString(18), resultSet.getString(19), (String[]) resultSet.getArray(20).getArray()));
                             pill.divName = resultSet.getString(21);
 
                             pill.pillImages = new ArrayList<>();
@@ -480,13 +483,12 @@ public class Pill {
 
     /***
      *
-     * @param divId
+     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Pill> getAllPillsOfUser(int divId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Pill> getAllPillsOfUser(LoggedInUser loggedInUser) throws Exception {
 
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Read") ||
@@ -503,113 +505,14 @@ public class Pill {
             try {
                 if (con != null) {
 
-                        stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
-                                " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
-                                " FROM " + schemaName + ".pills p WHERE id = ANY((select pills from "+schemaName+".feeds f " +
-                                " left join "+schemaName+".feedschedule fs on fs.feedid = f.id " +
-                                " where ? = ANY(userid :: int[])) :: int[]) ");
-                            stmt.setInt(1, loggedInUser.id);
-                            pillResultSet = stmt.executeQuery();
-                            while (pillResultSet.next()) {
-                                Pill pill = new Pill();
-                                pill.id = pillResultSet.getInt(1);
-                                pill.divid = pillResultSet.getInt(2);
-                                pill.title = pillResultSet.getString(3);
-                                pill.body = pillResultSet.getString(4);
-                                pill.questiontype = pillResultSet.getString(5);
-                                if (!pillResultSet.getString(5).equals("NONE"))
-                                    pill.isQuestion = true;
-                                else
-                                    pill.isQuestion = false;
-
-                                String options = pillResultSet.getString(7);
-                                pill.question = new HashMap();
-                                pill.question.put("questiontext",pillResultSet.getString(6));
-
-                                if(options != null)
-                                    pill.question.put("answeroptions",options.split(","));
-
-                                pill.question.put("answertext",pillResultSet.getString(8));
-                                pill.question.put("scorecorrect",pillResultSet.getString(9));
-                                pill.question.put("scoreincorrect",pillResultSet.getDouble(10));
-                                pill.products = (Integer[]) pillResultSet.getArray(11).getArray();
-                                pill.keywords = (String[]) pillResultSet.getArray(12).getArray();
-                                pill.createdate = pillResultSet.getTimestamp(13);
-                                pill.createby = pillResultSet.getInt(14);
-                                pill.pillImages = new ArrayList<>();
-
-                                stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
-                                        " videothumbnailurl, mediatype " +
-                                        " FROM " + schemaName + ".pillsmedia WHERE pillid = ?  ");
-                                stmt.setInt(1, pillResultSet.getInt(1));
-                                contentSet = stmt.executeQuery();
-                                while (contentSet.next()) {
-
-                                    if (contentSet.getString(6).equalsIgnoreCase("image")) {
-                                        pill.isImage = true;
-                                        pill.pillImages.add(contentSet.getString(2));
-                                    }
-
-                                    if (contentSet.getString(6).equalsIgnoreCase("video")) {
-                                        pill.isVideo = true;
-                                        pill.pillVideo = contentSet.getString(2);
-                                    }
-                                }
-                                pillList.add(pill);
-                            }
-
-                } else
-                    throw new Exception("DB connection is null");
-            } finally {
-                if (con != null)
-                    if (!con.isClosed())
-                        con.close();
-                if (stmt != null)
-                    if (!stmt.isClosed())
-                        stmt.close();
-                if (resultSet != null)
-                    if (!resultSet.isClosed())
-                        resultSet.close();
-            }
-            return pillList;
-        } else {
-            throw new NotAuthorizedException("");
-        }
-    }
-
-    /***
-     *
-     * @param feedId
-     * @param loggedInUser
-     * @return
-     * @throws Exception
-     */
-    public static List<Pill> getAllPillsOfFeed(int feedId,LoggedInUser loggedInUser) throws Exception
-    {
-
-        int userRole = loggedInUser.roles.get(0).roleId;
-        if (Permissions.isAuthorised(userRole, Pill).equals("Read") ||
-                Permissions.isAuthorised(userRole, Pill).equals("Write")) {
-            Connection con = DBConnectionProvider.getConn();
-            PreparedStatement stmt = null;
-            List<Pill> pillList = new ArrayList<>();
-            String schemaName = loggedInUser.schemaName;
-            ResultSet contentSet = null;
-            ResultSet pillResultSet = null;
-            Integer[] pillsId = new Integer[0];
-
-            try {
-                if (con != null) {
-
-                    stmt = con.prepareStatement(" SELECT p.id, p.divid, title, body, questiontype, questiontext, answeroptions, " +
-                                    " answertext, scorecorrect, scoreincorrect, products, keywords, p.createdate, p.createby " +
-                            " FROM "+schemaName+".feeds f " +
-                            " left join "+schemaName+".pills p on p.id = ANY(pills :: int[])" +
-                            " WHERE f.id = ? ");
-                    stmt.setInt(1,feedId);
+                    stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                            " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
+                            " FROM " + schemaName + ".pills p WHERE id = ANY((select pills from " + schemaName + ".feeds f " +
+                            " left join " + schemaName + ".feedschedule fs on fs.feedid = f.id " +
+                            " where ? = ANY(userid :: int[])) :: int[]) ORDER BY createdate DESC");
+                    stmt.setInt(1, loggedInUser.id);
                     pillResultSet = stmt.executeQuery();
-                    while (pillResultSet.next())
-                    {
+                    while (pillResultSet.next()) {
                         Pill pill = new Pill();
                         pill.id = pillResultSet.getInt(1);
                         pill.divid = pillResultSet.getInt(2);
@@ -623,14 +526,14 @@ public class Pill {
 
                         String options = pillResultSet.getString(7);
                         pill.question = new HashMap();
-                        pill.question.put("questiontext",pillResultSet.getString(6));
+                        pill.question.put("questiontext", pillResultSet.getString(6));
 
-                        if(options != null)
-                            pill.question.put("answeroptions",options.split(","));
+                        if (options != null)
+                            pill.question.put("answeroptions", options.split(","));
 
-                        pill.question.put("answertext",pillResultSet.getString(8));
-                        pill.question.put("scorecorrect",pillResultSet.getString(9));
-                        pill.question.put("scoreincorrect",pillResultSet.getDouble(10));
+                        pill.question.put("answertext", pillResultSet.getString(8));
+                        pill.question.put("scorecorrect", pillResultSet.getString(9));
+                        pill.question.put("scoreincorrect", pillResultSet.getDouble(10));
                         pill.products = (Integer[]) pillResultSet.getArray(11).getArray();
                         pill.keywords = (String[]) pillResultSet.getArray(12).getArray();
                         pill.createdate = pillResultSet.getTimestamp(13);
@@ -666,6 +569,123 @@ public class Pill {
                 if (stmt != null)
                     if (!stmt.isClosed())
                         stmt.close();
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return pillList;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     * @param feedId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Pill> getAllPillsOfFeed(int feedId, LoggedInUser loggedInUser) throws Exception {
+
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if (Permissions.isAuthorised(userRole, Pill).equals("Read") ||
+                Permissions.isAuthorised(userRole, Pill).equals("Write")) {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            List<Pill> pillList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+            ResultSet contentSet = null;
+            ResultSet pillResultSet = null;
+            Integer[] pillsId = new Integer[0];
+
+            try {
+                if (con != null) {
+
+                    stmt = con.prepareStatement(" SELECT p.id, p.divid, title, body, questiontype, questiontext, answeroptions, " +
+                            " answertext, scorecorrect, scoreincorrect, products, keywords, p.createdate, p.createby,u.username,u.firstname," +
+                            " u.lastname,(uf.address).city, (uf.address).state, (uf.address).phone " +
+                            " FROM " + schemaName + ".feeds f " +
+                            " left join " + schemaName + ".pills p on p.id = ANY(pills :: int[]) " +
+                            " left join master.users u on u.id = p.createby" +
+                            " left join "+schemaName+".userprofile uf on uf.userid = p.createby  " +
+                            " WHERE f.id = ? ORDER BY p.createdate DESC ");
+                    stmt.setInt(1, feedId);
+                    pillResultSet = stmt.executeQuery();
+                    while (pillResultSet.next()) {
+                        if (pillResultSet.getInt(1) > 0) {
+                            Pill pill = new Pill();
+                            pill.id = pillResultSet.getInt(1);
+                            pill.divid = pillResultSet.getInt(2);
+                            pill.title = pillResultSet.getString(3);
+                            pill.body = pillResultSet.getString(4);
+                            pill.questiontype = pillResultSet.getString(5);
+
+                            if (pillResultSet.getString(5) != null) {
+                                if (!pillResultSet.getString(5).equals("NONE"))
+                                    pill.isQuestion = true;
+                                else
+                                    pill.isQuestion = false;
+                            }
+
+                            String options = pillResultSet.getString(7);
+                            pill.question = new HashMap();
+                            pill.question.put("questiontext", pillResultSet.getString(6));
+
+                            if (options != null)
+                                pill.question.put("answeroptions", options.split(","));
+
+                            pill.question.put("answertext", pillResultSet.getString(8));
+                            pill.question.put("scorecorrect", pillResultSet.getString(9));
+                            pill.question.put("scoreincorrect", pillResultSet.getDouble(10));
+
+                            if (pillResultSet.getArray(11) != null) {
+                                pill.products = (Integer[]) pillResultSet.getArray(11).getArray();
+                            }
+
+                            if (pillResultSet.getArray(12) != null) {
+                                pill.keywords = (String[]) pillResultSet.getArray(12).getArray();
+                            }
+                            pill.createdate = pillResultSet.getTimestamp(13);
+                            pill.createby = pillResultSet.getInt(14);
+                            pill.userDetails = new ArrayList<>();
+                            pill.userDetails.add(new UserDetail(pillResultSet.getInt(14),pillResultSet.getString(15),pillResultSet.getString(16),
+                                    pillResultSet.getString(17),pillResultSet.getString(18),
+                                    pillResultSet.getString(19), (String[]) pillResultSet.getArray(20).getArray()));
+
+                            pill.pillImages = new ArrayList<>();
+
+                            stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
+                                    " videothumbnailurl, mediatype " +
+                                    " FROM " + schemaName + ".pillsmedia WHERE pillid = ?  ");
+                            stmt.setInt(1, pillResultSet.getInt(1));
+                            contentSet = stmt.executeQuery();
+                            while (contentSet.next()) {
+
+                                if (contentSet.getString(6).equalsIgnoreCase("image")) {
+                                    pill.isImage = true;
+                                    pill.pillImages.add(contentSet.getString(2));
+                                }
+
+                                if (contentSet.getString(6).equalsIgnoreCase("video")) {
+                                    pill.isVideo = true;
+                                    pill.pillVideo = contentSet.getString(2);
+                                }
+                            }
+                            pillList.add(pill);
+
+                        }
+                    }
+
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
                 if (pillResultSet != null)
                     if (!pillResultSet.isClosed())
                         pillResultSet.close();
@@ -678,6 +698,7 @@ public class Pill {
             throw new NotAuthorizedException("");
         }
     }
+
     /***
      *
      *
@@ -852,9 +873,9 @@ public class Pill {
      * @throws Exception
      */
     public static int updatePills(int divid, String title, String body, String questiontype, String questiontext,
-                               String answeroptions, String answertext, int scorecorrect, String scoreincorrect,
-                               String products, String keywords, List<String> filePath, List<String> fileTypes,
-                               boolean isUpdate,int id,LoggedInUser loggedInUser) throws Exception {
+                                  String answeroptions, String answertext, int scorecorrect, String scoreincorrect,
+                                  String products, String keywords, List<String> filePath, List<String> fileTypes,
+                                  boolean isUpdate, int id, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Write")) {
             String schemaname = loggedInUser.schemaName;
@@ -896,7 +917,7 @@ public class Pill {
                     keyArr = con.createArrayOf("text", keywordArr);
                 }
 
-                stmt = con.prepareStatement(" UPDATE "+schemaname+".pills " +
+                stmt = con.prepareStatement(" UPDATE " + schemaname + ".pills " +
                         " SET divid=?, title=?, body=?, questiontype= CAST(? AS master.questiontype), questiontext=?, answeroptions=?," +
                         " answertext=?, scorecorrect=?, scoreincorrect=?, products=?, keywords=? " +
                         " WHERE id = ? ");
@@ -934,14 +955,13 @@ public class Pill {
 
                 stmt.setArray(11, keyArr);
 
-                stmt.setInt(12,id);
+                stmt.setInt(12, id);
 
                 result = stmt.executeUpdate();
 
-                if(isUpdate)
-                {
-                    stmt = con.prepareStatement(" DELETE FROM "+schemaname+".pillsmedia WHERE pillid = ? ");
-                    stmt.setInt(1,id);
+                if (isUpdate) {
+                    stmt = con.prepareStatement(" DELETE FROM " + schemaname + ".pillsmedia WHERE pillid = ? ");
+                    stmt.setInt(1, id);
                     stmt.executeUpdate();
 
                     for (int i = 0; i < filePath.size(); i++) {
@@ -1111,13 +1131,13 @@ public class Pill {
 
                         String options = result.getString(7);
                         pill.question = new HashMap();
-                        pill.question.put("questiontext",result.getString(6));
-                        if(options != null)
-                            pill.question.put("answeroptions",options.split(","));
+                        pill.question.put("questiontext", result.getString(6));
+                        if (options != null)
+                            pill.question.put("answeroptions", options.split(","));
 
-                        pill.question.put("answertext",result.getString(8));
-                        pill.question.put("scorecorrect",result.getString(9));
-                        pill.question.put("scoreincorrect",result.getDouble(10));
+                        pill.question.put("answertext", result.getString(8));
+                        pill.question.put("scorecorrect", result.getString(9));
+                        pill.question.put("scoreincorrect", result.getDouble(10));
                         pill.products = (Integer[]) result.getArray(11).getArray();
                         pill.keywords = (String[]) result.getArray(12).getArray();
                         pill.createdate = result.getTimestamp(13);
