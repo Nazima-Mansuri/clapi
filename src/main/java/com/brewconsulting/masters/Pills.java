@@ -243,9 +243,11 @@ public class Pills {
         Response resp = null;
         String fileName = null;
         String uploadFilePath = "";
+        String resizeURL = "";
         String fileType = "";
         List<String> filePath = new ArrayList<>();
         List<String> fileTypes = new ArrayList<>();
+        List<String> resizedList = new ArrayList<>();
 
         try {
 
@@ -269,8 +271,11 @@ public class Pills {
                                     + fileFormDataContentDisposition.getFileName();
                             // This method is used to store image in AWS bucket.
                             uploadFilePath = Question.writeToFile(pillimages.get(i).getValueAs(InputStream.class), fileName);
+                            resizeURL = "https://s3.amazonaws.com/com.brewconsulting.client1/resized/resized-Question/"+fileName;
                             System.out.println("FILE PATH : " + uploadFilePath);
                             filePath.add(uploadFilePath);
+                            resizedList.add(resizeURL);
+                            System.out.println(" Resize Path : " + resizeURL);
                             System.out.println("SIZE : " + filePath.size());
 
                         } else {
@@ -284,7 +289,7 @@ public class Pills {
 
             int pillId = Pill.addPills(divid, title, body, questionType,
                     questiontext, answeroptions, answertext, scorecorrect, scoreincorrect, products, keywords,
-                    filePath, fileTypes, (LoggedInUser) crc.getProperty("userObject"));
+                    filePath, fileTypes, resizedList, (LoggedInUser) crc.getProperty("userObject"));
 
             if (pillId != 0)
                 resp = Response.ok("{\"id\":" + pillId + "}").build();
@@ -355,9 +360,11 @@ public class Pills {
         Response resp = null;
         String fileName = null;
         String uploadFilePath = "";
+        String resizeURL= "";
         String fileType = "";
         List<String> filePath = new ArrayList<>();
         List<String> fileTypes = new ArrayList<>();
+        List<String> resizeList = new ArrayList<>();
 
         try {
             properties.load(inp);
@@ -381,7 +388,10 @@ public class Pills {
                                         + fileFormDataContentDisposition.getFileName();
                                 // This method is used to store image in AWS bucket.
                                 uploadFilePath = Question.writeToFile(pillimages.get(i).getValueAs(InputStream.class), fileName);
+                                resizeURL = "https://s3.amazonaws.com/com.brewconsulting.client1/resized/resized-Question/"+fileName;
+
                                 filePath.add(uploadFilePath);
+                                resizeList.add(resizeURL);
                             } else {
                                 uploadFilePath = null;
                             }
@@ -394,7 +404,7 @@ public class Pills {
 
             int affectedRows = Pill.updatePills(divid, title, body, questionType,
                     questiontext, answeroptions, answertext, scorecorrect, scoreincorrect, products, keywords,
-                    filePath, fileTypes, isUpdate, id, (LoggedInUser) crc.getProperty("userObject"));
+                    filePath, fileTypes,resizeList, isUpdate, id, (LoggedInUser) crc.getProperty("userObject"));
 
             resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
 

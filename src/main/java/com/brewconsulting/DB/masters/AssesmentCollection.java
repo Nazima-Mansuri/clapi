@@ -7,10 +7,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -647,14 +650,14 @@ public class AssesmentCollection {
             double score = 0;
             int resultId = 0;
             String actualAnswer = "";
-            String QuestionJson = "" , complexitylevel ="";
+            String QuestionJson = "", complexitylevel = "";
             boolean isReviewQuestion = false;
             String UserAnswerJson = String.valueOf(node.get("answerJson"));
 
             try {
                 if (con != null) {
                     stmt = con.prepareStatement(" SELECT applyscoring,scorecorrect,scoreincorrect FROM " + schemaname
-                            + ".onthegocontenttest WHERE testid = ? ");
+                            + ".onthegocontenttest WHERE id = ? ");
                     stmt.setInt(1, node.get("testId").asInt());
                     resultSet = stmt.executeQuery();
                     while (resultSet.next()) {
@@ -676,42 +679,40 @@ public class AssesmentCollection {
                         isReviewQuestion = resultSet.getBoolean(5);
 
 
-                        stmt = con.prepareStatement(" SELECT count(*) AS Count FROM "+schemaname+".onthegoassessmentactualresult" +
+                        stmt = con.prepareStatement(" SELECT count(*) AS Count FROM " + schemaname + ".onthegoassessmentactualresult" +
                                 " WHERE testid = ? AND userid = ? AND questionid = ? ");
-                        stmt.setInt(1,node.get("testId").asInt());
-                        stmt.setInt(2,node.get("userId").asInt());
-                        stmt.setInt(3,node.get("questionId").asInt());
+                        stmt.setInt(1, node.get("testId").asInt());
+                        stmt.setInt(2, node.get("userId").asInt());
+                        stmt.setInt(3, node.get("questionId").asInt());
                         updateResultSet = stmt.executeQuery();
-                        while (updateResultSet.next())
-                        {
-                            if(updateResultSet.getInt("Count") > 0)
-                            {
-                                stmt = con.prepareStatement(" UPDATE "+schemaname+".onthegoassessmentactualresult " +
+                        while (updateResultSet.next()) {
+                            if (updateResultSet.getInt("Count") > 0) {
+                                stmt = con.prepareStatement(" UPDATE " + schemaname + ".onthegoassessmentactualresult " +
                                         " SET answerjson = ?, questionjson = ?, useranswerjson = ?, score = ?,isattemp = ? ,isreview = ?" +
                                         " WHERE testid = ? AND userid = ? AND questionid = ?");
                                 stmt.setString(1, actualAnswer);
                                 stmt.setString(2, QuestionJson);
-                                stmt.setString(3, UserAnswerJson );
+                                stmt.setString(3, UserAnswerJson);
 
-                                if(isReviewQuestion) {
+                                if (isReviewQuestion) {
                                     stmt.setDouble(4, 0);
                                     stmt.setBoolean(6, true);
 
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
-                                        stmt.setBoolean(5,false);
-                                    }else{
-                                        stmt.setBoolean(5,true);
+                                            String.valueOf(node.get("answerJson")).equals("")) {
+                                        stmt.setBoolean(5, false);
+                                    } else {
+                                        stmt.setBoolean(5, true);
                                     }
-                                } else{
+                                } else {
                                     stmt.setBoolean(6, false);
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("")) {
                                         stmt.setDouble(4, 0);
-                                        stmt.setBoolean(5,false);
-                                    }else {
+                                        stmt.setBoolean(5, false);
+                                    } else {
                                         if (isApplyScoring) {
                                             if (actualAnswer.equals(String.valueOf(node.get("answerJson")))) {
                                                 if (correctScore.length > 0) {
@@ -742,19 +743,20 @@ public class AssesmentCollection {
                                                 stmt.setDouble(4, -score);
                                                 stmt.setBoolean(5, true);
                                             }
-                                        }else{
+                                        } else {
                                             stmt.setDouble(4, 0);
                                             stmt.setBoolean(5, true);
                                         }
                                     }
                                 }
 
-                                stmt.setInt(7,node.get("testId").asInt());
-                                stmt.setInt(8,node.get("userId").asInt());
-                                stmt.setInt(9,node.get("questionId").asInt());
-                            }
-                            else
-                            {
+                                stmt.setInt(7, node.get("testId").asInt());
+                                stmt.setInt(8, node.get("userId").asInt());
+                                stmt.setInt(9, node.get("questionId").asInt());
+
+                                stmt.executeUpdate();
+
+                            } else {
                                 stmt = con.prepareStatement(" INSERT INTO " + schemaname
                                         + ".onthegoassessmentactualresult(questionid, userid, answerjson, questionjson, " +
                                         " useranswerjson, score,testid,isattemp,isreview)" +
@@ -767,25 +769,25 @@ public class AssesmentCollection {
                                 System.out.println("Answer JSON : " + String.valueOf(node.get("answerJson")));
                                 stmt.setString(5, String.valueOf(node.get("answerJson")));
 
-                                if(isReviewQuestion) {
+                                if (isReviewQuestion) {
                                     stmt.setDouble(6, 0);
                                     stmt.setBoolean(9, true);
 
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
-                                        stmt.setBoolean(8,false);
-                                    }else{
-                                        stmt.setBoolean(8,true);
+                                            String.valueOf(node.get("answerJson")).equals("")) {
+                                        stmt.setBoolean(8, false);
+                                    } else {
+                                        stmt.setBoolean(8, true);
                                     }
-                                } else{
+                                } else {
                                     stmt.setBoolean(9, false);
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("")) {
                                         stmt.setDouble(6, 0);
-                                        stmt.setBoolean(8,false);
-                                    }else {
+                                        stmt.setBoolean(8, false);
+                                    } else {
                                         if (isApplyScoring) {
                                             if (actualAnswer.equals(String.valueOf(node.get("answerJson")))) {
                                                 if (correctScore.length > 0) {
@@ -816,7 +818,7 @@ public class AssesmentCollection {
                                                 stmt.setDouble(6, -score);
                                                 stmt.setBoolean(8, true);
                                             }
-                                        }else{
+                                        } else {
                                             stmt.setDouble(6, 0);
                                             stmt.setBoolean(8, true);
                                         }
@@ -827,7 +829,7 @@ public class AssesmentCollection {
                                 result = stmt.executeUpdate();
 
                                 if (result == 0)
-                                    throw new SQLException("Add Question Collection Failed.");
+                                    throw new SQLException("Add Assesment Question Collection Failed.");
 
                                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                                 if (generatedKeys.next())

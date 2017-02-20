@@ -35,10 +35,9 @@ public class Assesments {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     *  Produces All Assesment details.
      *
-     * @param isGroup
-     * @param agendaId
+     *
+     * @param divId
      * @param crc
      * @return
      */
@@ -109,6 +108,150 @@ public class Assesments {
         return resp;
     }
 
+    /***
+     *
+     *
+     * @param testId
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Path("set/{testId}")
+    @Secured
+    public Response getAssesmentCollectionSet(@PathParam("testId") int testId, @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.quesSetView.class).writeValueAsString(Assesment
+                            .getAssesmentQuestionSet(testId, (LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        }
+        catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Questions Collections\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+
+    /***
+     *
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("running")
+    public Response getRunningAssesments(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(Assesment
+                            .getRunningAssesment((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Running Assesments\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+    /***
+     *
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("expired")
+    public Response getExpiredAssesments(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(Assesment
+                            .getExpiredAssesment((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Expired Assesments\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
+
+    /***
+     *
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
+    @Path("past")
+    public Response getPastAssesments(@Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writerWithView(UserViews.scoreView.class).writeValueAsString(Assesment
+                            .getPastExamScore((LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to Past Assesments\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+
+        return resp;
+    }
     /***
      *  Add Assesments
      *

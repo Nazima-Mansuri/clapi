@@ -106,7 +106,7 @@ public class SettingContent {
                                 content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
                             }
                             content.createBy = result.getInt(6);
-                            content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                            content.createdOn = result.getTimestamp(7);
                             content.userDetails = new ArrayList<>();
                             content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
                             content.divName = result.getString(14);
@@ -137,7 +137,7 @@ public class SettingContent {
                                 content.url = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
                             }
                             content.createBy = result.getInt(6);
-                            content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                            content.createdOn = result.getTimestamp(7);
                             content.userDetails = new ArrayList<>();
                             content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
                             content.divName = result.getString(14);
@@ -213,7 +213,7 @@ public class SettingContent {
                     content.divId = result.getInt(4);
                     content.url = result.getString(5);
                     content.createBy = result.getInt(6);
-                    content.createdOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                    content.createdOn = result.getTimestamp(7);
                     content.userDetails = new ArrayList<>();
                     content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
                     content.divName = result.getString(14);

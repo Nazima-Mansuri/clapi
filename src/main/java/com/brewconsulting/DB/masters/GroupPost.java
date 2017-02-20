@@ -88,7 +88,7 @@ public class GroupPost {
                     groupPost.id = result.getInt(1);
                     groupPost.groupId = result.getInt(2);
                     groupPost.postText = result.getString(3);
-                    groupPost.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                    groupPost.createDate = result.getTimestamp(4);
                     groupPost.createBy = result.getInt(5);
                     groupPost.userDetails = new ArrayList<>();
                     groupPost.userDetails.add(new UserDetail(result.getInt(5),result.getString(6),result.getString(7),result.getString(8),result.getString(9),result.getString(10), (String[]) result.getArray(11).getArray()));
@@ -98,7 +98,7 @@ public class GroupPost {
                     if (groupPostReply.id != 0) {
                         groupPostReply.groupPostId = result.getInt(14);
                         groupPostReply.replyText = result.getString(15);
-                        groupPostReply.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(16).getTime())));
+                        groupPostReply.createDate = result.getTimestamp(16);
                         groupPostReply.createBy = result.getInt(17);
                         groupPostReply.userDetails = new ArrayList<>();
                         groupPostReply.userDetails.add(new UserDetail(result.getInt(17),result.getString(18),result.getString(19),result.getString(20),result.getString(21),result.getString(22), (String[]) result.getArray(23).getArray()));

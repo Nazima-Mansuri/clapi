@@ -114,12 +114,12 @@ public class History {
 								.getArray();
 					history.empnumber = result.getString(11);
 					if(!result.getTimestamp(12).equals(result.getTimestamp(13))) {
-						history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
-						history.endDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(13).getTime())));
+						history.effectDate = result.getTimestamp(12);
+						history.endDate = result.getTimestamp(13);
 					}
 					else
 					{
-						history.effectDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(12).getTime())));
+						history.effectDate = result.getTimestamp(12);
 						history.endDate = null;
 
 					}

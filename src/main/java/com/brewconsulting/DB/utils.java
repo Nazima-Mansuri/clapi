@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 public class utils {
@@ -35,8 +36,15 @@ public class utils {
 	 * @throws ParseException
 	 */
 	public static Date stringToDate(String strDate) throws ParseException {
+
 		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
 		Date date = sdf.parse(strDate);
-		return date;
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(Calendar.HOUR_OF_DAY, 10);
+		DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+		System.out.println(dateFormat.parse(dateFormat.format(cal.getTime())));
+
+		return dateFormat.parse(dateFormat.format(cal.getTime()));
 	}
 }

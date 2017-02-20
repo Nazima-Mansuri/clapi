@@ -184,20 +184,39 @@ public class Feed {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             int affectedRow = 0;
+            ResultSet resultSet = null;
             String schemaName = loggedInUser.schemaName;
 
             try {
+
                 Integer[] feeds = new Integer[node.withArray("pills").size()];
                 for (int i = 0; i < node.withArray("pills").size(); i++) {
                     feeds[i] = node.withArray("pills").get(i).asInt();
                 }
                 Array feedArr = con.createArrayOf("int", feeds);
 
-                stmt = con.prepareStatement(" UPDATE " + schemaName + ".feeds SET pills = ? " +
-                        " WHERE id = ? ");
-                stmt.setArray(1, feedArr);
-                stmt.setInt(2, node.get("id").asInt());
-                affectedRow = stmt.executeUpdate();
+                stmt = con.prepareStatement(" SELECT pills FROM "+schemaName+".feeds WHERE id = ? ");
+                stmt.setInt(1,node.get("id").asInt());
+                resultSet = stmt.executeQuery();
+                while (resultSet.next())
+                {
+                    Integer[] pills = (Integer[]) resultSet.getArray(1).getArray();
+                    if(pills.length > 0)
+                    {
+                        stmt = con.prepareStatement(" UPDATE "+ schemaName +".feeds " +
+                                " SET  pills = array_cat(pills, ? ) WHERE id = ? ");
+                    }
+                    else
+                    {
+                        stmt = con.prepareStatement(" UPDATE " + schemaName + ".feeds SET pills = ? " +
+                                " WHERE id = ? ");
+                    }
+
+                    stmt.setArray(1, feedArr);
+                    stmt.setInt(2, node.get("id").asInt());
+                    affectedRow = stmt.executeUpdate();
+                }
+
             } finally {
                 if (con != null)
                     if (!con.isClosed())

@@ -31,9 +31,9 @@ public class AssesmentCollections {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
+     *  Produces Assesment collections
      *
-     * @param isGroup
-     * @param agendaId
+     * @param testId
      * @param crc
      * @return
      */
@@ -257,7 +257,7 @@ public class AssesmentCollections {
     }
 
     /***
-     *  remove questio from collection
+     *  remove question from collection
      *
      * @param input
      * @param crc
@@ -303,7 +303,6 @@ public class AssesmentCollections {
      *  Delete Assesment collection.
      *
      * @param id
-     * @param isGroup
      * @param crc
      * @return
      */

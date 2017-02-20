@@ -336,9 +336,9 @@ public class Territory {
                         territory.username = result.getString(13);
                         territory.firstname = result.getString(14);
                         territory.lastname = result.getString(15);
-                        territory.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(16).getTime())));
+                        territory.createDate = result.getTimestamp(16);
                         territory.createBy = result.getInt(17);
-                        territory.updatedate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(18).getTime())));
+                        territory.updatedate = result.getTimestamp(18);
                         territory.updateby = result.getInt(19);
                         if(territory.firstname != null && territory.lastname != null)
                             tw.text = territory.name +" - " + territory.firstname + " " + territory.lastname;

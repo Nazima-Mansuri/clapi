@@ -100,7 +100,7 @@ public class CycleMeetingPost {
                     meetingPost.id = result.getInt(1);
                     meetingPost.cycleMeetingId = result.getInt(2);
                     meetingPost.postText = result.getString(3);
-                    meetingPost.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                    meetingPost.createDate = result.getTimestamp(4);
                     meetingPost.createBy = result.getInt(5);
                     meetingPost.userId = (Integer[]) result.getArray(6).getArray();
                     meetingPost.userDetails = new ArrayList<>();
@@ -111,7 +111,7 @@ public class CycleMeetingPost {
                     if (meetingPostReply.id != 0) {
                         meetingPostReply.cycleMeetingPostId = result.getInt(15);
                         meetingPostReply.replyText = result.getString(16);
-                        meetingPostReply.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(17).getTime())));
+                        meetingPostReply.createDate = result.getTimestamp(17);
                         meetingPostReply.createBy = result.getInt(18);
                         meetingPostReply.userDetails = new ArrayList<>();
                         meetingPostReply.userDetails.add(new UserDetail(result.getInt(18),result.getString(19),result.getString(20),result.getString(21),result.getString(22),result.getString(23), (String[]) result.getArray(24).getArray()));
@@ -262,7 +262,7 @@ public class CycleMeetingPost {
                         meetingPost.id = result.getInt(1);
                         meetingPost.cycleMeetingId = result.getInt(2);
                         meetingPost.postText = result.getString(3);
-                        meetingPost.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                        meetingPost.createDate = result.getTimestamp(4);
                         meetingPost.createBy = result.getInt(5);
                         meetingPost.userId = (Integer[]) result.getArray(6).getArray();
                         meetingPost.userDetails = new ArrayList<>();

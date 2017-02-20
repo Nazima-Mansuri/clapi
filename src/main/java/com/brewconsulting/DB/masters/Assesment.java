@@ -12,6 +12,7 @@ import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -20,7 +21,7 @@ import java.util.List;
  */
 public class Assesment {
 
-   @JsonView(UserViews.assesmentView.class)
+   @JsonView({UserViews.assesmentView.class,UserViews.scoreView.class})
     @JsonProperty("id")
     public int id;
 
@@ -28,17 +29,17 @@ public class Assesment {
     @JsonProperty("divId")
     public int divId;
 
-    @JsonView(UserViews.assesmentView.class)
+    @JsonView({UserViews.assesmentView.class,UserViews.quesSetView.class,UserViews.scoreView.class})
     @JsonProperty("name")
     public String name;
 
-    @JsonView(UserViews.assesmentView.class)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:MM:ss")
+    @JsonView({UserViews.assesmentView.class,UserViews.scoreView.class})
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     @JsonProperty("startDate")
     public java.util.Date startDate;
 
-    @JsonView(UserViews.assesmentView.class)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:MM:ss")
+    @JsonView({UserViews.assesmentView.class,UserViews.scoreView.class})
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     @JsonProperty("endDate")
     public java.util.Date endDate;
 
@@ -63,38 +64,49 @@ public class Assesment {
     @JsonProperty("userDetails")
     public ArrayList<UserDetail> userDetails;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("Instruction")
     public String Instrction;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("EndNote")
     public String EndNote;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("Description")
     public String Description;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("showFeedBack")
     public boolean showFeedBack;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("randomDelivery")
     public boolean randomDelivery;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("AllowReview")
     public boolean AllowReview;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("Scoring")
     public HashMap Scoring;
 
-    @JsonView({UserViews.settingView.class})
+    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
     @JsonProperty("TimeLimitation")
     public HashMap TimeLimitation;
 
+    @JsonView(UserViews.quesSetView.class)
+    @JsonProperty("questions")
+    public List<Question> questions;
+
+    @JsonView(UserViews.scoreView.class)
+    @JsonProperty("isExpired")
+    public boolean isExpired;
+
+    @JsonView(UserViews.scoreView.class)
+    @JsonProperty("score")
+    public int score;
 
 
     public Assesment() {
@@ -130,7 +142,7 @@ public class Assesment {
                             " FROM "+schemaName+".onthegocontenttest o " +
                             " left join master.users u on u.id = o.createdby " +
                             " LEFT JOIN "+ schemaName+".userprofile uf on uf.userid = o.createdby" +
-                            " WHERE divid = ? ");
+                            " WHERE divid = ? ORDER BY o.createdon DESC");
                     stmt.setInt(1,divId);
                     resultSet = stmt.executeQuery();
                     while (resultSet.next())
@@ -633,5 +645,346 @@ public class Assesment {
         } else {
             throw new NotAuthorizedException("");
         }
+    }
+
+
+    /***
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Assesment> getRunningAssesment(LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
+                Permissions.isAuthorised(userRole,20).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            ResultSet countSet = null;
+            List<Assesment> assesmentList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+
+            try
+            {
+                if(con != null)
+                {
+                    stmt = con.prepareStatement("SELECT o.id,assesmentname, o.startdate, o.enddate," +
+                            "  o.userid, o.divid, o.createdon, o.createdby " +
+                            " FROM "+schemaName+".onthegocontenttest o " +
+                            " WHERE ? = ANY(userid :: int[]) " +
+                            " AND (now() BETWEEN o.startdate AND o.enddate OR now() = o.startdate OR now() = o.enddate)");
+
+                    stmt.setInt(1,loggedInUser.id);
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next())
+                    {
+                        stmt = con.prepareStatement(" SELECT Count(*) As Count FROM "+schemaName+".onthegoassessmentactualresult" +
+                                " WHERE testid = ? AND userid = ? ");
+                        stmt.setInt(1,resultSet.getInt(1));
+                        stmt.setInt(2,loggedInUser.id);
+                        countSet = stmt.executeQuery();
+                        while (countSet.next())
+                        {
+                            Assesment assesment = new Assesment();
+
+                            if(countSet.getInt("Count")== 0)
+                            {
+
+                                assesment.id = resultSet.getInt(1);
+                                assesment.name = resultSet.getString(2);
+                                assesment.startDate = resultSet.getTimestamp(3);
+                                assesment.endDate = resultSet.getTimestamp(4);
+
+                                assesmentList.add(assesment);
+                            }
+
+                        }
+                    }
+                }
+                else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+            }
+            return assesmentList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+
+    /***
+     *
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Assesment> getExpiredAssesment(LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
+                Permissions.isAuthorised(userRole,20).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            ResultSet countSet = null;
+            List<Assesment> assesmentList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+
+            try
+            {
+                if(con != null)
+                {
+                    stmt = con.prepareStatement("SELECT o.id,assesmentname,o.startdate,o.enddate " +
+                            " FROM "+schemaName+".onthegocontenttest o " +
+                            " WHERE ? = ANY(userid :: int[]) AND now() > enddate ");
+
+                    stmt.setInt(1,loggedInUser.id);
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next())
+                    {
+                        Assesment assesment = new Assesment();
+                        assesment.id = resultSet.getInt(1);
+                        assesment.name = resultSet.getString(2);
+                        assesment.startDate = resultSet.getTimestamp(3);
+                        assesment.endDate = resultSet.getTimestamp(4);
+
+                        stmt = con.prepareStatement(" SELECT Count(*) As Count FROM "+schemaName+".onthegoassessmentactualresult" +
+                                " WHERE testid = ? AND userid = ? ");
+                        stmt.setInt(1,resultSet.getInt(1));
+                        stmt.setInt(2,loggedInUser.id);
+                        countSet = stmt.executeQuery();
+                        while (countSet.next())
+                        {
+                            if(countSet.getInt("Count") > 0)
+                            {
+                                assesment.isExpired = false;
+                            }
+                            else
+                            {
+                                assesment.isExpired = true;
+                            }
+                        }
+                        assesmentList.add(assesment);
+                    }
+                }
+                else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+            }
+            return assesmentList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+
+    /***
+     *
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Assesment> getPastExamScore(LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
+                Permissions.isAuthorised(userRole,20).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            ResultSet resultSet = null;
+            ResultSet countSet = null;
+            List<Assesment> assesmentList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+
+            try
+            {
+                if(con != null)
+                {
+                    stmt = con.prepareStatement(" SELECT sum(score),testid,assesmentname,startdate,enddate " +
+                            " FROM "+schemaName+".onthegoassessmentactualresult r " +
+                            " left join "+schemaName+".onthegocontenttest o on o.id = testid " +
+                            " WHERE isattemp = true AND r.userid = ? GROUP BY(testid,assesmentname,startdate,enddate)");
+                    stmt.setInt(1,loggedInUser.id);
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next())
+                    {
+                        Assesment assesment = new Assesment();
+                        assesment.score = resultSet.getInt(1);
+                        assesment.name = resultSet.getString(3);
+                        assesment.startDate = resultSet.getTimestamp(4);
+                        assesment.endDate = resultSet.getTimestamp(5);
+                        assesmentList.add(assesment);
+                    }
+
+                  /*  stmt = con.prepareStatement("SELECT id,assesmentname,startdate,enddate "+
+                            " FROM " + schemaName + ".onthegocontenttest " +
+                            " WHERE ? = ANY(userid :: int[]) AND now() > enddate ");
+                    stmt.setInt(1,loggedInUser.id);
+                    resultSet = stmt.executeQuery();
+                    while (resultSet.next())
+                    {
+                        Assesment assesment = new Assesment();
+                        assesment.id = resultSet.getInt(1);
+                        assesment.name = resultSet.getString(2);
+                        assesment.startDate = resultSet.getTimestamp(3);
+                        assesment.endDate = resultSet.getTimestamp(4);
+
+                        stmt = con.prepareStatement(" SELECT userid,sum(score) " +
+                                " FROM "+schemaName+".onthegoassessmentactualresult  " +
+                                " WHERE isattemp = true AND testid = ? AND userid = ? GROUP BY(userid,testid)");
+                        stmt.setInt(1,resultSet.getInt(1));
+                        stmt.setInt(2,loggedInUser.id);
+                        countSet = stmt.executeQuery();
+                        while (countSet.next())
+                        {
+                            assesment.score = resultSet.getInt(1);
+                        }
+                        assesmentList.add(assesment);
+                    }*/
+                }
+                else
+                    throw new Exception("DB connection is null");
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(resultSet != null)
+                    if(!resultSet.isClosed())
+                        resultSet.close();
+                if(countSet != null)
+                    if(!countSet.isClosed())
+                        countSet.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+            }
+            return assesmentList;
+        }
+        else
+        {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *
+     *
+     * @param testId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Assesment> getAssesmentQuestionSet(int testId, LoggedInUser loggedInUser) throws Exception {
+        Connection con = DBConnectionProvider.getConn();
+        PreparedStatement stmt = null;
+        List<Assesment> collectionList = new ArrayList<>();
+        ResultSet resultSet = null;
+        String schemaname = loggedInUser.schemaName;
+        boolean isRandom = false;
+        Integer[] quesArray = new Integer[0];
+
+        try {
+
+            stmt = con.prepareStatement(" SELECT questionids,israndom " +
+                    " FROM " + schemaname + ".onthegoassesmentactual WHERE testid = ? ");
+            stmt.setInt(1, testId);
+            resultSet = stmt.executeQuery();
+
+            while (resultSet.next()) {
+                quesArray = (Integer[]) resultSet.getArray(1).getArray();
+            }
+
+            stmt = con.prepareStatement(" SELECT assesmentname, testinstruction, testendnote, testdescription," +
+                    " allowreview, timeperquestion,applytimeperquestion, duration,randomdelivery " +
+                    " FROM " + schemaname + ".onthegocontenttest " +
+                    " WHERE id  = ? ");
+
+            stmt.setInt(1, testId);
+            resultSet = stmt.executeQuery();
+            while (resultSet.next()) {
+                Assesment assesment = new Assesment();
+
+                assesment.name = resultSet.getString(1);
+                assesment.Instrction = resultSet.getString(2);
+                assesment.EndNote = resultSet.getString(3);
+                assesment.Description = resultSet.getString(4);
+                assesment.AllowReview = resultSet.getBoolean(5);
+
+                assesment.TimeLimitation = new HashMap();
+                assesment.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(7));
+                assesment.TimeLimitation.put("FixedTime", resultSet.getString(8));
+
+                HashMap DifferentTime = new HashMap();
+                if(resultSet.getArray(6) != null) {
+                    Integer[] diffArr = (Integer[]) resultSet.getArray(6).getArray();
+                    if (diffArr.length > 0 && diffArr.length == 3) {
+                        DifferentTime.put("Low", diffArr[0]);
+                        DifferentTime.put("Medium", diffArr[1]);
+                        DifferentTime.put("High", diffArr[2]);
+                    }
+                }
+
+                assesment.TimeLimitation.put("DifferentTime", DifferentTime);
+
+                assesment.randomDelivery = resultSet.getBoolean(9);
+                isRandom = resultSet.getBoolean(9);
+
+///                   questionCollectionList.add(collection);
+                assesment.questions = new ArrayList<>();
+
+                System.out.println("Length : " + quesArray.length);
+                for (int i = 0; i < quesArray.length; i++) {
+                    System.out.println("Array " + i + " : " + quesArray[i]);
+                    assesment.questions.add(com.brewconsulting.DB.masters.Question.getQuestionById(quesArray[i], loggedInUser));
+                }
+                collectionList.add(assesment);
+            }
+            if (isRandom) {
+                Collections.shuffle(collectionList);
+            }
+        }
+        finally {
+            if (con != null)
+                if (!con.isClosed())
+                    con.close();
+            if (stmt != null)
+                if (!stmt.isClosed())
+                    stmt.close();
+            if (resultSet != null)
+                if (!resultSet.isClosed())
+                    resultSet.close();
+        }
+        return collectionList;
     }
 }

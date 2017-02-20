@@ -152,7 +152,7 @@ public class Question {
                                         " left join " + schemaName + ".userprofile uf on uf.userid = q.updateby " +
                                         " left join " + schemaName + ".divisions d on d.id = q.division " +
                                         " WHERE division = ? " +
-                                        " ORDER BY q.createdate DESC ");
+                                        " ORDER BY q.updatedate DESC ");
                         stmt.setInt(1, divId);
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -196,7 +196,7 @@ public class Question {
                                         " left join master.users u on u.id = q.updateby" +
                                         " left join " + schemaName + ".userprofile uf on uf.userid = q.updateby " +
                                         " left join " + schemaName + ".divisions d on d.id = q.division " +
-                                        " ORDER BY q.createdate DESC ");
+                                        " ORDER BY q.updatedate DESC ");
                         result = stmt.executeQuery();
                         while (result.next()) {
                             Question question = new Question();

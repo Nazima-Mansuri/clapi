@@ -120,9 +120,9 @@ public class Note
                         note.title = result.getString(3);
                         note.description = result.getString(4);
                         note.category = result.getString(5);
-                        note.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        note.createOn = result.getTimestamp(6);
                         note.createBy = result.getInt(7);
-                        note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        note.updateOn = result.getTimestamp(8);
                         note.updateBy = result.getInt(9);
                         note.userDetails = new ArrayList<>();
                         note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
@@ -193,9 +193,9 @@ public class Note
                         groupNote.title = result.getString(3);
                         groupNote.description = result.getString(4);
                         groupNote.category = result.getString(5);
-                        groupNote.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        groupNote.createOn = result.getTimestamp(6);
                         groupNote.createBy = result.getInt(7);
-                        groupNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        groupNote.updateOn = result.getTimestamp(8);
                         groupNote.updateBy = result.getInt(9);
                         groupNote.userDetails = new ArrayList<>();
                         groupNote.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
@@ -439,9 +439,9 @@ public class Note
                         childNote.title = result.getString(2);
                         childNote.description = result.getString(3);
                         childNote.category = result.getString(4);
-                        childNote.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
+                        childNote.createOn = result.getTimestamp(5);
                         childNote.createBy = result.getInt(6);
-                        childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                        childNote.updateOn = result.getTimestamp(7);
                         childNote.updateBy = result.getInt(8);
                         childNote.userDetails = new ArrayList<>();
                         childNote.userDetails.add(new UserDetail(result.getInt(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13), (String[]) result.getArray(14).getArray()));
@@ -512,9 +512,9 @@ public class Note
                         childNote.title = result.getString(2);
                         childNote.description = result.getString(3);
                         childNote.category = result.getString(4);
-                        childNote.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(5).getTime())));
+                        childNote.createOn = result.getTimestamp(5);
                         childNote.createBy = result.getInt(6);
-                        childNote.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                        childNote.updateOn = result.getTimestamp(7);
                         childNote.updateBy = result.getInt(8);
                         childNote.userDetails = new ArrayList<>();
                         childNote.userDetails.add(new UserDetail(result.getInt(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13), (String[]) result.getArray(14).getArray()));

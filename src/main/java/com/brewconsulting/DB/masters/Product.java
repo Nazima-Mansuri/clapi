@@ -149,13 +149,9 @@ public class Product {
                             product.description = result.getString(4);
                             product.division = result.getInt(5);
                             product.isActive = result.getBoolean(6);
-                            product.createDate = new SimpleDateFormat("dd-MM-yyyy")
-                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
-                                            .format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                            product.createDate = result.getTimestamp(7);
                             product.createBy = result.getInt(8);
-                            product.updateDate = new SimpleDateFormat("dd-MM-yyyy")
-                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
-                                            .format(new java.sql.Date(result.getTimestamp(9).getTime())));
+                            product.updateDate = result.getTimestamp(9);
                             product.updateBy = result.getInt(10);
                             product.username = result.getString(11);
                             product.firstname = result.getString(12);
@@ -195,13 +191,9 @@ public class Product {
                             product.description = result.getString(4);
                             product.division = result.getInt(5);
                             product.isActive = result.getBoolean(6);
-                            product.createDate = new SimpleDateFormat("dd-MM-yyyy")
-                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
-                                            .format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                            product.createDate = result.getTimestamp(7);
                             product.createBy = result.getInt(8);
-                            product.updateDate = new SimpleDateFormat("dd-MM-yyyy")
-                                    .parse(new SimpleDateFormat("dd-MM-yyyy")
-                                            .format(new java.sql.Date(result.getTimestamp(9).getTime())));
+                            product.updateDate = result.getTimestamp(9);
                             product.updateBy = result.getInt(10);
                             product.username = result.getString(11);
                             product.firstname = result.getString(12);
@@ -282,13 +274,9 @@ public class Product {
                         product.description = result.getString(4);
                         product.division = result.getInt(5);
                         product.isActive = result.getBoolean(6);
-                        product.createDate = new SimpleDateFormat("dd-MM-yyyy")
-                                .parse(new SimpleDateFormat("dd-MM-yyyy")
-                                        .format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                        product.createDate = result.getTimestamp(7);
                         product.createBy = result.getInt(8);
-                        product.updateDate = new SimpleDateFormat("dd-MM-yyyy")
-                                .parse(new SimpleDateFormat("dd-MM-yyyy")
-                                        .format(new java.sql.Date(result.getTimestamp(9).getTime())));
+                        product.updateDate = result.getTimestamp(9);
                         product.updateBy = result.getInt(10);
                         product.username = result.getString(11);
                         product.firstname = result.getString(12);

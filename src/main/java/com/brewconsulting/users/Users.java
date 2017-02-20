@@ -256,7 +256,7 @@ public class Users {
     /***
      * Produces list of ROOT level Users.
      *
-     * @param id
+     * @param divId
      * @param crc
      * @return
      */
@@ -793,8 +793,6 @@ public class Users {
     /***
      *  Change password of User When user logged in First Time.
      *
-     * @param id
-     * @param input
      * @return
      */
     @PUT

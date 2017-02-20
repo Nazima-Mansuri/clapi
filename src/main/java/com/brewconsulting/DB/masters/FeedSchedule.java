@@ -239,7 +239,7 @@ public class FeedSchedule {
      * @return
      * @throws Exception
      */
-    public static List<FeedSchedule> recentlyDeliveredPills(LoggedInUser loggedInUser) throws Exception {
+    public static List<FeedSchedule> recentlyDeliveredPills(int divId,LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Feed).equals("Read") ||
                 Permissions.isAuthorised(userRole, Feed).equals("Write")) {
@@ -257,7 +257,12 @@ public class FeedSchedule {
                     if (loggedInUser.roles.get(0).roleName.equals("ROOT")) {
                         stmt = con.prepareStatement(" SELECT fd1.id,feed, pillid, deliverytime , " +
                                 " (SELECT count(fd.userid) from " + schemaName + ".feeddelivery fd where fd.pillid = fd1.pillid GROUP BY fd.pillid) as Total " +
-                                " FROM " + schemaName + ".feeddelivery fd1 GROUP BY fd1.id,pillid,feed,deliverytime");
+                                " FROM " + schemaName + ".feeddelivery fd1 " +
+                                " left join "+schemaName+".feedschedule fs on fs.id = fd1.feed" +
+                                " left join "+schemaName+".feeds f on f.id = fs.feedid " +
+                                " WHERE f.divid = ? " +
+                                " GROUP BY fd1.id,pillid,feed,deliverytime LIMIT 10");
+                        stmt.setInt(1,divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             FeedSchedule deliverFeed = new FeedSchedule();
@@ -286,8 +291,11 @@ public class FeedSchedule {
                     } else if (loggedInUser.roles.get(0).roleName.equals("MARKETING REPRESENTATIVE")) {
                         stmt = con.prepareStatement(" SELECT id,feed, pillid, deliverytime " +
                                 " FROM " + schemaName + ".feeddelivery fd " +
-                                " WHERE fd.userid = ? ");
+                                " left join "+schemaName+".feedschedule fs on fs.id = fd.feed" +
+                                " left join "+schemaName+".feeds f on f.id = fs.feedid " +
+                                " WHERE fd.userid = ? AND f.id = ? LIMIT 10 ");
                         stmt.setInt(1, loggedInUser.id);
+                        stmt.setInt(2,divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             FeedSchedule deliverFeed = new FeedSchedule();
@@ -353,6 +361,7 @@ public class FeedSchedule {
             String schemaName = loggedInUser.schemaName;
 
             try {
+
                 con.setAutoCommit(false);
 
                 Integer terr[] = new Integer[node.withArray("territories").size()];
@@ -428,6 +437,7 @@ public class FeedSchedule {
                 con.commit();
                 try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
+//                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
                     URL url = new URL("http://192.168.200.11:3010/api/tasks");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setDoOutput(true);
@@ -559,7 +569,8 @@ public class FeedSchedule {
                 affectedRow = stmt.executeUpdate();
                 try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
+//                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
+                    URL url = new URL("http://192.168.200.11:3010/api/tasks");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setDoOutput(true);
                     conn.setRequestMethod("POST");
@@ -674,7 +685,8 @@ public class FeedSchedule {
 
                 try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-                    URL url = new URL("http://52.73.14.171:3010/api/removetasks");
+//                    URL url = new URL("http://52.73.14.171:3010/api/removetasks");
+                    URL url = new URL("http://192.168.200.11:3010/api/removetasks");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setDoOutput(true);
                     conn.setRequestMethod("POST");
@@ -816,6 +828,54 @@ public class FeedSchedule {
         }
         else
         {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     *  Used to update pill Read time
+     *
+     * @param node
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static int updatePillReadTime(JsonNode node,LoggedInUser loggedInUser) throws Exception
+    {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if(Permissions.isAuthorised(userRole,Feed).equals("Write"))
+        {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            String schemaName = loggedInUser.schemaName;
+            int affectedRows = 0;
+            try
+            {
+                if(con != null)
+                {
+                    stmt = con.prepareStatement(" UPDATE "+schemaName+".feeddelivery SET readtime = ?,answertime = ?,answerjson = ? " +
+                            " WHERE userid = ? AND pillid = ? ");
+                    stmt.setTimestamp(1,new Timestamp((new Date()).getTime()));
+                    stmt.setTimestamp(2,new Timestamp((new Date()).getTime()));
+                    stmt.setString(3,node.get("answerJson").asText());
+                    stmt.setInt(4,loggedInUser.id);
+                    stmt.setInt(5,node.get("pillId").asInt());
+                    affectedRows = stmt.executeUpdate();
+                }
+                else
+                    throw new SQLException("DB Connection is null");
+            }
+            finally {
+                if(con != null)
+                    if(!con.isClosed())
+                        con.close();
+                if(stmt != null)
+                    if(!stmt.isClosed())
+                        stmt.close();
+            }
+            return affectedRows;
+        }
+        else {
             throw new NotAuthorizedException("");
         }
     }

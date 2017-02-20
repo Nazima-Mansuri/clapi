@@ -118,8 +118,8 @@ public class FeedSchedules {
     @GET
     @Produces("application/json")
     @Secured
-    @Path("deliveredPills")
-    public Response getDeliveredPills(@Context ContainerRequestContext crc) {
+    @Path("deliveredPills/{divId}")
+    public Response getDeliveredPills(@PathParam("divId") int divId,@Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -127,7 +127,7 @@ public class FeedSchedules {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.feedDeliveryView.class).writeValueAsString(FeedSchedule
-                            .recentlyDeliveredPills((LoggedInUser) crc
+                            .recentlyDeliveredPills(divId,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
@@ -219,6 +219,50 @@ public class FeedSchedules {
             logger.error("NotAuthorizedException",na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Feed Schedule.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        catch (IOException e) {
+            logger.error("IOException" ,e);
+            if (resp == null)
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Exception" ,e);
+            // TODO Auto-generated catch block
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+    /***
+     *
+     *
+     * @param input
+     * @param crc
+     * @return
+     */
+    @PUT
+    @Produces("application/json")
+    @Secured
+    @Consumes("application/json")
+    @Path("pillanswertime")
+    public Response updatePillAnswerTime(InputStream input,
+                                       @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            JsonNode node = mapper.readTree(input);
+            int affectedRows = FeedSchedule.updatePillReadTime(node,
+                    (LoggedInUser) crc.getProperty("userObject"));
+            resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
+        }catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException",na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to update Pill Answer time.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }

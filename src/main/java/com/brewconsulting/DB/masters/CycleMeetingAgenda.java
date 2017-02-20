@@ -524,9 +524,9 @@ public class CycleMeetingAgenda {
                         cycleMeetingAgenda.sessionDesc = result.getString(5);
                         cycleMeetingAgenda.sessionStartTime = result.getString(6);
                         cycleMeetingAgenda.sessionEndTime = result.getString(7);
-                        cycleMeetingAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
+                        cycleMeetingAgenda.createOn = result.getTimestamp(8);
                         cycleMeetingAgenda.createBy = result.getInt(9);
-                        cycleMeetingAgenda.updatedOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(10).getTime())));
+                        cycleMeetingAgenda.updatedOn = result.getTimestamp(10);
                         cycleMeetingAgenda.updatedBy = result.getInt(11);
                         cycleMeetingAgenda.contentType = result.getString(12);
                         cycleMeetingAgenda.sessionConductor = result.getString(13);

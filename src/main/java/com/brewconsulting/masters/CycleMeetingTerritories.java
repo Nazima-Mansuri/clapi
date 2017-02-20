@@ -398,7 +398,6 @@ public class CycleMeetingTerritories {
             System.out.println("Agenda Id : " + agendaId);
 
             System.out.println("Device List Size : " + allDetails.size());
-
             for (int i = 0; i < allDetails.size(); i++) {
                 deviceDetails = allDetails.get(i);
                 arr = deviceDetails.split(",");
@@ -436,18 +435,18 @@ public class CycleMeetingTerritories {
                     }
 
                     if (deviceOS.equalsIgnoreCase("iOS")) {
+                        /*ApnsService service =
+                                APNS.newService()
+                                        .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_Production.p12"), "lanetteam1")
+                                        .withProductionDestination()
+                                        .build();*/
                         ApnsService service =
                                 APNS.newService()
-                                        .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_APNS_Production.p12"), "lanetteam1")
-                                        .withProductionDestination()
-                                        .build();
-                       /* ApnsService service =
-                                APNS.newService()
-                                        .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_APNS_Development.p12"), "lanetteam1")
+                                        .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_Development.p12"), "lanetteam1")
                                         .withSandboxDestination()
-                                        .build();*/
+                                        .build();
 
-                        String payload = APNS.newPayload().alertBody("Exam Started.!").alertAction("Test").category("" + agendaId).build();
+                        String payload = APNS.newPayload().alertBody("Exam Started.!").alertAction("Test").customField("id",agendaId).build();
                         System.out.println("Payload : " + payload);
                         ApnsNotification apnresp = service.push(deviceToken, payload);
                         resp = Response.ok().

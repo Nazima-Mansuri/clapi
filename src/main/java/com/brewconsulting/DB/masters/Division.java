@@ -142,9 +142,9 @@ public class Division {
                                 div.id = result.getInt(1);
                                 div.name = result.getString(2);
                                 div.description = result.getString(3);
-                                div.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                                div.createDate = result.getTimestamp(4);
                                 div.createBy = result.getInt(5);
-                                div.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                                div.updateDate = result.getTimestamp(6);
                                 div.updateBy = result.getInt(7);
                                 div.username = result.getString(8);
                                 div.firstname = result.getString(9);
@@ -196,9 +196,9 @@ public class Division {
                                 div.id = result.getInt(1);
                                 div.name = result.getString(2);
                                 div.description = result.getString(3);
-                                div.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                                div.createDate = result.getTimestamp(4);
                                 div.createBy = result.getInt(5);
-                                div.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                                div.updateDate = result.getTimestamp(6);
                                 div.updateBy = result.getInt(7);
                                 div.username = result.getString(8);
                                 div.firstname = result.getString(9);
@@ -290,9 +290,9 @@ public class Division {
                         division.id = result.getInt(1);
                         division.name = result.getString(2);
                         division.description = result.getString(3);
-                        division.createDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(4).getTime())));
+                        division.createDate = result.getTimestamp(4);
                         division.createBy = result.getInt(5);
-                        division.updateDate = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(6).getTime())));
+                        division.updateDate = result.getTimestamp(6);
                         division.updateBy = result.getInt(7);
                         division.username = result.getString(8);
                         division.firstname = result.getString(9);

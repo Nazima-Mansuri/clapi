@@ -100,6 +100,9 @@ public class Pill {
     @JsonProperty("pillImages")
     public ArrayList<String> pillImages;
 
+    @JsonProperty("pillResizeImages")
+    public ArrayList<String> pillResizeImages;
+
     @JsonProperty("pillVideo")
     public String pillVideo;
 
@@ -142,19 +145,19 @@ public class Pill {
             try {
                 if (con != null) {
 
-                    /*stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                    stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
                             " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
                             " FROM " + schemaName + ".pills p " +
                             " WHERE id = ANY(SELECT pillid " +
                             "  FROM "+schemaName+".feeddelivery WHERE userid = ?)" +
                             " ORDER BY createdate ");
-                    stmt.setInt(1,loggedInUser.id);*/
+                    stmt.setInt(1,loggedInUser.id);
 
-
-                    stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                    /*stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
                             " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
                             " FROM " + schemaName + ".pills p " +
-                            " ORDER BY createdate ");
+                            " ORDER BY createdate ");*/
+
                     resultSet = stmt.executeQuery();
                     while (resultSet.next()) {
                         Pill pill = new Pill();
@@ -183,6 +186,7 @@ public class Pill {
                         pill.createdate = resultSet.getTimestamp(13);
                         pill.createby = resultSet.getInt(14);
                         pill.pillImages = new ArrayList<>();
+                        pill.pillResizeImages = new ArrayList<>();
 
                         stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
                                 " videothumbnailurl, mediatype " +
@@ -194,6 +198,7 @@ public class Pill {
                             if (contentSet.getString(6).equalsIgnoreCase("image")) {
                                 pill.isImage = true;
                                 pill.pillImages.add(contentSet.getString(2));
+                                pill.pillResizeImages.add(contentSet.getString(3));
                             }
 
                             if (contentSet.getString(6).equalsIgnoreCase("video")) {
@@ -345,7 +350,7 @@ public class Pill {
                                 " left join master.users u on u.id = p.createby " +
                                 " left join " + schemaName + ".userprofile uf on uf.userid = p.createby " +
                                 " left join " + schemaName + ".divisions d on d.id = p.divid " +
-                                " WHERE divid = ? ORDER BY p.createdate ");
+                                " WHERE divid = ? ORDER BY p.createdate DESC");
                         stmt.setInt(1, divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
@@ -407,7 +412,8 @@ public class Pill {
                                 " FROM " + schemaName + ".pills p " +
                                 " left join master.users u on u.id = p.createby " +
                                 " left join " + schemaName + ".userprofile uf on uf.userid = p.createby " +
-                                " left join " + schemaName + ".divisions d on d.id = p.divid ");
+                                " left join " + schemaName + ".divisions d on d.id = p.divid " +
+                                " ORDER BY p.createdate DESC");
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             Pill pill = new Pill();
@@ -720,7 +726,7 @@ public class Pill {
     public static int addPills(int divid, String title, String body, String questiontype, String questiontext,
                                String answeroptions, String answertext, int scorecorrect, String scoreincorrect,
                                String products, String keywords, List<String> filePath, List<String> fileTypes,
-                               LoggedInUser loggedInUser) throws Exception {
+                               List<String> resizeList,LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Write")) {
             String schemaname = loggedInUser.schemaName;
@@ -825,7 +831,7 @@ public class Pill {
 
                     stmt.setInt(1, pillId);
                     stmt.setString(2, filePath.get(i));
-                    stmt.setString(3, "");
+                    stmt.setString(3, resizeList.get(i));
                     stmt.setString(4, "");
                     stmt.setString(5, "");
                     stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
@@ -875,7 +881,8 @@ public class Pill {
     public static int updatePills(int divid, String title, String body, String questiontype, String questiontext,
                                   String answeroptions, String answertext, int scorecorrect, String scoreincorrect,
                                   String products, String keywords, List<String> filePath, List<String> fileTypes,
-                                  boolean isUpdate, int id, LoggedInUser loggedInUser) throws Exception {
+                                  List<String> resizeList,boolean isUpdate, int id,
+                                  LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Write")) {
             String schemaname = loggedInUser.schemaName;
@@ -971,7 +978,7 @@ public class Pill {
 
                         stmt.setInt(1, id);
                         stmt.setString(2, filePath.get(i));
-                        stmt.setString(3, "");
+                        stmt.setString(3, resizeList.get(i));
                         stmt.setString(4, "");
                         stmt.setString(5, "");
                         stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
@@ -1053,9 +1060,9 @@ public class Pill {
 
             try {
                 if (con != null) {
-                    String query = "SELECT id, divid, title, body, questiontype, questiontext, answeroptions, answertext," +
+                    String query = "SELECT p.id, divid, title, body, questiontype, questiontext, answeroptions, answertext," +
                             "  scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
-                            " FROM " + schemaName + ".pills WHERE divid = ? ";
+                            " FROM " + schemaName + ".pills p WHERE divid = ? ";
 
                     if (node.has("keywords")) {
                         if (node.withArray("keywords").size() > 0) {
@@ -1090,6 +1097,8 @@ public class Pill {
                         }
                     }
 
+                    query = query.concat(" AND NOT EXISTS (SELECT pills FROM "+schemaName+".feeds f WHERE f.id = ? AND p.id = ANY(pills :: int[]))");
+
                     stmt = con.prepareStatement(query);
                     System.out.println(" Query : " + query);
 
@@ -1115,6 +1124,8 @@ public class Pill {
                     if (isAuthor) {
                         stmt.setInt(index++, node.get("author").asInt());
                     }
+
+                    stmt.setInt(index++, node.get("feedId").asInt());
 
                     result = stmt.executeQuery();
                     while (result.next()) {

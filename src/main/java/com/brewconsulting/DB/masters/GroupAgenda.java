@@ -125,9 +125,9 @@ public class GroupAgenda {
                         groupAgenda.sessionStartTime = result.getString(4);
                         groupAgenda.sessionEndTime = result.getString(5);
                         groupAgenda.sessionConductor = result.getString(6);
-                        groupAgenda.createOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(7).getTime())));
+                        groupAgenda.createOn = result.getTimestamp(7);
                         groupAgenda.createBy = result.getInt(8);
-                        groupAgenda.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(9).getTime())));
+                        groupAgenda.updateOn = result.getTimestamp(9);
                         groupAgenda.updateBy = result.getInt(10);
                         groupAgenda.contentType = result.getString(11);
                         groupAgenda.groupId=groupId;
