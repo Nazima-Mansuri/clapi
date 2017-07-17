@@ -894,7 +894,7 @@ public class User {
                     con.commit();
                     return userid;
                 } else {
-                    throw new BadRequestException("Email Id is already Exist");
+                    throw new BadRequestException("email id is already exists");
                 }
             } catch (Exception ex) {
                 if (con != null)

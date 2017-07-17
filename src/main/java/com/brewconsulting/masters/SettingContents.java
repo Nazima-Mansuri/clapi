@@ -81,7 +81,7 @@ public class SettingContents {
     @Produces("application/json")
     @Path("{divId}/{agendaId}")
     @Secured
-    public Response getcontents(@PathParam("divId") int divId,@PathParam("agendaId") int agendaId,@Context ContainerRequestContext crc) {
+    public Response getcontents(@QueryParam("isGroup") boolean isGroup,@PathParam("divId") int divId,@PathParam("agendaId") int agendaId,@Context ContainerRequestContext crc) {
         Response resp = null;
 
         try {
@@ -90,7 +90,7 @@ public class SettingContents {
 
             resp = Response.ok(
                     mapper.writeValueAsString(SettingContent
-                            .getDivisionSpecificContent(divId,agendaId,(LoggedInUser) crc
+                            .getDivisionSpecificContent(divId,agendaId,isGroup,(LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         }   catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException ",na);

@@ -17,9 +17,8 @@ import java.sql.*;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Date;
-import java.util.List;
 
 public class GroupAgenda {
 
@@ -68,6 +67,7 @@ public class GroupAgenda {
     public ArrayList<Content> contentList;
 
     public static final int GroupAgenda = 9;
+
     // MAKE THE DEFAULT CONSTRUCTOR VISIBLE TO PACKAGE ONLY.
     GroupAgenda() {
 
@@ -76,10 +76,11 @@ public class GroupAgenda {
     public enum ContentType {
         ACTIVITY, INFO, TEST, MIXED;
     }
-    public enum DeliveryMode
-    {
-        WEB,APP;
+
+    public enum DeliveryMode {
+        WEB, APP;
     }
+
     /**
      * method for get group agenda by groupid and dayNo
      *
@@ -93,9 +94,8 @@ public class GroupAgenda {
             throws Exception {
         // TODO: check authorization of the user to see this data
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Read") ||
-                Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, GroupAgenda).equals("Read") ||
+                Permissions.isAuthorised(userRole, GroupAgenda).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
 
             Connection con = DBConnectionProvider.getConn();
@@ -130,20 +130,18 @@ public class GroupAgenda {
                         groupAgenda.updateOn = result.getTimestamp(9);
                         groupAgenda.updateBy = result.getInt(10);
                         groupAgenda.contentType = result.getString(11);
-                        groupAgenda.groupId=groupId;
-                        groupAgenda.dayNo=dayNo;
+                        groupAgenda.groupId = groupId;
+                        groupAgenda.dayNo = dayNo;
                         groupAgenda.contentList = new ArrayList<>();
 
-                        if(result.getString(11).equals("MIXED"))
-                        {
+                        if (result.getString(11).equals("MIXED")) {
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.contentid , c1.title , c1. description " +
-                                    " FROM "+schemaName+".groupsessioncontentinfo as c1 WHERE  c1.agendaid = ? " +
-                                    " ORDER BY c1.contentseq");
-                            stmt.setInt(1,result.getInt(1));
+                                    " FROM " + schemaName + ".groupsessioncontentinfo as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq ASC");
+                            stmt.setInt(1, result.getInt(1));
                             contentResult = stmt.executeQuery();
-                            while (contentResult.next())
-                            {
+                            while (contentResult.next()) {
                                 Content content = new Content();
                                 content.id = contentResult.getInt(1);
                                 content.agendaId = contentResult.getInt(2);
@@ -161,12 +159,11 @@ public class GroupAgenda {
 
                             stmt = con.prepareStatement("SELECT c1.id, c1.agendaid, c1.contenttype,c1.contentseq, c1.createdon, c1.createdby, " +
                                     " c1.updateon, c1.updatedby , c1.title , c1. description " +
-                                    " FROM "+schemaName+".groupsessioncontenttest as c1 WHERE  c1.agendaid = ? " +
-                                    " ORDER BY c1.contentseq ");
-                            stmt.setInt(1,result.getInt(1));
+                                    " FROM " + schemaName + ".groupsessioncontenttest as c1 WHERE  c1.agendaid = ? " +
+                                    " ORDER BY c1.contentseq ASC");
+                            stmt.setInt(1, result.getInt(1));
                             contentResult = stmt.executeQuery();
-                            while (contentResult.next())
-                            {
+                            while (contentResult.next()) {
                                 Content content = new Content();
                                 content.id = contentResult.getInt(1);
                                 content.agendaId = contentResult.getInt(2);
@@ -181,8 +178,18 @@ public class GroupAgenda {
                                 groupAgenda.contentList.add(content);
                             }
 
-                        }
+                            if (groupAgenda.contentList != null) {
+                                if (groupAgenda.contentList.size() > 0) {
+                                    Collections.sort(groupAgenda.contentList, new Comparator<Content>() {
 
+                                        @Override
+                                        public int compare(Content t1, Content t2) {
+                                            return t1.contentSeq - t2.contentSeq;
+                                        }
+                                    });
+                                }
+                            }
+                        }
                         groupAgendas.add(groupAgenda);
                     }
                 } else
@@ -200,9 +207,7 @@ public class GroupAgenda {
                         con.close();
             }
             return groupAgendas;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -220,8 +225,7 @@ public class GroupAgenda {
         // TODO: check authorization of the user to Insert data
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, GroupAgenda).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
@@ -237,20 +241,31 @@ public class GroupAgenda {
                 ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
                 DeliveryMode deliveryMode = DeliveryMode.APP;
 
-                stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
+               /* stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
                         " where groupid = ? AND  dayno = ? AND  " +
                         " ((CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR " +
-                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?))");
-                stmt.setInt(1,node.get("groupId").asInt());
-                stmt.setInt(2,node.get("dayNo").asInt());
-                stmt.setTime(3,Time.valueOf(node.get("sessionStartTime").asText().trim()));
-                stmt.setTime(4,Time.valueOf(node.get("sessionStartTime").asText().trim()));
-                stmt.setTime(5,Time.valueOf(node.get("sessionEndTime").asText().trim()));
-                stmt.setTime(6,Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?))");*/
+
+                stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM   client1.groupagenda " +
+                        " where groupid = ? AND  dayno = ? AND " +
+                        " ((CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR " +
+                        " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR" +
+                        " (CAST(sessionstarttime as time) >= ? and CAST(sessionstarttime as time) <= ?) OR" +
+                        " (CAST(sessionendtime as time) >= ? and CAST(sessionendtime as time) <= ?))");
+
+                stmt.setInt(1, node.get("groupId").asInt());
+                stmt.setInt(2, node.get("dayNo").asInt());
+                stmt.setTime(3, Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(4, Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(5, Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                stmt.setTime(7, Time.valueOf(node.get("sessionStartTime").asText()));
+                stmt.setTime(8, Time.valueOf(node.get("sessionEndTime").asText()));
+                stmt.setTime(9, Time.valueOf(node.get("sessionStartTime").asText()));
+                stmt.setTime(10, Time.valueOf(node.get("sessionEndTime").asText()));
                 resultSet = stmt.executeQuery();
 
-                if(!resultSet.next())
-                {
+                if (!resultSet.next()) {
                     stmt = con
                             .prepareStatement(
                                     "INSERT INTO "
@@ -264,15 +279,15 @@ public class GroupAgenda {
                     stmt.setString(4, node.get("sessionDesc").asText());
                     stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText().trim()));
                     stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText().trim()));
-                    if(node.has("sessionConductor"))
+                    if (node.has("sessionConductor"))
                         stmt.setString(7, node.get("sessionConductor").asText());
                     else
-                        stmt.setString(7,null);
+                        stmt.setString(7, null);
                     stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                     stmt.setInt(9, loggedInUser.id);
                     stmt.setTimestamp(10, new Timestamp((new Date()).getTime()));
                     stmt.setInt(11, loggedInUser.id);
-                    stmt.setString(12,contentType.name());
+                    stmt.setString(12, contentType.name());
                     result = stmt.executeUpdate();
 
                     if (result == 0)
@@ -306,17 +321,17 @@ public class GroupAgenda {
                     }
 
                     Integer[] array = new Integer[]{};
-                    Array arr = con.createArrayOf("int",array);
+                    Array arr = con.createArrayOf("int", array);
 
-                    if(contentType.name().equals("INFO") || contentType.name().equals("ACTIVITY")) {
+                    if (contentType.name().equals("INFO") || contentType.name().equals("ACTIVITY")) {
                         stmt = con.prepareStatement("INSERT INTO " +
                                 schemaName +
                                 ".groupSessionContentInfo(title,description,agendaid,contenttype,contentseq," +
                                 " createdon,createdby , updateon, updatedby,contentid) " +
                                 " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
 
-                        stmt.setString(1,null);
-                        stmt.setString(2,null);
+                        stmt.setString(1, null);
+                        stmt.setString(2, null);
                         stmt.setInt(3, id);
                         stmt.setString(4, contentType.name());
                         stmt.setInt(5, sequenceNo);
@@ -324,20 +339,19 @@ public class GroupAgenda {
                         stmt.setInt(7, loggedInUser.id);
                         stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                         stmt.setInt(9, loggedInUser.id);
-                        stmt.setArray(10,arr);
+                        stmt.setArray(10, arr);
 
                         result = stmt.executeUpdate();
                     }
 
-                    if(contentType.name().equals("TEST"))
-                    {
+                    if (contentType.name().equals("TEST")) {
                         // It can create Empty Integer Array
                         Integer[] intTest = new Integer[]{};
-                        Array testIntArr = con.createArrayOf("int",intTest);
+                        Array testIntArr = con.createArrayOf("int", intTest);
 
                         // It can create Empty Double Array
                         Double[] doubleArr = new Double[]{};
-                        Array testDoubArr = con.createArrayOf("FLOAT8",doubleArr);
+                        Array testDoubArr = con.createArrayOf("FLOAT8", doubleArr);
 
                         stmt = con.prepareStatement(" INSERT INTO " +
                                 schemaName +
@@ -347,8 +361,8 @@ public class GroupAgenda {
                                 " applytimeperquestion, allowreview,testdescription ) " +
                                 " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?)");
 
-                        stmt.setString(1,null);
-                        stmt.setString(2,null);
+                        stmt.setString(1, null);
+                        stmt.setString(2, null);
                         stmt.setInt(3, id);
                         stmt.setString(4, contentType.name());
                         stmt.setInt(5, sequenceNo);
@@ -356,26 +370,24 @@ public class GroupAgenda {
                         stmt.setInt(7, loggedInUser.id);
                         stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                         stmt.setInt(9, loggedInUser.id);
-                        stmt.setArray(10,testIntArr);
-                        stmt.setArray(11,testDoubArr);
-                        stmt.setObject(12,"00:00");
-                        stmt.setArray(13,testIntArr);
-                        stmt.setString(14,null);
-                        stmt.setString(15,null);
-                        stmt.setBoolean(16,false);
-                        stmt.setBoolean(17,false);
-                        stmt.setBoolean(18,false);
-                        stmt.setBoolean(19,false);
-                        stmt.setBoolean(20,false);
-                        stmt.setString(21,null);
+                        stmt.setArray(10, testIntArr);
+                        stmt.setArray(11, testDoubArr);
+                        stmt.setObject(12, "00:00");
+                        stmt.setArray(13, testIntArr);
+                        stmt.setString(14, null);
+                        stmt.setString(15, null);
+                        stmt.setBoolean(16, false);
+                        stmt.setBoolean(17, false);
+                        stmt.setBoolean(18, false);
+                        stmt.setBoolean(19, false);
+                        stmt.setBoolean(20, false);
+                        stmt.setString(21, null);
 
                         result = stmt.executeUpdate();
                     }
 
-                    if(contentType.name().equals("MIXED"))
-                    {
-                        for(int i=0;i<node.withArray("mixedContentType").size();i++)
-                        {
+                    if (contentType.name().equals("MIXED")) {
+                        for (int i = 0; i < node.withArray("mixedContentType").size(); i++) {
                             stmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".groupsessioncontent " +
                                     " WHERE agendaid = ? ");
                             stmt.setInt(1, id);
@@ -396,20 +408,19 @@ public class GroupAgenda {
 
                             ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
 
-                            if(type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
+                            if (type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
                                 stmt = con.prepareStatement("INSERT INTO " +
                                         schemaName +
                                         ".groupSessionContentInfo(title,description,agendaid,contenttype,contentseq," +
                                         " createdon,createdby , updateon, updatedby,contentid) " +
                                         " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
 
-                                stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+                                stmt.setString(1, node.withArray("mixedContentType").get(i).get("title").asText());
 
-                                if(node.withArray("mixedContentType").get(i).has("description")) {
+                                if (node.withArray("mixedContentType").get(i).has("description")) {
                                     stmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
-                                }
-                                else
-                                    stmt.setString(2,null);
+                                } else
+                                    stmt.setString(2, null);
 
                                 stmt.setInt(3, id);
                                 stmt.setString(4, type.name());
@@ -418,20 +429,19 @@ public class GroupAgenda {
                                 stmt.setInt(7, loggedInUser.id);
                                 stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                                 stmt.setInt(9, loggedInUser.id);
-                                stmt.setArray(10,arr);
+                                stmt.setArray(10, arr);
 
                                 result = stmt.executeUpdate();
                             }
 
-                            if(type.name().equals("TEST"))
-                            {
+                            if (type.name().equals("TEST")) {
                                 // It can create Empty Integer Array
                                 Integer[] intTest = new Integer[]{};
-                                Array testIntArr = con.createArrayOf("int",intTest);
+                                Array testIntArr = con.createArrayOf("int", intTest);
 
                                 // It can create Empty Double Array
                                 Double[] doubleArr = new Double[]{};
-                                Array testDoubArr = con.createArrayOf("FLOAT8",doubleArr);
+                                Array testDoubArr = con.createArrayOf("FLOAT8", doubleArr);
 
                                 stmt = con.prepareStatement(" INSERT INTO " +
                                         schemaName +
@@ -441,13 +451,12 @@ public class GroupAgenda {
                                         " applytimeperquestion, allowreview,testdescription ) " +
                                         " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
 
-                                stmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+                                stmt.setString(1, node.withArray("mixedContentType").get(i).get("title").asText());
 
-                                if(node.withArray("mixedContentType").get(i).has("description")) {
+                                if (node.withArray("mixedContentType").get(i).has("description")) {
                                     stmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
-                                }
-                                else
-                                    stmt.setString(2,null);
+                                } else
+                                    stmt.setString(2, null);
 
                                 stmt.setInt(3, id);
                                 stmt.setString(4, type.name());
@@ -456,18 +465,18 @@ public class GroupAgenda {
                                 stmt.setInt(7, loggedInUser.id);
                                 stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                                 stmt.setInt(9, loggedInUser.id);
-                                stmt.setArray(10,testIntArr);
-                                stmt.setArray(11,testDoubArr);
-                                stmt.setObject(12,"00:00");
-                                stmt.setArray(13,testIntArr);
-                                stmt.setString(14,null);
-                                stmt.setString(15,null);
-                                stmt.setBoolean(16,false);
-                                stmt.setBoolean(17,false);
-                                stmt.setBoolean(18,false);
-                                stmt.setBoolean(19,false);
-                                stmt.setBoolean(20,false);
-                                stmt.setString(21,null);
+                                stmt.setArray(10, testIntArr);
+                                stmt.setArray(11, testDoubArr);
+                                stmt.setObject(12, "00:00");
+                                stmt.setArray(13, testIntArr);
+                                stmt.setString(14, null);
+                                stmt.setString(15, null);
+                                stmt.setBoolean(16, false);
+                                stmt.setBoolean(17, false);
+                                stmt.setBoolean(18, false);
+                                stmt.setBoolean(19, false);
+                                stmt.setBoolean(20, false);
+                                stmt.setString(21, null);
 
                                 result = stmt.executeUpdate();
                             }
@@ -475,9 +484,7 @@ public class GroupAgenda {
                     }
                     con.commit();
                     return id;
-                }
-                else
-                {
+                } else {
                     throw new BadRequestException("");
                 }
 
@@ -490,9 +497,7 @@ public class GroupAgenda {
                 if (con != null)
                     con.close();
             }
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -509,46 +514,43 @@ public class GroupAgenda {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, GroupAgenda).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             PreparedStatement contentStmt = null;
-            int result =0;
+            int result = 0;
             ResultSet resultSet;
             ResultSet seqResultSet;
-            int groupId = 0,dayNo = 0;
+            int groupId = 0, dayNo = 0;
             int sequenceNo;
 
             try {
                 con.setAutoCommit(false);
 
-                stmt = con.prepareStatement("SELECT groupid , dayNo FROM "+schemaName+".groupagenda WHERE id = ?");
-                stmt.setInt(1,node.get("id").asInt());
+                stmt = con.prepareStatement("SELECT groupid , dayNo FROM " + schemaName + ".groupagenda WHERE id = ?");
+                stmt.setInt(1, node.get("id").asInt());
                 resultSet = stmt.executeQuery();
 
-                if(resultSet.next())
-                {
+                if (resultSet.next()) {
                     groupId = resultSet.getInt(1);
                     dayNo = resultSet.getInt(2);
                 }
 
-                stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM "+schemaName+".groupagenda " +
+                stmt = con.prepareStatement("SELECT sessionstarttime , sessionendtime FROM " + schemaName + ".groupagenda " +
                         " where id != ? AND groupid = ? AND  dayno = ? AND  " +
                         " ((CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?) OR " +
                         " (CAST(sessionstarttime as time) <= ? and CAST(sessionendtime as time) >= ?))");
-                stmt.setInt(1,node.get("id").asInt());
-                stmt.setInt(2,groupId);
-                stmt.setInt(3,dayNo);
-                stmt.setTime(4,Time.valueOf(node.get("sessionStartTime").asText().trim()));
-                stmt.setTime(5,Time.valueOf(node.get("sessionStartTime").asText().trim()));
-                stmt.setTime(6,Time.valueOf(node.get("sessionEndTime").asText().trim()));
-                stmt.setTime(7,Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                stmt.setInt(1, node.get("id").asInt());
+                stmt.setInt(2, groupId);
+                stmt.setInt(3, dayNo);
+                stmt.setTime(4, Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(5, Time.valueOf(node.get("sessionStartTime").asText().trim()));
+                stmt.setTime(6, Time.valueOf(node.get("sessionEndTime").asText().trim()));
+                stmt.setTime(7, Time.valueOf(node.get("sessionEndTime").asText().trim()));
                 resultSet = stmt.executeQuery();
 
-                if(!resultSet.next())
-                {
+                if (!resultSet.next()) {
 
                     ContentType contentType = ContentType.valueOf(node.get("contentType").asText());
                     stmt = con
@@ -566,26 +568,25 @@ public class GroupAgenda {
                     stmt.setString(7, node.get("sessionConductor").asText());
                     stmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                     stmt.setInt(9, loggedInUser.id);
-                    stmt.setString(10,contentType.name());
+                    stmt.setString(10, contentType.name());
                     stmt.setInt(11, node.get("id").asInt());
 
-                    if(contentType.name().equals("MIXED")){
+                    if (contentType.name().equals("MIXED")) {
 
-                        contentStmt = con.prepareStatement("DELETE FROM "+schemaName+" " +
+                        contentStmt = con.prepareStatement("DELETE FROM " + schemaName + " " +
                                 " .groupsessioncontentinfo WHERE agendaid = ? ");
-                        contentStmt.setInt(1,node.get("id").asInt());
+                        contentStmt.setInt(1, node.get("id").asInt());
                         contentStmt.executeUpdate();
 
-                        contentStmt = con.prepareStatement("DELETE FROM "+schemaName+" " +
+                        contentStmt = con.prepareStatement("DELETE FROM " + schemaName + " " +
                                 " .groupsessioncontenttest WHERE agendaid = ? ");
-                        contentStmt.setInt(1,node.get("id").asInt());
+                        contentStmt.setInt(1, node.get("id").asInt());
                         contentStmt.executeUpdate();
 
-                        for(int i=0;i<node.withArray("mixedContentType").size();i++)
-                        {
+                        for (int i = 0; i < node.withArray("mixedContentType").size(); i++) {
                             contentStmt = con.prepareStatement("SELECT max(contentseq) as sequenceNo from " + schemaName + ".groupsessioncontent " +
                                     " WHERE agendaid = ? ");
-                            contentStmt.setInt(1,node.get("id").asInt());
+                            contentStmt.setInt(1, node.get("id").asInt());
                             seqResultSet = contentStmt.executeQuery();
 
                             if (seqResultSet.next()) {
@@ -602,11 +603,11 @@ public class GroupAgenda {
                             }
 
                             Integer[] array = new Integer[]{};
-                            Array arr = con.createArrayOf("int",array);
+                            Array arr = con.createArrayOf("int", array);
 
                             ContentType type = ContentType.valueOf(node.withArray("mixedContentType").get(i).get("contentType").asText());
 
-                            if(type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
+                            if (type.name().equals("INFO") || type.name().equals("ACTIVITY")) {
 
                                 contentStmt = con.prepareStatement("INSERT INTO " +
                                         schemaName +
@@ -614,13 +615,12 @@ public class GroupAgenda {
                                         " createdon,createdby , updateon, updatedby,contentid) " +
                                         " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?)");
 
-                                contentStmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+                                contentStmt.setString(1, node.withArray("mixedContentType").get(i).get("title").asText());
 
-                                if(node.withArray("mixedContentType").get(i).has("description")) {
+                                if (node.withArray("mixedContentType").get(i).has("description")) {
                                     contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
-                                }
-                                else
-                                    contentStmt.setString(2,null);
+                                } else
+                                    contentStmt.setString(2, null);
 
                                 contentStmt.setInt(3, node.get("id").asInt());
                                 contentStmt.setString(4, type.name());
@@ -629,26 +629,41 @@ public class GroupAgenda {
                                 contentStmt.setInt(7, loggedInUser.id);
                                 contentStmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                                 contentStmt.setInt(9, loggedInUser.id);
-                                contentStmt.setArray(10,arr);
+                                contentStmt.setArray(10, arr);
 
                                 contentStmt.executeUpdate();
                             }
 
-                            if(type.name().equals("TEST"))
-                            {
-                                contentStmt = con.prepareStatement("INSERT INTO " +
+                            if (type.name().equals("TEST")) {
+
+                                Integer[] intTest = new Integer[]{};
+                                Array testIntArr = con.createArrayOf("int", intTest);
+
+                                // It can create Empty Double Array
+                                Double[] doubleArr = new Double[]{};
+                                Array testDoubArr = con.createArrayOf("FLOAT8", doubleArr);
+
+                              /*  contentStmt = con.prepareStatement("INSERT INTO " +
                                         schemaName +
                                         ".groupsessioncontenttest(title,description,agendaid,contenttype,contentseq," +
                                         " createdon,createdby , updateon, updatedby) " +
-                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,? )");
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,? )");*/
 
-                                contentStmt.setString(1,node.withArray("mixedContentType").get(i).get("title").asText());
+                                contentStmt = con.prepareStatement(" INSERT INTO " +
+                                        schemaName +
+                                        ".groupsessioncontenttest(title,description,agendaid,contenttype,contentseq, " +
+                                        " createdon,createdby,updateon, updatedby,scorecorrect,scoreincorrect,duration,timeperquestion, " +
+                                        " testinstruction, testendnote, applyscoring,showfeedback,applyinterval," +
+                                        " applytimeperquestion, allowreview,testdescription ) " +
+                                        " VALUES (?,?,?,CAST(? AS master.contentType),?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?) ");
 
-                                if(node.withArray("mixedContentType").get(i).has("description")) {
+
+                              /*  contentStmt.setString(1, node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if (node.withArray("mixedContentType").get(i).has("description")) {
                                     contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
-                                }
-                                else
-                                    contentStmt.setString(2,null);
+                                } else
+                                    contentStmt.setString(2, null);
 
                                 contentStmt.setInt(3, node.get("id").asInt());
                                 contentStmt.setString(4, type.name());
@@ -657,6 +672,35 @@ public class GroupAgenda {
                                 contentStmt.setInt(7, loggedInUser.id);
                                 contentStmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
                                 contentStmt.setInt(9, loggedInUser.id);
+
+                                contentStmt.executeUpdate();*/
+
+                                contentStmt.setString(1, node.withArray("mixedContentType").get(i).get("title").asText());
+
+                                if (node.withArray("mixedContentType").get(i).has("description")) {
+                                    contentStmt.setString(2, node.withArray("mixedContentType").get(i).get("description").asText());
+                                } else
+                                    contentStmt.setString(2, null);
+
+                                contentStmt.setInt(3, node.get("id").asInt());
+                                contentStmt.setString(4, type.name());
+                                contentStmt.setInt(5, sequenceNo);
+                                contentStmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(7, loggedInUser.id);
+                                contentStmt.setTimestamp(8, new Timestamp((new Date()).getTime()));
+                                contentStmt.setInt(9, loggedInUser.id);
+                                contentStmt.setArray(10, testIntArr);
+                                contentStmt.setArray(11, testDoubArr);
+                                contentStmt.setObject(12, "00:00");
+                                contentStmt.setArray(13, testIntArr);
+                                contentStmt.setString(14, null);
+                                contentStmt.setString(15, null);
+                                contentStmt.setBoolean(16, false);
+                                contentStmt.setBoolean(17, false);
+                                contentStmt.setBoolean(18, false);
+                                contentStmt.setBoolean(19, false);
+                                contentStmt.setBoolean(20, false);
+                                contentStmt.setString(21, null);
 
                                 contentStmt.executeUpdate();
                             }
@@ -664,9 +708,7 @@ public class GroupAgenda {
                     }
                     result = stmt.executeUpdate();
                     con.commit();
-                }
-                else
-                {
+                } else {
                     throw new BadRequestException("");
                 }
 
@@ -681,9 +723,7 @@ public class GroupAgenda {
             }
             return result;
 
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -701,8 +741,7 @@ public class GroupAgenda {
         // TODO: check authorization of the user to Delete data
 
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,GroupAgenda).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, GroupAgenda).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
@@ -728,9 +767,7 @@ public class GroupAgenda {
             }
             return result;
 
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }

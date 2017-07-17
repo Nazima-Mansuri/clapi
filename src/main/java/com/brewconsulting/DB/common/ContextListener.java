@@ -4,6 +4,7 @@ import com.brewconsulting.masters.Divisions;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.ServletContext;
@@ -40,7 +41,8 @@ public class ContextListener implements ServletContextListener {
             PropertyConfigurator.configure(properties);
 
             javax.naming.Context env = null;
-            env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
+            env = (javax.naming.Context) new InitialContext().lookup("java:comp/env/jdbc/postgres");
+
             String databasename = (String) env.lookup("DB_URL");
             source = (DataSource) (new InitialContext()).lookup(databasename);
             Connection connection = source.getConnection();

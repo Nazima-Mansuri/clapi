@@ -39,7 +39,7 @@ public class Questions {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     *  Produces all questions.
+     * Produces all questions.
      *
      * @param divId
      * @param crc
@@ -76,7 +76,7 @@ public class Questions {
     }
 
     /**
-     *  Search question
+     * Search question
      *
      * @param input
      * @param crc
@@ -87,8 +87,7 @@ public class Questions {
     @Produces("application/json")
     @Path("filter")
     public Response filter(InputStream input,
-                           @Context ContainerRequestContext crc)
-    {
+                           @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -101,15 +100,13 @@ public class Questions {
                             .filterQuestions(node, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
 
-        }
-        catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Seach Questions\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Exception ", e);
             resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
@@ -189,7 +186,7 @@ public class Questions {
 
             int questionId = Question.insertQuestion(questionText, pollable, division, questionType,
                     complexityLevel, Product, keywords, feedbackRight, feedbackWrong, isActive, questionJson, correctAnswer,
-                    uploadFilePath, fileType,isReview, (LoggedInUser) crc.getProperty("userObject"));
+                    uploadFilePath, fileType, isReview, (LoggedInUser) crc.getProperty("userObject"));
 
             if (questionId != 0)
                 resp = Response.ok("{\"id\":" + questionId + "}").build();
@@ -265,6 +262,7 @@ public class Questions {
                                @FormDataParam("questionId") int questionId,
                                @FormDataParam("isUpdated") boolean isUpdated,
                                @FormDataParam("url") String url,
+                               @FormDataParam("fileType") String type,
                                @Context ContainerRequestContext crc) {
 
         Response resp = null;
@@ -290,12 +288,13 @@ public class Questions {
                     }
                 }
             } else {
+                fileType = type;
                 uploadFilePath = url;
             }
 
             int affectedRows = Question.updateQuestion(questionText, pollable, division, questionType,
                     complexityLevel, Product, keywords, feedbackRight, feedbackWrong, isActive, questionJson, correctAnswer,
-                    uploadFilePath,fileType, questionId, (LoggedInUser) crc.getProperty("userObject"));
+                    uploadFilePath, fileType, questionId, (LoggedInUser) crc.getProperty("userObject"));
 
             if (affectedRows != 0)
                 resp = Response.ok("{\"id\":" + affectedRows + "}").build();
@@ -375,7 +374,7 @@ public class Questions {
     }
 
     /***
-     *  Clonbe question.
+     * Clonbe question.
      *
      * @param id
      * @param crc
@@ -387,7 +386,7 @@ public class Questions {
     @Consumes("application/json")
     @Path("{id}")
     public Response cloneQuestion(@PathParam("id") int id,
-                              @Context ContainerRequestContext crc) {
+                                  @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -397,29 +396,26 @@ public class Questions {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + questionId + "}").build();
         } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException",na);
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to clone Question\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (SQLException s)
-        {
-            logger.error("SQLException",s);
+        } catch (SQLException s) {
+            logger.error("SQLException", s);
             resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+                    .entity("{\"Message\":" + "\"" + s.getMessage() + "\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (IOException e) {
-            logger.error("IOException",e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
             if (resp == null) {
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
-            logger.error("Exception " , e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;

@@ -13,6 +13,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeComparator;
 import org.joda.time.DateTimeUtils;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -97,19 +98,18 @@ public class FeedSchedule {
     public int createby;
 
     @JsonView({UserViews.feedDeliveryView.class})
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     @JsonProperty("deliveryTime")
-    public Date deliveryTime;
+    public String deliveryTime;
 
     @JsonView(UserViews.feedDeliveryView.class)
     @JsonProperty("divName")
     public String divName;
 
-    @JsonView({UserViews.feedDeliveryView.class,UserViews.deliveredFeedsView.class})
+    @JsonView({UserViews.feedDeliveryView.class, UserViews.deliveredFeedsView.class})
     @JsonProperty("pillId")
     public int pillId;
 
-    @JsonView({UserViews.feedDeliveryView.class,UserViews.deliveredFeedsView.class})
+    @JsonView({UserViews.feedDeliveryView.class, UserViews.deliveredFeedsView.class})
     @JsonProperty("pillName")
     public String pillName;
 
@@ -138,7 +138,6 @@ public class FeedSchedule {
 
 
     /***
-     *
      * @param feedId
      * @param loggedInUser
      * @return
@@ -186,16 +185,16 @@ public class FeedSchedule {
                         Date startdate = feedSchedule.feedStartDate;
                         Date enddate = feedSchedule.feedEndDate;
                         Date temp = new Date();
-                        temp.setDate(startdate.getDate()-1);
+                        temp.setDate(startdate.getDate() - 1);
 
-                        boolean isAfter =  DateTimeComparator.getDateOnlyInstance().compare(DateTime.now(), enddate) > 0;
+                        boolean isAfter = DateTimeComparator.getDateOnlyInstance().compare(DateTime.now(), enddate) > 0;
                         boolean isBefore = DateTimeComparator.getDateOnlyInstance().compare(startdate, DateTime.now()) > 0;
-                        if (isAfter){
-                            feedSchedule.status="Past";
-                        }else if(isBefore){
-                            feedSchedule.status="Future";
-                        }else{
-                            feedSchedule.status="Current";
+                        if (isAfter) {
+                            feedSchedule.status = "Past";
+                        } else if (isBefore) {
+                            feedSchedule.status = "Future";
+                        } else {
+                            feedSchedule.status = "Current";
                         }
 
                         feedSchedule.feedStartTime = (Time[]) resultSet.getArray(8).getArray();
@@ -234,12 +233,11 @@ public class FeedSchedule {
     }
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<FeedSchedule> recentlyDeliveredPills(int divId,LoggedInUser loggedInUser) throws Exception {
+    public static List<FeedSchedule> recentlyDeliveredPills(int divId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Feed).equals("Read") ||
                 Permissions.isAuthorised(userRole, Feed).equals("Write")) {
@@ -258,16 +256,22 @@ public class FeedSchedule {
                         stmt = con.prepareStatement(" SELECT fd1.id,feed, pillid, deliverytime , " +
                                 " (SELECT count(fd.userid) from " + schemaName + ".feeddelivery fd where fd.pillid = fd1.pillid GROUP BY fd.pillid) as Total " +
                                 " FROM " + schemaName + ".feeddelivery fd1 " +
-                                " left join "+schemaName+".feedschedule fs on fs.id = fd1.feed" +
-                                " left join "+schemaName+".feeds f on f.id = fs.feedid " +
+                                " left join " + schemaName + ".feedschedule fs on fs.id = fd1.feed" +
+                                " left join " + schemaName + ".feeds f on f.id = fs.feedid " +
                                 " WHERE f.divid = ? " +
-                                " GROUP BY fd1.id,pillid,feed,deliverytime LIMIT 10");
-                        stmt.setInt(1,divId);
+                                " GROUP BY fd1.id,pillid,feed,deliverytime " +
+                                " ORDER BY fd1.createdate DESC " +
+                                " LIMIT 10");
+                        stmt.setInt(1, divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             FeedSchedule deliverFeed = new FeedSchedule();
                             deliverFeed.id = resultSet.getInt(1);
-                            deliverFeed.deliveryTime = resultSet.getTimestamp(4);
+
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                            String date = sdf.format(resultSet.getTimestamp(4));
+
+                            deliverFeed.deliveryTime = date;
                             deliverFeed.participants = resultSet.getInt("Total");
                             deliverFeed.pillId = resultSet.getInt(3);
 
@@ -289,18 +293,23 @@ public class FeedSchedule {
                             deliveredPillsList.add(deliverFeed);
                         }
                     } else if (loggedInUser.roles.get(0).roleName.equals("MARKETING REPRESENTATIVE")) {
-                        stmt = con.prepareStatement(" SELECT id,feed, pillid, deliverytime " +
+                        stmt = con.prepareStatement(" SELECT fd.id,feed, pillid, deliverytime " +
                                 " FROM " + schemaName + ".feeddelivery fd " +
-                                " left join "+schemaName+".feedschedule fs on fs.id = fd.feed" +
-                                " left join "+schemaName+".feeds f on f.id = fs.feedid " +
-                                " WHERE fd.userid = ? AND f.id = ? LIMIT 10 ");
+                                " left join " + schemaName + ".feedschedule fs on fs.id = fd.feed" +
+                                " left join " + schemaName + ".feeds f on f.id = fs.feedid " +
+                                " WHERE fd.userid = ? AND f.id = ? " +
+                                " ORDER by fd.createdate DESC " +
+                                " LIMIT 10 ");
                         stmt.setInt(1, loggedInUser.id);
-                        stmt.setInt(2,divId);
+                        stmt.setInt(2, divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
                             FeedSchedule deliverFeed = new FeedSchedule();
                             deliverFeed.id = resultSet.getInt(1);
-                            deliverFeed.deliveryTime = resultSet.getTimestamp(4);
+
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                            String date = sdf.format(resultSet.getTimestamp(4));
+                            deliverFeed.deliveryTime = date;
 
                             stmt = con.prepareStatement(" SELECT d.name,f.name,f.description,p.title " +
                                     " FROM " + schemaName + ".feedschedule fs " +
@@ -344,7 +353,6 @@ public class FeedSchedule {
     }
 
     /***
-     *
      * @param node
      * @param loggedInUser
      * @return
@@ -359,139 +367,162 @@ public class FeedSchedule {
             int result = 0;
             ResultSet resultSet = null;
             String schemaName = loggedInUser.schemaName;
+            Integer[] pills = new Integer[0];
 
             try {
 
                 con.setAutoCommit(false);
 
-                Integer terr[] = new Integer[node.withArray("territories").size()];
-                Integer userId[] = new Integer[node.withArray("territories").size()];
-                for (int i = 0; i < node.withArray("territories").size(); i++) {
-                    terr[i] = node.withArray("territories").get(i).asInt();
+                stmt = con.prepareStatement(" SELECT pills FROM " + schemaName + ".feeds WHERE id = ? ");
+                stmt.setInt(1, node.get("feedId").asInt());
+                resultSet = stmt.executeQuery();
+                while (resultSet.next()) {
+                    pills = (Integer[]) resultSet.getArray(1).getArray();
                 }
-                Array terrArr = con.createArrayOf("int", terr);
 
-                stmt = con.prepareStatement(" SELECT userid from " + schemaName + ".userterritorymap " +
-                        " WHERE terrid = ? ");
-                for (int i = 0; i < terr.length; i++) {
-                    stmt.setInt(1, terr[i]);
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
-                        System.out.println(" In While ..");
-                        userId[i] = resultSet.getInt(1);
-                        System.out.println("Id : " + resultSet.getInt(1));
+                if (pills.length > 0) {
+                    Integer terr[] = new Integer[node.withArray("territories").size()];
+
+                    List<Integer> userList = new ArrayList<>();
+
+                    for (int i = 0; i < node.withArray("territories").size(); i++) {
+                        terr[i] = node.withArray("territories").get(i).asInt();
                     }
-                }
-                Array userIdArr = con.createArrayOf("int", userId);
-                System.out.println(" User Ids  : " + userId.length);
+                    Array terrArr = con.createArrayOf("int", terr);
+
+                    stmt = con.prepareStatement(" SELECT userid from " + schemaName + ".userterritorymap " +
+                            " WHERE terrid = ? ");
+                    for (int i = 0; i < terr.length; i++) {
+                        stmt.setInt(1, terr[i]);
+                        resultSet = stmt.executeQuery();
+                        while (resultSet.next()) {
+                            System.out.println(" In While ..");
+
+                            if (resultSet.getInt(1) > 0)
+                                userList.add(resultSet.getInt(1));
+
+                            System.out.println("Id : " + resultSet.getInt(1));
+                        }
+                    }
+
+                    Integer userId[] = new Integer[userList.size()];
+                    for (int i = 0; i < userList.size(); i++) {
+                        userId[i] = userList.get(i);
+                    }
+                    Array userIdArr = con.createArrayOf("int", userId);
+                    System.out.println(" User Ids  : " + userList.size());
 
 
-                Time[] startTime = new Time[node.withArray("feedStartTime").size()];
-                for (int i = 0; i < node.withArray("feedStartTime").size(); i++) {
-                    startTime[i] = Time.valueOf(node.withArray("feedStartTime").get(i).asText());
-                }
-                Array startTimeArr = con.createArrayOf("time", startTime);
+                    Time[] startTime = new Time[node.withArray("feedStartTime").size()];
+                    for (int i = 0; i < node.withArray("feedStartTime").size(); i++) {
+                        startTime[i] = Time.valueOf(node.withArray("feedStartTime").get(i).asText());
+                    }
+                    Array startTimeArr = con.createArrayOf("time", startTime);
 
-                Time[] endTime = new Time[node.withArray("feedEndTime").size()];
-                for (int i = 0; i < node.withArray("feedEndTime").size(); i++) {
-                    endTime[i] = Time.valueOf(node.withArray("feedEndTime").get(i).asText());
-                }
-                Array endTimeArr = con.createArrayOf("time", endTime);
+                    Time[] endTime = new Time[node.withArray("feedEndTime").size()];
+                    for (int i = 0; i < node.withArray("feedEndTime").size(); i++) {
+                        endTime[i] = Time.valueOf(node.withArray("feedEndTime").get(i).asText());
+                    }
+                    Array endTimeArr = con.createArrayOf("time", endTime);
 
-                Integer noOfPills[] = new Integer[node.withArray("noOfPillsPerDay").size()];
-                for (int i = 0; i < node.withArray("noOfPillsPerDay").size(); i++) {
-                    noOfPills[i] = node.withArray("noOfPillsPerDay").get(i).asInt();
-                }
-                Array pillsArr = con.createArrayOf("int", noOfPills);
+                    Integer noOfPills[] = new Integer[node.withArray("noOfPillsPerDay").size()];
+                    for (int i = 0; i < node.withArray("noOfPillsPerDay").size(); i++) {
+                        noOfPills[i] = node.withArray("noOfPillsPerDay").get(i).asInt();
+                    }
+                    Array pillsArr = con.createArrayOf("int", noOfPills);
 
-                stmt = con.prepareStatement(" INSERT INTO " + schemaName
-                        + ".feedschedule(territories, feedstartdate, feedenddate, rotate, createdate, createby,"
-                        + " feedstarttime,feedendtime,numberofpillperday,userid,feedid)"
-                        + " VALUES (?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                    stmt = con.prepareStatement(" INSERT INTO " + schemaName
+                            + ".feedschedule(territories, feedstartdate, feedenddate, rotate, createdate, createby,"
+                            + " feedstarttime,feedendtime,numberofpillperday,userid,feedid)"
+                            + " VALUES (?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
 
-                stmt.setArray(1, terrArr);
-                stmt.setTimestamp(2, Timestamp.valueOf(node.get("startDate").asText()));
-                stmt.setTimestamp(3, Timestamp.valueOf(node.get("endDate").asText()));
-                stmt.setBoolean(4, node.get("rotate").asBoolean());
-                stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
-                stmt.setInt(6, loggedInUser.id);
-                stmt.setArray(7, startTimeArr);
-                stmt.setArray(8, endTimeArr);
-                stmt.setArray(9, pillsArr);
-                stmt.setArray(10, userIdArr);
-                stmt.setInt(11, node.get("feedId").asInt());
+                    stmt.setArray(1, terrArr);
+                    stmt.setTimestamp(2, Timestamp.valueOf(node.get("startDate").asText()));
+                    stmt.setTimestamp(3, Timestamp.valueOf(node.get("endDate").asText()));
+                    stmt.setBoolean(4, node.get("rotate").asBoolean());
+                    stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
+                    stmt.setInt(6, loggedInUser.id);
+                    stmt.setArray(7, startTimeArr);
+                    stmt.setArray(8, endTimeArr);
+                    stmt.setArray(9, pillsArr);
+                    stmt.setArray(10, userIdArr);
+                    stmt.setInt(11, node.get("feedId").asInt());
 
-                result = stmt.executeUpdate();
+                    result = stmt.executeUpdate();
 
-                if (result == 0)
-                    throw new SQLException("Add Feeds Failed.");
+                    if (result == 0)
+                        throw new SQLException("Add Feeds Failed.");
 
-                ResultSet generatedKeys = stmt.getGeneratedKeys();
-                int feedScheduleId;
-                if (generatedKeys.next())
-                    // It gives last inserted Id in questionId
-                    feedScheduleId = generatedKeys.getInt(1);
-                else
-                    throw new SQLException("No ID obtained");
+                    ResultSet generatedKeys = stmt.getGeneratedKeys();
+                    int feedScheduleId;
+                    if (generatedKeys.next())
+                        // It gives last inserted Id in questionId
+                        feedScheduleId = generatedKeys.getInt(1);
+                    else
+                        throw new SQLException("No ID obtained");
 
-                con.commit();
-                try {
+                    con.commit();
+                    try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-//                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
-                    URL url = new URL("http://192.168.200.11:3010/api/tasks");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setDoOutput(true);
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    //String input = "{\"pillID\":\"100\",\"name\":\"iPad 4\"}";
-                    String input = "{\"feedScheduleId\":" + feedScheduleId + ",\"schema\":" + "\"" + schemaName + "\"}";
+                        URL url = new URL("http://52.73.14.171:3010/api/tasks");
+//                        URL url = new URL("http://192.168.200.11:3010/api/tasks");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        //String input = "{\"pillID\":\"100\",\"name\":\"iPad 4\"}";
+                        String input = "{\"feedScheduleId\":" + feedScheduleId + ",\"schema\":" + "\"" + schemaName + "\"}";
 
-                    OutputStream os = conn.getOutputStream();
-                    os.write(input.getBytes());
-                    os.flush();
-                    if (conn.getResponseCode() != 200) {
-                        throw new RuntimeException("Failed : HTTP error code : "
-                                + conn.getResponseCode());
-                    }
-
-                    BufferedReader br = new BufferedReader(new InputStreamReader(
-                            (conn.getInputStream())));
-                    System.out.println(" Response Message : " + conn.getResponseMessage());
-
-                    String output;
-                    System.out.println("Output from Server .... \n");
-                    while ((output = br.readLine()) != null) {
-                        System.out.println(output);
-                        ObjectMapper mapper = new ObjectMapper();
-
-                        JsonNode jsonNode = mapper.readTree(output);
-                        Integer[] jobIds = new Integer[jsonNode.withArray("jobIds").size()];
-
-                        for (int i = 0; i < jobIds.length; i++) {
-                            jobIds[i] = jsonNode.withArray("jobIds").get(i).asInt();
-                            System.out.println("JOBS : " + jobIds[i]);
+                        OutputStream os = conn.getOutputStream();
+                        os.write(input.getBytes());
+                        os.flush();
+                        if (conn.getResponseCode() != 200) {
+                            throw new RuntimeException("Failed : HTTP error code : "
+                                    + conn.getResponseCode());
                         }
 
-                        Array jobs = con.createArrayOf("int", jobIds);
+                        BufferedReader br = new BufferedReader(new InputStreamReader(
+                                (conn.getInputStream())));
+                        System.out.println(" Response Message : " + conn.getResponseMessage());
 
-                        stmt = con.prepareStatement(" UPDATE " + schemaName + ".feedschedule SET jobids = ? WHERE id = ? ");
-                        stmt.setArray(1, jobs);
-                        stmt.setInt(2, feedScheduleId);
-                        int affectedRows = stmt.executeUpdate();
-                        System.out.println(" Affected Rows : " + affectedRows);
-                        con.commit();
+                        String output;
+                        System.out.println("Output from Server .... \n");
+                        while ((output = br.readLine()) != null) {
+                            System.out.println(output);
+                            ObjectMapper mapper = new ObjectMapper();
+
+                            JsonNode jsonNode = mapper.readTree(output);
+                            Integer[] jobIds = new Integer[jsonNode.withArray("jobIds").size()];
+
+                            for (int i = 0; i < jobIds.length; i++) {
+                                jobIds[i] = jsonNode.withArray("jobIds").get(i).asInt();
+                                System.out.println("JOBS : " + jobIds[i]);
+                            }
+
+                            Array jobs = con.createArrayOf("int", jobIds);
+
+                            stmt = con.prepareStatement(" UPDATE " + schemaName + ".feedschedule SET jobids = ? WHERE id = ? ");
+                            stmt.setArray(1, jobs);
+                            stmt.setInt(2, feedScheduleId);
+                            int affectedRows = stmt.executeUpdate();
+                            System.out.println(" Affected Rows : " + affectedRows);
+                            con.commit();
+                        }
+                        conn.disconnect();
+
+                    } catch (MalformedURLException e) {
+
+                        e.printStackTrace();
+
+                    } catch (IOException e) {
+
+                        e.printStackTrace();
+
                     }
-                    conn.disconnect();
-                } catch (MalformedURLException e) {
-
-                    e.printStackTrace();
-
-                } catch (IOException e) {
-
-                    e.printStackTrace();
-
+                    return feedScheduleId;
+                } else {
+                    throw new BadRequestException("");
                 }
-                return feedScheduleId;
             } catch (Exception ex) {
                 if (con != null)
                     con.rollback();
@@ -520,7 +551,6 @@ public class FeedSchedule {
     }*/
 
     /***
-     *
      * @param node
      * @param loggedInUser
      * @return
@@ -557,20 +587,42 @@ public class FeedSchedule {
                 Array userIdArr = con.createArrayOf("int", userId);
                 System.out.println(" User Ids  : " + userId.length);
 
+                Time[] startTime = new Time[node.withArray("feedStartTime").size()];
+                for (int i = 0; i < node.withArray("feedStartTime").size(); i++) {
+                    startTime[i] = Time.valueOf(node.withArray("feedStartTime").get(i).asText());
+                }
+                Array startTimeArr = con.createArrayOf("time", startTime);
+
+                Time[] endTime = new Time[node.withArray("feedEndTime").size()];
+                for (int i = 0; i < node.withArray("feedEndTime").size(); i++) {
+                    endTime[i] = Time.valueOf(node.withArray("feedEndTime").get(i).asText());
+                }
+                Array endTimeArr = con.createArrayOf("time", endTime);
+
+                Integer noOfPills[] = new Integer[node.withArray("noOfPillsPerDay").size()];
+                for (int i = 0; i < node.withArray("noOfPillsPerDay").size(); i++) {
+                    noOfPills[i] = node.withArray("noOfPillsPerDay").get(i).asInt();
+                }
+                Array pillsArr = con.createArrayOf("int", noOfPills);
+
                 stmt = con.prepareStatement(" UPDATE " + schemaName + ".feedschedule " +
-                        " SET territories=?, feedstartdate=?, feedenddate=?, rotate=?, userid = ? " +
+                        " SET territories=?, feedstartdate=?, feedenddate=?, rotate=?, userid = ?," +
+                        " feedstarttime = ? ,feedendtime = ?,numberofpillperday = ? " +
                         " WHERE id = ? ");
                 stmt.setArray(1, terrArr);
                 stmt.setTimestamp(2, Timestamp.valueOf(node.get("startDate").asText()));
                 stmt.setTimestamp(3, Timestamp.valueOf(node.get("endDate").asText()));
                 stmt.setBoolean(4, node.get("rotate").asBoolean());
                 stmt.setArray(5, userIdArr);
-                stmt.setInt(6, node.get("id").asInt());
+                stmt.setArray(6, startTimeArr);
+                stmt.setArray(7, endTimeArr);
+                stmt.setArray(8, pillsArr);
+                stmt.setInt(9, node.get("id").asInt());
                 affectedRow = stmt.executeUpdate();
                 try {
-                            /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-//                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
-                    URL url = new URL("http://192.168.200.11:3010/api/tasks");
+                    /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
+                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
+//                  URL url = new URL("http://192.168.200.11:3010/api/tasks");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setDoOutput(true);
                     conn.setRequestMethod("POST");
@@ -636,7 +688,6 @@ public class FeedSchedule {
     }
 
     /***
-     *
      * @param id
      * @param loggedInUser
      * @return
@@ -651,6 +702,7 @@ public class FeedSchedule {
             String schemaName = loggedInUser.schemaName;
             ResultSet resultSet = null;
             String jobIds = "";
+            int length = 0;
 
             try {
                 stmt = con.prepareStatement(" SELECT jobids FROM " + schemaName + ".feedschedule WHERE id = ? ");
@@ -658,64 +710,69 @@ public class FeedSchedule {
                 resultSet = stmt.executeQuery();
                 while (resultSet.next()) {
                     Integer[] arr;
-                    arr = (Integer[]) resultSet.getArray(1).getArray();
 
-                    String a = Arrays.toString(arr); //toString the List or Vector
-                    String strArr[] = a.substring(1, a.length() - 1).split(", ");
+                    if (resultSet.getArray(1).getArray() != null) {
+                        arr = (Integer[]) resultSet.getArray(1).getArray();
 
-                    if (strArr.length > 0) {
-                        StringBuilder nameBuilder = new StringBuilder();
+                        length = arr.length;
 
-                        for (String n : strArr) {
-                            nameBuilder.append(n.replace("'", "\\")).append(",");
+                        String a = Arrays.toString(arr); //toString the List or Vector
+                        String strArr[] = a.substring(1, a.length() - 1).split(", ");
+
+                        if (strArr.length > 0) {
+                            StringBuilder nameBuilder = new StringBuilder();
+
+                            for (String n : strArr) {
+                                nameBuilder.append(n.replace("'", "\\")).append(",");
+                            }
+
+                            nameBuilder.deleteCharAt(nameBuilder.length() - 1);
+
+                            jobIds = nameBuilder.toString();
+                            System.out.println(" JObIds : " + nameBuilder.toString());
                         }
-
-                        nameBuilder.deleteCharAt(nameBuilder.length() - 1);
-
-                        jobIds = nameBuilder.toString();
-                        System.out.println(" JObIds : " + nameBuilder.toString());
                     }
                 }
-
 
                 stmt = con.prepareStatement(" DELETE FROM " + schemaName + ".feedschedule WHERE id = ? ");
                 stmt.setInt(1, id);
                 affectedRow = stmt.executeUpdate();
 
-
-                try {
+                if (length > 0) {
+                    try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-//                    URL url = new URL("http://52.73.14.171:3010/api/removetasks");
-                    URL url = new URL("http://192.168.200.11:3010/api/removetasks");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setDoOutput(true);
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    String input = "{\"jobIds\":" + "\"" + jobIds + "\"}";
+                        URL url = new URL("http://52.73.14.171:3010/api/removetasks");
+//                        URL url = new URL("http://192.168.200.11:3010/api/removetasks");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        String input = "{\"jobIds\":" + "\"" + jobIds + "\"}";
 
-                    OutputStream os = conn.getOutputStream();
-                    os.write(input.getBytes());
-                    os.flush();
-                    if (conn.getResponseCode() != 200) {
-                        throw new RuntimeException("Failed : HTTP error code : "
-                                + conn.getResponseCode());
+                        OutputStream os = conn.getOutputStream();
+                        os.write(input.getBytes());
+                        os.flush();
+                        if (conn.getResponseCode() != 200) {
+                            throw new RuntimeException("Failed : HTTP error code : "
+                                    + conn.getResponseCode());
+                        }
+
+                        BufferedReader br = new BufferedReader(new InputStreamReader(
+                                (conn.getInputStream())));
+                        System.out.println(" Response Message : " + conn.getResponseMessage());
+
+
+                        String output;
+                        System.out.println("Output from Server .... \n");
+                        while ((output = br.readLine()) != null) {
+                            System.out.println(output);
+                        }
+                        conn.disconnect();
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-
-                    BufferedReader br = new BufferedReader(new InputStreamReader(
-                            (conn.getInputStream())));
-                    System.out.println(" Response Message : " + conn.getResponseMessage());
-
-
-                    String output;
-                    System.out.println("Output from Server .... \n");
-                    while ((output = br.readLine()) != null) {
-                        System.out.println(output);
-                    }
-                    conn.disconnect();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
             } finally {
                 if (con != null)
@@ -732,19 +789,17 @@ public class FeedSchedule {
     }
 
     /***
-     *  Method is used to get all details about delivered and failed pills.
+     * Method is used to get all details about delivered and failed pills.
      *
      * @param feedScheduleId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<FeedSchedule> getDeliveredData(int feedScheduleId,String status,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<FeedSchedule> getDeliveredData(int feedScheduleId, String status, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,Feed).equals("Read") ||
-                Permissions.isAuthorised(userRole,Feed).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, Feed).equals("Read") ||
+                Permissions.isAuthorised(userRole, Feed).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             List<FeedSchedule> deliveredFeedList = new ArrayList<>();
             ResultSet resultSet = null;
@@ -752,19 +807,16 @@ public class FeedSchedule {
             PreparedStatement stmt = null;
             String schemaName = loggedInUser.schemaName;
 
-            try
-            {
-                if(status.equalsIgnoreCase("Future"))
-                {
-                    stmt = con.prepareStatement(" SELECT p.id,p.title,p.body FROM "+schemaName+".pills p " +
-                            " where p.id = ANY((SELECT DISTINCT f.pills FROM "+schemaName+".feeddelivery fd " +
-                            " LEFT JOIN "+schemaName+".feedschedule fs on fs.id = fd.feed " +
-                            " LEFT JOIN "+schemaName+".feeds f on f.id = fs.feedid " +
+            try {
+                if (status.equalsIgnoreCase("Future")) {
+                    stmt = con.prepareStatement(" SELECT p.id,p.title,p.body FROM " + schemaName + ".pills p " +
+                            " where p.id = ANY((SELECT DISTINCT f.pills FROM " + schemaName + ".feeddelivery fd " +
+                            " LEFT JOIN " + schemaName + ".feedschedule fs on fs.id = fd.feed " +
+                            " LEFT JOIN " + schemaName + ".feeds f on f.id = fs.feedid " +
                             " WHERE fs.id = ?) :: int[]) ");
-                    stmt.setInt(1,feedScheduleId);
+                    stmt.setInt(1, feedScheduleId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         FeedSchedule feedSchedule = new FeedSchedule();
                         feedSchedule.pillId = resultSet.getInt(1);
                         feedSchedule.pillName = resultSet.getString(2);
@@ -772,110 +824,95 @@ public class FeedSchedule {
 
                         deliveredFeedList.add(feedSchedule);
                     }
-                }
-                else
-                {
-                    stmt = con.prepareStatement(" SELECT p.id,p.title,p.body FROM "+schemaName+".pills p " +
-                            " where p.id = ANY((SELECT DISTINCT f.pills FROM "+schemaName+".feeddelivery fd " +
-                            " LEFT JOIN "+schemaName+".feedschedule fs on fs.id = fd.feed " +
-                            " LEFT JOIN "+schemaName+".feeds f on f.id = fs.feedid " +
+                } else {
+                    stmt = con.prepareStatement(" SELECT p.id,p.title,p.body FROM " + schemaName + ".pills p " +
+                            " where p.id = ANY((SELECT DISTINCT f.pills FROM " + schemaName + ".feeddelivery fd " +
+                            " LEFT JOIN " + schemaName + ".feedschedule fs on fs.id = fd.feed " +
+                            " LEFT JOIN " + schemaName + ".feeds f on f.id = fs.feedid " +
                             " WHERE fs.id = ?) :: int[]) ");
-                    stmt.setInt(1,feedScheduleId);
+                    stmt.setInt(1, feedScheduleId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         FeedSchedule feedSchedule = new FeedSchedule();
                         feedSchedule.pillId = resultSet.getInt(1);
                         feedSchedule.pillName = resultSet.getString(2);
                         feedSchedule.pillBody = resultSet.getString(3);
 
-                        stmt = con.prepareStatement(" SELECT count(*) As Count FROM "+schemaName+".feeddelivery " +
+                        stmt = con.prepareStatement(" SELECT count(*) As Count FROM " + schemaName + ".feeddelivery " +
                                 " where pillid = ? AND feed = ?");
-                        stmt.setInt(1,feedSchedule.pillId);
-                        stmt.setInt(2,feedScheduleId);
+                        stmt.setInt(1, feedSchedule.pillId);
+                        stmt.setInt(2, feedScheduleId);
                         countSet = stmt.executeQuery();
-                        while (countSet.next())
-                        {
+                        while (countSet.next()) {
                             feedSchedule.deliveredCount = countSet.getInt("Count");
                         }
 
-                        stmt = con.prepareStatement(" SELECT count(*) As Count FROM "+schemaName+".feeddeliveryfail " +
+                        stmt = con.prepareStatement(" SELECT count(*) As Count FROM " + schemaName + ".feeddeliveryfail " +
                                 " where pillid = ? AND feed = ?");
-                        stmt.setInt(1,feedSchedule.pillId);
-                        stmt.setInt(2,feedScheduleId);
+                        stmt.setInt(1, feedSchedule.pillId);
+                        stmt.setInt(2, feedScheduleId);
                         countSet = stmt.executeQuery();
-                        while (countSet.next())
-                        {
+                        while (countSet.next()) {
                             feedSchedule.failureCount = countSet.getInt("Count");
                         }
 
                         deliveredFeedList.add(feedSchedule);
                     }
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
-                if(countSet != null)
-                    if(!countSet.isClosed())
+                if (countSet != null)
+                    if (!countSet.isClosed())
                         countSet.close();
             }
             return deliveredFeedList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *  Used to update pill Read time
+     * Used to update pill Read time
      *
      * @param node
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int updatePillReadTime(JsonNode node,LoggedInUser loggedInUser) throws Exception
-    {
+    public static int updatePillReadTime(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,Feed).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, Feed).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             String schemaName = loggedInUser.schemaName;
             int affectedRows = 0;
-            try
-            {
-                if(con != null)
-                {
-                    stmt = con.prepareStatement(" UPDATE "+schemaName+".feeddelivery SET readtime = ?,answertime = ?,answerjson = ? " +
+            try {
+                if (con != null) {
+                    stmt = con.prepareStatement(" UPDATE " + schemaName + ".feeddelivery SET readtime = ?,answertime = ?,answerjson = ? " +
                             " WHERE userid = ? AND pillid = ? ");
-                    stmt.setTimestamp(1,new Timestamp((new Date()).getTime()));
-                    stmt.setTimestamp(2,new Timestamp((new Date()).getTime()));
-                    stmt.setString(3,node.get("answerJson").asText());
-                    stmt.setInt(4,loggedInUser.id);
-                    stmt.setInt(5,node.get("pillId").asInt());
+                    stmt.setTimestamp(1, new Timestamp((new Date()).getTime()));
+                    stmt.setTimestamp(2, new Timestamp((new Date()).getTime()));
+                    stmt.setString(3, node.get("answerJson").asText());
+                    stmt.setInt(4, loggedInUser.id);
+                    stmt.setInt(5, node.get("pillId").asInt());
                     affectedRows = stmt.executeUpdate();
-                }
-                else
+                } else
                     throw new SQLException("DB Connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return affectedRows;
-        }
-        else {
+        } else {
             throw new NotAuthorizedException("");
         }
     }

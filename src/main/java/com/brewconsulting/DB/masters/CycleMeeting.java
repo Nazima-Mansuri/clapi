@@ -219,6 +219,12 @@ public class CycleMeeting {
                         subMeeting.userDetails = new ArrayList<>();
                         subMeeting.userDetails.add(new UserDetail(result.getInt(7),result.getString(12),result.getString(13),result.getString(14),result.getString(15),result.getString(16) ,(String[]) result.getArray(17).getArray()));
                         subMeeting.count = result.getInt(18);
+                        if(subMeeting.endDate.before(new Date()) && !subMeeting.endDate.equals(new Date()))
+                            subMeeting.status = "Past";
+                        else if(subMeeting.startDate.after(new Date()) && subMeeting.endDate.after(new Date()) && !subMeeting.endDate.equals(new Date()))
+                            subMeeting.status = "Future";
+                        else
+                            subMeeting.status = "Current";
                     }
                 } else
                     throw new Exception("DB connection is null");

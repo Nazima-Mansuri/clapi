@@ -580,7 +580,6 @@ public class AssesmentCollection {
                     }
                 }
             }
-            System.out.println("ID Size : " + questionIds.size());
 
             if (questionIds.size() > 0) {
                 Integer[] quesId = new Integer[questionIds.size()];

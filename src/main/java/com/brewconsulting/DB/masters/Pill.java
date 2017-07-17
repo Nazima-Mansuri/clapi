@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.imageio.ImageIO;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -23,10 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,6 +34,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.io.OutputStream;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by lcom53 on 29/12/16.
@@ -61,21 +62,6 @@ public class Pill {
 
     @JsonProperty("isQuestion")
     public boolean isQuestion;
-
-   /* @JsonProperty("questiontext")
-    public String questiontext;
-
-    @JsonProperty("answeroptions")
-    public String[] answeroptions;
-
-    @JsonProperty("answertext")
-    public String answertext;
-
-    @JsonProperty("scorecorrect")
-    public String scorecorrect;
-
-    @JsonProperty("scoreincorrect")
-    public double scoreincorrect;*/
 
     @JsonProperty("products")
     public Integer[] products;
@@ -106,6 +92,19 @@ public class Pill {
     @JsonProperty("pillVideo")
     public String pillVideo;
 
+    @JsonProperty("feedDeliveryId")
+    public int feedDeliveryId;
+
+    @JsonProperty("deliveryTime")
+    public String deliveryTime;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+    @JsonProperty("readTime")
+    public Date readTime;
+
+    @JsonProperty("userAnswerJson")
+    public String userAnswerJson;
+
     @JsonProperty("question")
     public HashMap question;
 
@@ -124,7 +123,7 @@ public class Pill {
     public static final int Pill = 18;
 
     /***
-     *
+     * Used to get all delivered pills of specific user
      *
      * @param loggedInUser
      * @return
@@ -145,68 +144,190 @@ public class Pill {
             try {
                 if (con != null) {
 
-                    stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
-                            " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
-                            " FROM " + schemaName + ".pills p " +
-                            " WHERE id = ANY(SELECT pillid " +
-                            "  FROM "+schemaName+".feeddelivery WHERE userid = ?)" +
-                            " ORDER BY createdate ");
-                    stmt.setInt(1,loggedInUser.id);
-
-                    /*stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
-                            " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
-                            " FROM " + schemaName + ".pills p " +
-                            " ORDER BY createdate ");*/
-
-                    resultSet = stmt.executeQuery();
-                    while (resultSet.next()) {
+                    stmt = con.prepareStatement(" SELECT id,pillid,deliverytime,readtime,answerjson FROM " + schemaName + ".feeddelivery WHERE userid = ?");
+                    stmt.setInt(1, loggedInUser.id);
+                    result = stmt.executeQuery();
+                    while (result.next()) {
                         Pill pill = new Pill();
-                        pill.id = resultSet.getInt(1);
-                        pill.divid = resultSet.getInt(2);
-                        pill.title = resultSet.getString(3);
-                        pill.body = resultSet.getString(4);
-                        pill.questiontype = resultSet.getString(5);
-                        if (!resultSet.getString(5).equals("NONE"))
-                            pill.isQuestion = true;
-                        else
-                            pill.isQuestion = false;
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                        String date = sdf.format(result.getTimestamp(3));
+                        pill.feedDeliveryId = result.getInt(1);
+                        pill.deliveryTime = date;
 
-                        String options = resultSet.getString(7);
-                        pill.question = new HashMap();
-                        pill.question.put("questiontext", resultSet.getString(6));
+                        pill.readTime = result.getTimestamp(4);
+                        pill.userAnswerJson = result.getString(5);
 
-                        if (options != null)
-                            pill.question.put("answeroptions", options.split(","));
+                        stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                                " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
+                                " FROM " + schemaName + ".pills p " +
+                                " WHERE id = ? ");
+                        stmt.setInt(1, result.getInt(2));
+                        resultSet = stmt.executeQuery();
+                        while (resultSet.next()) {
 
-                        pill.question.put("answertext", resultSet.getString(8));
-                        pill.question.put("scorecorrect", resultSet.getString(9));
-                        pill.question.put("scoreincorrect", resultSet.getDouble(10));
-                        pill.products = (Integer[]) resultSet.getArray(11).getArray();
-                        pill.keywords = (String[]) resultSet.getArray(12).getArray();
-                        pill.createdate = resultSet.getTimestamp(13);
-                        pill.createby = resultSet.getInt(14);
-                        pill.pillImages = new ArrayList<>();
-                        pill.pillResizeImages = new ArrayList<>();
+                            pill.id = resultSet.getInt(1);
+                            pill.divid = resultSet.getInt(2);
+                            pill.title = resultSet.getString(3);
+                            pill.body = resultSet.getString(4);
+                            pill.questiontype = resultSet.getString(5);
+                            if (!resultSet.getString(5).equals("NONE"))
+                                pill.isQuestion = true;
+                            else
+                                pill.isQuestion = false;
 
-                        stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
-                                " videothumbnailurl, mediatype " +
-                                " FROM " + schemaName + ".pillsmedia WHERE pillid = ?  ");
-                        stmt.setInt(1, resultSet.getInt(1));
-                        contentSet = stmt.executeQuery();
-                        while (contentSet.next()) {
+                            String options = resultSet.getString(7);
+                            pill.question = new HashMap();
+                            pill.question.put("questiontext", resultSet.getString(6));
+                            String[] arr = new String[0];
+                            if (options != null)
+                                pill.question.put("answeroptions", options.split(","));
+                            else
+                                pill.question.put("answeroptions", arr);
 
-                            if (contentSet.getString(6).equalsIgnoreCase("image")) {
-                                pill.isImage = true;
-                                pill.pillImages.add(contentSet.getString(2));
-                                pill.pillResizeImages.add(contentSet.getString(3));
+                            pill.question.put("answertext", resultSet.getString(8));
+                            pill.question.put("scorecorrect", resultSet.getString(9));
+                            pill.question.put("scoreincorrect", resultSet.getDouble(10));
+                            pill.products = (Integer[]) resultSet.getArray(11).getArray();
+                            pill.keywords = (String[]) resultSet.getArray(12).getArray();
+                            pill.createdate = resultSet.getTimestamp(13);
+                            pill.createby = resultSet.getInt(14);
+                            pill.pillImages = new ArrayList<>();
+                            pill.pillResizeImages = new ArrayList<>();
+
+                            stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
+                                    " videothumbnailurl, mediatype " +
+                                    " FROM " + schemaName + ".pillsmedia WHERE pillid = ?  ");
+                            stmt.setInt(1, resultSet.getInt(1));
+                            contentSet = stmt.executeQuery();
+                            while (contentSet.next()) {
+
+                                if (contentSet.getString(6).equalsIgnoreCase("image")) {
+                                    pill.isImage = true;
+                                    pill.pillImages.add(contentSet.getString(2));
+                                    pill.pillResizeImages.add(contentSet.getString(3));
+                                }
+
+                                if (contentSet.getString(6).equalsIgnoreCase("video")) {
+                                    pill.isVideo = true;
+                                    pill.pillVideo = contentSet.getString(2);
+                                }
                             }
 
-                            if (contentSet.getString(6).equalsIgnoreCase("video")) {
-                                pill.isVideo = true;
-                                pill.pillVideo = contentSet.getString(2);
-                            }
+                            pillList.add(pill);
                         }
-                        pillList.add(pill);
+                    }
+                } else
+                    throw new Exception("DB connection is null");
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
+                        resultSet.close();
+            }
+            return pillList;
+        } else {
+            throw new NotAuthorizedException("");
+        }
+    }
+
+    /***
+     * @param feedDeliveryId
+     * @param loggedInUser
+     * @return
+     * @throws Exception
+     */
+    public static List<Pill> getAllDeliveredPills(int feedDeliveryId, LoggedInUser loggedInUser) throws Exception {
+        int userRole = loggedInUser.roles.get(0).roleId;
+        if (Permissions.isAuthorised(userRole, Pill).equals("Read") ||
+                Permissions.isAuthorised(userRole, Pill).equals("Write")) {
+            Connection con = DBConnectionProvider.getConn();
+            PreparedStatement stmt = null;
+            List<Pill> pillList = new ArrayList<>();
+            String schemaName = loggedInUser.schemaName;
+            ResultSet result = null;
+            ResultSet resultSet = null;
+            ResultSet contentSet = null;
+
+            try {
+                if (con != null) {
+
+                    stmt = con.prepareStatement(" SELECT id,pillid,deliverytime,readtime,answerjson FROM " + schemaName + ".feeddelivery WHERE userid = ? AND id > ?");
+                    stmt.setInt(1, loggedInUser.id);
+                    stmt.setInt(2, feedDeliveryId);
+                    result = stmt.executeQuery();
+                    while (result.next()) {
+                        Pill pill = new Pill();
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                        String date = sdf.format(result.getTimestamp(3));
+                        pill.feedDeliveryId = result.getInt(1);
+                        pill.deliveryTime = date;
+
+                        pill.readTime = result.getTimestamp(4);
+                        pill.userAnswerJson = result.getString(5);
+
+                        stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
+                                " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
+                                " FROM " + schemaName + ".pills p " +
+                                " WHERE id = ? ");
+                        stmt.setInt(1, result.getInt(2));
+                        resultSet = stmt.executeQuery();
+                        while (resultSet.next()) {
+
+                            pill.id = resultSet.getInt(1);
+                            pill.divid = resultSet.getInt(2);
+                            pill.title = resultSet.getString(3);
+                            pill.body = resultSet.getString(4);
+                            pill.questiontype = resultSet.getString(5);
+                            if (!resultSet.getString(5).equals("NONE"))
+                                pill.isQuestion = true;
+                            else
+                                pill.isQuestion = false;
+
+                            String options = resultSet.getString(7);
+                            pill.question = new HashMap();
+                            pill.question.put("questiontext", resultSet.getString(6));
+                            String[] arr = new String[0];
+                            if (options != null)
+                                pill.question.put("answeroptions", options.split(","));
+                            else
+                                pill.question.put("answeroptions", arr);
+
+                            pill.question.put("answertext", resultSet.getString(8));
+                            pill.question.put("scorecorrect", resultSet.getString(9));
+                            pill.question.put("scoreincorrect", resultSet.getDouble(10));
+                            pill.products = (Integer[]) resultSet.getArray(11).getArray();
+                            pill.keywords = (String[]) resultSet.getArray(12).getArray();
+                            pill.createdate = resultSet.getTimestamp(13);
+                            pill.createby = resultSet.getInt(14);
+                            pill.pillImages = new ArrayList<>();
+                            pill.pillResizeImages = new ArrayList<>();
+
+                            stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
+                                    " videothumbnailurl, mediatype " +
+                                    " FROM " + schemaName + ".pillsmedia WHERE pillid = ?  ");
+                            stmt.setInt(1, resultSet.getInt(1));
+                            contentSet = stmt.executeQuery();
+                            while (contentSet.next()) {
+
+                                if (contentSet.getString(6).equalsIgnoreCase("image")) {
+                                    pill.isImage = true;
+                                    pill.pillImages.add(contentSet.getString(2));
+                                    pill.pillResizeImages.add(contentSet.getString(3));
+                                }
+
+                                if (contentSet.getString(6).equalsIgnoreCase("video")) {
+                                    pill.isVideo = true;
+                                    pill.pillVideo = contentSet.getString(2);
+                                }
+                            }
+
+                            pillList.add(pill);
+                        }
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -229,7 +350,6 @@ public class Pill {
 
 
     /***
-     *
      * @param pillId
      * @param loggedInUser
      * @return
@@ -272,8 +392,11 @@ public class Pill {
                         pill.question = new HashMap();
                         pill.question.put("questiontext", resultSet.getString(6));
 
+                        String[] arr = new String[0];
                         if (options != null)
                             pill.question.put("answeroptions", options.split(","));
+                        else
+                            pill.question.put("answeroptions", arr);
 
                         pill.question.put("answertext", resultSet.getString(8));
                         pill.question.put("scorecorrect", resultSet.getString(9));
@@ -283,17 +406,19 @@ public class Pill {
                         pill.createdate = resultSet.getTimestamp(13);
                         pill.createby = resultSet.getInt(14);
                         pill.pillImages = new ArrayList<>();
+                        pill.pillResizeImages = new ArrayList<>();
 
                         stmt = con.prepareStatement(" SELECT pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
                                 " videothumbnailurl, mediatype " +
                                 " FROM " + schemaName + ".pillsmedia WHERE pillid = ?  ");
-                        stmt.setInt(1, resultSet.getInt(1));
+                        stmt.setInt(1, pillId);
                         contentSet = stmt.executeQuery();
                         while (contentSet.next()) {
 
                             if (contentSet.getString(6).equalsIgnoreCase("image")) {
                                 pill.isImage = true;
                                 pill.pillImages.add(contentSet.getString(2));
+                                pill.pillResizeImages.add(contentSet.getString(3));
                             }
 
                             if (contentSet.getString(6).equalsIgnoreCase("video")) {
@@ -301,6 +426,21 @@ public class Pill {
                                 pill.pillVideo = contentSet.getString(2);
                             }
                         }
+
+                        stmt = con.prepareStatement(" SELECT deliverytime,readtime,answerjson,id FROM " + schemaName + ".feeddelivery " +
+                                " WHERE pillid = ? AND userid = ? ");
+                        stmt.setInt(1, pillId);
+                        stmt.setInt(2, loggedInUser.id);
+                        contentSet = stmt.executeQuery();
+                        while (contentSet.next()) {
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                            String date = sdf.format(contentSet.getTimestamp(1));
+
+                            pill.deliveryTime = date;
+                            pill.readTime = contentSet.getTimestamp(2);
+                            pill.userAnswerJson = contentSet.getString(3);
+                        }
+
                     }
                 } else
                     throw new Exception("DB connection is null");
@@ -323,8 +463,6 @@ public class Pill {
 
 
     /***
-     *
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
@@ -346,11 +484,11 @@ public class Pill {
                         stmt = con.prepareStatement(" SELECT p.id, p.divid, title, body, questiontype, questiontext, answeroptions, " +
                                 " answertext, scorecorrect, scoreincorrect, products, keywords, p.createdate, p.createby," +
                                 " u.username,u.firstname,u.lastname,(uf.address).city,(uf.address).state,(uf.address).phone,d.name " +
-                                " FROM " + schemaName + ".pills p " +
+                                " FROM (select * from " + schemaName + ".pills p WHERE divid = ?)p " +
                                 " left join master.users u on u.id = p.createby " +
                                 " left join " + schemaName + ".userprofile uf on uf.userid = p.createby " +
                                 " left join " + schemaName + ".divisions d on d.id = p.divid " +
-                                " WHERE divid = ? ORDER BY p.createdate DESC");
+                                " ORDER BY p.createdate DESC");
                         stmt.setInt(1, divId);
                         resultSet = stmt.executeQuery();
                         while (resultSet.next()) {
@@ -370,8 +508,11 @@ public class Pill {
                             pill.question = new HashMap();
                             pill.question.put("questiontext", resultSet.getString(6));
 
+                            String[] arr = new String[0];
                             if (options != null)
                                 pill.question.put("answeroptions", options.split(","));
+                            else
+                                pill.question.put("answeroptions", arr);
 
                             pill.question.put("answertext", resultSet.getString(8));
                             pill.question.put("scorecorrect", resultSet.getString(9));
@@ -431,8 +572,11 @@ public class Pill {
                             pill.question = new HashMap();
                             pill.question.put("questiontext", resultSet.getString(6));
 
+                            String[] arr = new String[0];
                             if (options != null)
                                 pill.question.put("answeroptions", options.split(","));
+                            else
+                                pill.question.put("answeroptions", arr);
 
                             pill.question.put("answertext", resultSet.getString(8));
                             pill.question.put("scorecorrect", resultSet.getString(9));
@@ -488,8 +632,6 @@ public class Pill {
     }
 
     /***
-     *
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
@@ -534,8 +676,11 @@ public class Pill {
                         pill.question = new HashMap();
                         pill.question.put("questiontext", pillResultSet.getString(6));
 
+                        String[] arr = new String[0];
                         if (options != null)
                             pill.question.put("answeroptions", options.split(","));
+                        else
+                            pill.question.put("answeroptions", arr);
 
                         pill.question.put("answertext", pillResultSet.getString(8));
                         pill.question.put("scorecorrect", pillResultSet.getString(9));
@@ -586,7 +731,6 @@ public class Pill {
     }
 
     /***
-     *
      * @param feedId
      * @param loggedInUser
      * @return
@@ -611,11 +755,11 @@ public class Pill {
                     stmt = con.prepareStatement(" SELECT p.id, p.divid, title, body, questiontype, questiontext, answeroptions, " +
                             " answertext, scorecorrect, scoreincorrect, products, keywords, p.createdate, p.createby,u.username,u.firstname," +
                             " u.lastname,(uf.address).city, (uf.address).state, (uf.address).phone " +
-                            " FROM " + schemaName + ".feeds f " +
+                            " FROM (select * from " + schemaName + ".feeds f WHERE f.id = ?)f " +
                             " left join " + schemaName + ".pills p on p.id = ANY(pills :: int[]) " +
                             " left join master.users u on u.id = p.createby" +
-                            " left join "+schemaName+".userprofile uf on uf.userid = p.createby  " +
-                            " WHERE f.id = ? ORDER BY p.createdate DESC ");
+                            " left join " + schemaName + ".userprofile uf on uf.userid = p.createby  " +
+                            " ORDER BY p.createdate DESC ");
                     stmt.setInt(1, feedId);
                     pillResultSet = stmt.executeQuery();
                     while (pillResultSet.next()) {
@@ -638,8 +782,11 @@ public class Pill {
                             pill.question = new HashMap();
                             pill.question.put("questiontext", pillResultSet.getString(6));
 
+                            String[] arr = new String[0];
                             if (options != null)
                                 pill.question.put("answeroptions", options.split(","));
+                            else
+                                pill.question.put("answeroptions", arr);
 
                             pill.question.put("answertext", pillResultSet.getString(8));
                             pill.question.put("scorecorrect", pillResultSet.getString(9));
@@ -655,8 +802,8 @@ public class Pill {
                             pill.createdate = pillResultSet.getTimestamp(13);
                             pill.createby = pillResultSet.getInt(14);
                             pill.userDetails = new ArrayList<>();
-                            pill.userDetails.add(new UserDetail(pillResultSet.getInt(14),pillResultSet.getString(15),pillResultSet.getString(16),
-                                    pillResultSet.getString(17),pillResultSet.getString(18),
+                            pill.userDetails.add(new UserDetail(pillResultSet.getInt(14), pillResultSet.getString(15), pillResultSet.getString(16),
+                                    pillResultSet.getString(17), pillResultSet.getString(18),
                                     pillResultSet.getString(19), (String[]) pillResultSet.getArray(20).getArray()));
 
                             pill.pillImages = new ArrayList<>();
@@ -706,8 +853,6 @@ public class Pill {
     }
 
     /***
-     *
-     *
      * @param divid
      * @param title
      * @param body
@@ -726,13 +871,15 @@ public class Pill {
     public static int addPills(int divid, String title, String body, String questiontype, String questiontext,
                                String answeroptions, String answertext, int scorecorrect, String scoreincorrect,
                                String products, String keywords, List<String> filePath, List<String> fileTypes,
-                               List<String> resizeList,LoggedInUser loggedInUser) throws Exception {
+                               List<String> resizeList, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Write")) {
             String schemaname = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             int result = 0;
+            ResultSet resultSet;
+            int pillId = 0;
 
             try {
                 con.setAutoCommit(false);
@@ -769,81 +916,89 @@ public class Pill {
                     keyArr = con.createArrayOf("text", keywordArr);
                 }
 
-                stmt = con.prepareStatement(" INSERT INTO " + schemaname
-                        + ".pills(divid, title, body, questiontype, questiontext, answeroptions," +
-                        " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby) " +
-                        " VALUES (?,?,?,CAST(? AS master.questiontype),?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                stmt = con.prepareStatement(" SELECT Count(*) FROM " + schemaname + ".pills WHERE title = ? ");
+                stmt.setString(1, title);
+                resultSet = stmt.executeQuery();
+                while (resultSet.next()) {
+                    if (resultSet.getInt(1) == 0) {
+                        stmt = con.prepareStatement(" INSERT INTO " + schemaname
+                                + ".pills(divid, title, body, questiontype, questiontext, answeroptions," +
+                                " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby) " +
+                                " VALUES (?,?,?,CAST(? AS master.questiontype),?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
 
-                stmt.setInt(1, divid);
-                stmt.setString(2, title);
+                        stmt.setInt(1, divid);
+                        stmt.setString(2, title);
 
-                if (!body.isEmpty() && body != null)
-                    stmt.setString(3, body);
-                else
-                    stmt.setString(3, null);
+                        if (!body.isEmpty() && body != null)
+                            stmt.setString(3, body);
+                        else
+                            stmt.setString(3, null);
 
-                stmt.setString(4, quesType.name());
+                        stmt.setString(4, quesType.name());
 
-                if (!questiontext.isEmpty() && questiontext != null)
-                    stmt.setString(5, questiontext);
-                else
-                    stmt.setString(5, null);
+                        if (!questiontext.isEmpty() && questiontext != null)
+                            stmt.setString(5, questiontext);
+                        else
+                            stmt.setString(5, null);
 
-                if (!answeroptions.isEmpty() && answeroptions != null)
-                    stmt.setString(6, answeroptions);
-                else
-                    stmt.setString(6, null);
+                        if (!answeroptions.isEmpty() && answeroptions != null)
+                            stmt.setString(6, answeroptions);
+                        else
+                            stmt.setString(6, null);
 
-                if (!answertext.isEmpty() && answertext != null)
-                    stmt.setString(7, answertext);
-                else
-                    stmt.setString(7, null);
+                        if (!answertext.isEmpty() && answertext != null)
+                            stmt.setString(7, answertext);
+                        else
+                            stmt.setString(7, null);
 
-                stmt.setInt(8, scorecorrect);
+                        stmt.setInt(8, scorecorrect);
 
-                stmt.setDouble(9, Double.parseDouble(scoreincorrect));
+                        stmt.setDouble(9, Double.parseDouble(scoreincorrect));
 
-                stmt.setArray(10, prdarr);
+                        stmt.setArray(10, prdarr);
 
-                stmt.setArray(11, keyArr);
+                        stmt.setArray(11, keyArr);
 
-                stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
+                        stmt.setTimestamp(12, new Timestamp((new Date()).getTime()));
 
-                stmt.setInt(13, loggedInUser.id);
+                        stmt.setInt(13, loggedInUser.id);
 
-                result = stmt.executeUpdate();
+                        result = stmt.executeUpdate();
 
-                if (result == 0)
-                    throw new SQLException("Add Pills Failed.");
+                        if (result == 0)
+                            throw new SQLException("Add Pills Failed.");
 
-                ResultSet generatedKeys = stmt.getGeneratedKeys();
-                int pillId;
-                if (generatedKeys.next())
-                    // It gives last inserted Id in questionId
-                    pillId = generatedKeys.getInt(1);
-                else
-                    throw new SQLException("No ID obtained");
+                        ResultSet generatedKeys = stmt.getGeneratedKeys();
+                        if (generatedKeys.next())
+                            // It gives last inserted Id in questionId
+                            pillId = generatedKeys.getInt(1);
+                        else
+                            throw new SQLException("No ID obtained");
 
-                for (int i = 0; i < filePath.size(); i++) {
-                    stmt = con.prepareStatement("INSERT INTO " + schemaname
-                            + ".pillsmedia(pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
-                            " videothumbnailurl, createdate, createby,mediatype) VALUES (?,?,?,?,?,?,?,?)");
+                        for (int i = 0; i < filePath.size(); i++) {
+                            stmt = con.prepareStatement("INSERT INTO " + schemaname
+                                    + ".pillsmedia(pillid, originalmediaurl, resize540xurl, resize250x25uurl," +
+                                    " videothumbnailurl, createdate, createby,mediatype) VALUES (?,?,?,?,?,?,?,?)");
 
-                    stmt.setInt(1, pillId);
-                    stmt.setString(2, filePath.get(i));
-                    stmt.setString(3, resizeList.get(i));
-                    stmt.setString(4, "");
-                    stmt.setString(5, "");
-                    stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
-                    stmt.setInt(7, loggedInUser.id);
+                            stmt.setInt(1, pillId);
+                            stmt.setString(2, filePath.get(i));
+                            stmt.setString(3, resizeList.get(i));
+                            stmt.setString(4, "");
+                            stmt.setString(5, "");
+                            stmt.setTimestamp(6, new Timestamp((new Date()).getTime()));
+                            stmt.setInt(7, loggedInUser.id);
 
-                    if (!fileTypes.get(i).isEmpty() || !fileTypes.get(i).equals("") || !fileTypes.get(i).equals(null))
-                        stmt.setString(8, fileTypes.get(i));
-                    else
-                        stmt.setString(8, "none");
+                            if (!fileTypes.get(i).isEmpty() || !fileTypes.get(i).equals("") || !fileTypes.get(i).equals(null))
+                                stmt.setString(8, fileTypes.get(i));
+                            else
+                                stmt.setString(8, "none");
 
-                    stmt.executeUpdate();
+                            stmt.executeUpdate();
+                        }
+                    } else
+                        throw new BadRequestException("Pill is alredy Exist with same name");
                 }
+
                 con.commit();
                 return pillId;
             } finally {
@@ -860,7 +1015,6 @@ public class Pill {
     }
 
     /***
-     *
      * @param divid
      * @param title
      * @param body
@@ -881,7 +1035,7 @@ public class Pill {
     public static int updatePills(int divid, String title, String body, String questiontype, String questiontext,
                                   String answeroptions, String answertext, int scorecorrect, String scoreincorrect,
                                   String products, String keywords, List<String> filePath, List<String> fileTypes,
-                                  List<String> resizeList,boolean isUpdate, int id,
+                                  List<String> resizeList, boolean isUpdate, int id,
                                   LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, Pill).equals("Write")) {
@@ -1007,7 +1161,6 @@ public class Pill {
     }
 
     /***
-     *
      * @param id
      * @param loggedInUser
      * @return
@@ -1020,11 +1173,32 @@ public class Pill {
             PreparedStatement stmt = null;
             int affectedRow = 0;
             String schemaName = loggedInUser.schemaName;
+            ResultSet resultSet;
 
             try {
-                stmt = con.prepareStatement(" DELETE FROM " + schemaName + ".pills WHERE id = ? ");
+
+                stmt = con.prepareStatement("Select SUM(cnt) FROM (" +
+                        " Select count(*) cnt from " + schemaName + ".feeds where ? = ANY(pills :: int[]) " +
+                        " union all " +
+                        " Select count(*) cnt from " + schemaName + ".feeddelivery where pillid = ? " +
+                        " union all " +
+                        " Select count(*) cnt from " + schemaName + ".feeddeliveryfail where pillid = ?) " +
+                        " AS TotalCount");
+
                 stmt.setInt(1, id);
-                affectedRow = stmt.executeUpdate();
+                stmt.setInt(2, id);
+                stmt.setInt(3, id);
+                resultSet = stmt.executeQuery();
+                while (resultSet.next()) {
+                    if (resultSet.getInt(1) == 0) {
+                        stmt = con.prepareStatement(" DELETE FROM " + schemaName + ".pillsmedia WHERE pillid = ? ");
+                        stmt.setInt(1, id);
+                        affectedRow = stmt.executeUpdate();
+                    }
+                    stmt = con.prepareStatement(" DELETE FROM " + schemaName + ".pills WHERE id = ? ");
+                    stmt.setInt(1, id);
+                    affectedRow = stmt.executeUpdate();
+                }
             } finally {
                 if (con != null)
                     if (!con.isClosed())
@@ -1040,7 +1214,6 @@ public class Pill {
     }
 
     /***
-     *
      * @param node
      * @param loggedInUser
      * @return
@@ -1097,7 +1270,7 @@ public class Pill {
                         }
                     }
 
-                    query = query.concat(" AND NOT EXISTS (SELECT pills FROM "+schemaName+".feeds f WHERE f.id = ? AND p.id = ANY(pills :: int[]))");
+                    query = query.concat(" AND NOT EXISTS (SELECT pills FROM " + schemaName + ".feeds f WHERE f.id = ? AND p.id = ANY(pills :: int[]))");
 
                     stmt = con.prepareStatement(query);
                     System.out.println(" Query : " + query);

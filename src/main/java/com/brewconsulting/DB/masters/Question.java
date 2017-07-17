@@ -102,7 +102,7 @@ public class Question {
     }
 
     public enum QuestionType {
-        MCQ, MRQ, MATRIX, SLIDER, PRIORITY, TEXT, PULLDOWN, NUMBER, LINE, DIVISION, DATE, TIME, EMAIL, URL;
+        MCQ, MRQ, MATRIX, SLIDER, PRIORITY, TEXT, PULLDOWN, NUMBER, LINE, DIVISION, DATE, TIME, EMAIL, URL,NONE;
     }
 
     public enum ComplexityLevel {
@@ -606,7 +606,7 @@ public class Question {
 
                     if (node.has("FromDate") && node.has("ToDate")) {
                         if (node.get("FromDate").asText() != "" || node.get("ToDate").asText() != "") {
-                            query = query.concat(" AND createdate >= ? AND createdate <= ( ? ::date + '1 day'::interval) ");
+                            query = query.concat(" AND q.createdate >= ? AND q.createdate <= ( ? ::date + '1 day'::interval) ");
                             isDate = true;
                         }
                     }
@@ -640,7 +640,7 @@ public class Question {
                         }
                     }
 
-                    query = query.concat(" ORDER BY updatedate DESC");
+                    query = query.concat(" ORDER BY q.updatedate DESC");
                     stmt = con.prepareStatement(query);
                     System.out.println(" QUERY : " + query);
 

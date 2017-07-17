@@ -1110,7 +1110,7 @@ public class QuestionCollection {
                     stmt.setInt(1, agendaId);
                     resultSet = stmt.executeQuery();
 
-                    while (resultSet.next()) {
+                      while (resultSet.next()) {
                         questionCollection = new QuestionCollection();
                         questionCollection.id = resultSet.getInt(1);
                         questionCollection.agendaId = resultSet.getInt(2);
@@ -1128,36 +1128,48 @@ public class QuestionCollection {
                         questionCollection.Scoring.put("IsApplyScoring", resultSet.getBoolean(12));
 
                         HashMap CorrectScore = new HashMap();
-                        Integer[] corrArray = (Integer[]) resultSet.getArray(13).getArray();
-                        if (corrArray.length > 0 && corrArray.length == 3) {
-                            CorrectScore.put("Low", corrArray[0]);
-                            CorrectScore.put("Medium", corrArray[1]);
-                            CorrectScore.put("High", corrArray[2]);
+                        if (resultSet.getArray(13) != null) {
+                            Integer[] corrArray = (Integer[]) resultSet.getArray(13).getArray();
+                            if (corrArray.length > 0 && corrArray.length == 3) {
+                                CorrectScore.put("Low", corrArray[0]);
+                                CorrectScore.put("Medium", corrArray[1]);
+                                CorrectScore.put("High", corrArray[2]);
+                            }
                         }
 
                         questionCollection.Scoring.put("CorrectScore", CorrectScore);
+
                         HashMap IncorrectScore = new HashMap();
-                        Double[] inCorrArray = (Double[]) resultSet.getArray(14).getArray();
-                        if (inCorrArray.length > 0 && inCorrArray.length == 3) {
-                            IncorrectScore.put("Low", inCorrArray[0]);
-                            IncorrectScore.put("Medium", inCorrArray[1]);
-                            IncorrectScore.put("High", inCorrArray[2]);
+                        if (resultSet.getArray(14) != null) {
+                            Double[] inCorrArray = (Double[]) resultSet.getArray(14).getArray();
+                            if (inCorrArray.length > 0 && inCorrArray.length == 3) {
+                                IncorrectScore.put("Low", inCorrArray[0]);
+                                IncorrectScore.put("Medium", inCorrArray[1]);
+                                IncorrectScore.put("High", inCorrArray[2]);
+                            }
                         }
 
                         questionCollection.Scoring.put("IncorrectScore", IncorrectScore);
 
                         questionCollection.TimeLimitation = new HashMap();
                         questionCollection.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(18));
-                        questionCollection.TimeLimitation.put("FixedTime", resultSet.getString(16));
+
+                        if (resultSet.getString(16) != null)
+                            questionCollection.TimeLimitation.put("FixedTime", resultSet.getString(16));
+                        else
+                            questionCollection.TimeLimitation.put("FixedTime", "00:00:00");
 
                         questionCollection.showFeedBack = resultSet.getBoolean(15);
 
                         HashMap DifferentTime = new HashMap();
-                        Integer[] diffArr = (Integer[]) resultSet.getArray(17).getArray();
-                        if (diffArr.length > 0 && diffArr.length == 3) {
-                            DifferentTime.put("Low", diffArr[0]);
-                            DifferentTime.put("Medium", diffArr[1]);
-                            DifferentTime.put("High", diffArr[2]);
+                        ;
+                        if (resultSet.getArray(17) != null) {
+                            Integer[] diffArr = (Integer[]) resultSet.getArray(17).getArray();
+                            if (diffArr.length > 0 && diffArr.length == 3) {
+                                DifferentTime.put("Low", diffArr[0]);
+                                DifferentTime.put("Medium", diffArr[1]);
+                                DifferentTime.put("High", diffArr[2]);
+                            }
                         }
 
                         questionCollection.TimeLimitation.put("DifferentTime", DifferentTime);
@@ -1165,6 +1177,7 @@ public class QuestionCollection {
                         questionCollection.title = resultSet.getString(20);
                         questionCollection.description = resultSet.getString(21);
                         questionCollection.randomdelivery = resultSet.getBoolean(22);
+                        questionCollection.deliveryMode = "APP";
 
                         collectionList.add(questionCollection);
                     }
@@ -1591,8 +1604,14 @@ public class QuestionCollection {
                         }
                         if (medium > 0) {
                             lstTemp = com.brewconsulting.DB.masters.Question.getQuestionsByListAndComplexity(qc.questionsId, "MEDIUM");
-                            for (int i = 0; i < medium; i++) {
-                                questionIds.add(lstTemp.get(i).id);
+                            if (lstTemp.size() >= medium) {
+                                for (int i = 0; i < medium; i++) {
+                                    questionIds.add(lstTemp.get(i).id);
+                                }
+                            } else {
+                                for (int i = 0; i < lstTemp.size(); i++) {
+                                    questionIds.add(lstTemp.get(i).id);
+                                }
                             }
                             lstTemp.clear();
                         }
@@ -2049,7 +2068,7 @@ public class QuestionCollection {
                                     " sum(score) as TotalScore, userid,username,firstname,lastname" +
                                     " FROM " + schemaname + ".cyclemeetingassessmentresult " +
                                     " left join master.users u on u.id = userid " +
-                                    " WHERE agendaid = ? GROUP BY(userid,u.username,u.firstname,u.lastname) ORDER BY totalscore DESC ");
+                                    " WHERE agendaid = ? GROUP BY userid,u.username,u.firstname,u.lastname ORDER BY totalscore DESC ");
                     stmt.setInt(1, agendaId);
                     resultSet = stmt.executeQuery();
 
@@ -2110,7 +2129,7 @@ public class QuestionCollection {
                                     " questionid,c.questionjson,c.answerjson,q.isreview " +
                                     " FROM " + schemaname + ".cyclemeetingassessmentresult c " +
                                     " left join " + schemaname + ".question q ON q.id = questionid " +
-                                    " WHERE agendaid = ? GROUP BY(questionid,c.questionjson,c.answerjson,q.isreview)");
+                                    " WHERE agendaid = ? GROUP BY c.questionid,c.questionjson,c.answerjson,q.isreview");
                     stmt.setInt(1, agendaId);
                     resultSet = stmt.executeQuery();
 

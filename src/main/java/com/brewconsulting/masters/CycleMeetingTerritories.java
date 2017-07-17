@@ -435,16 +435,16 @@ public class CycleMeetingTerritories {
                     }
 
                     if (deviceOS.equalsIgnoreCase("iOS")) {
-                        /*ApnsService service =
+                        ApnsService service =
                                 APNS.newService()
                                         .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_Production.p12"), "lanetteam1")
                                         .withProductionDestination()
-                                        .build();*/
-                        ApnsService service =
+                                        .build();
+                        /*ApnsService service =
                                 APNS.newService()
                                         .withCert(getClass().getClassLoader().getResourceAsStream("Rolla_Development.p12"), "lanetteam1")
                                         .withSandboxDestination()
-                                        .build();
+                                        .build();*/
 
                         String payload = APNS.newPayload().alertBody("Exam Started.!").alertAction("Test").customField("id",agendaId).build();
                         System.out.println("Payload : " + payload);

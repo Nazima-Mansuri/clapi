@@ -1,29 +1,16 @@
 package com.brewconsulting.DB.masters;
 
-import java.nio.file.AccessDeniedException;
-import java.nio.file.NoSuchFileException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.NoContentException;
-
 import com.brewconsulting.DB.Permissions;
 import com.brewconsulting.DB.common.DBConnectionProvider;
-import com.brewconsulting.exceptions.NoDataFound;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+
+import javax.ws.rs.NotAuthorizedException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class Division {
 
@@ -128,12 +115,11 @@ public class Division {
                                     .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy,d.updateDate,d.updateBy," +
                                             " u.username,u.firstname,u.lastname,(address).addLine1 addLine1," +
                                             " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                            " (address).state state,(address).phone phones from "
-                                            + schemaName
-                                            + ".divisions d left join master.users u on d.updateBy = u.id left join "
-                                            + schemaName
+                                            " (address).state state,(address).phone phones from " +
+                                            " (select * from "+schemaName+".divisions d WHERE d.id = ?) d" +
+                                            " left join master.users u on d.updateBy = u.id " +
+                                            " left join " + schemaName
                                             + ".userprofile p on d.updateby = p.userid " +
-                                            " WHERE d.id = ? " +
                                             " ORDER BY d.updateDate DESC");
                             stmt.setInt(1, idList.get(i));
                             result = stmt.executeQuery();
@@ -277,12 +263,10 @@ public class Division {
                     stmt = con
                             .prepareStatement("select d.id, d.name, d.description, d.createDate, d.createBy, d.updateDate, "
                                     + " d.updateBy,u.username,u.firstname,u.lastname,(address).addLine1 addLine1,(address).addLine2 addLine2," +
-                                    " (address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from "
-                                    + schemaName
-                                    + ".divisions d " +
+                                    " (address).addLine3 addLine3,(address).city city,(address).state state,(address).phone phones from " +
+                                    " (select * from "+schemaName+".divisions d WHERE d.id = ?) d"+
                                     " left join master.users u on u.id = d.updateby " +
-                                    " left join " + schemaName + ".userprofile p on d.updateby = p.userid " +
-                                    "where id = ?");
+                                    " left join " + schemaName + ".userprofile p on d.updateby = p.userid");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {

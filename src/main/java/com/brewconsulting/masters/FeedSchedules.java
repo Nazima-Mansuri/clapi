@@ -171,6 +171,13 @@ public class FeedSchedules {
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
+        catch (BadRequestException b) {
+            logger.error("BadRequestException",b);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"No pills are available for feed.\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
         catch (SQLException s)
         {
             logger.error("SQLException",s);

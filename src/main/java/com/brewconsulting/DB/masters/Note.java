@@ -19,47 +19,46 @@ import static com.brewconsulting.DB.utils.stringToDate;
 /**
  * Created by lcom53 on 17/10/16.
  */
-public class Note
-{
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+public class Note {
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("id")
     public int id;
 
-    @JsonView({ UserViews.groupNoteView.class })
+    @JsonView({UserViews.groupNoteView.class})
     @JsonProperty("groupId")
     public int groupId;
 
-    @JsonView({ UserViews.childNoteView.class })
+    @JsonView({UserViews.childNoteView.class})
     @JsonProperty("cycleMeetingId")
     public int cycleMeetingId;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("title")
     public String title;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("description")
     public String description;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("category")
-    public String  category;
+    public String category;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("createdOn")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date createOn;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("createdBy")
     public int createBy;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("updateOn")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     public Date updateOn;
 
-    @JsonView({ UserViews.childNoteView.class, UserViews.groupNoteView.class })
+    @JsonView({UserViews.childNoteView.class, UserViews.groupNoteView.class})
     @JsonProperty("updateBy")
     public int updateBy;
 
@@ -67,13 +66,13 @@ public class Note
     public ArrayList<UserDetail> userDetails;
 
     public static final int Note = 12;
+
     // make default constructor to visible package
     public Note() {
     }
 
-    public enum NoteCategory
-    {
-        Prepare_Edit_Content, Venue_Arrangements,Travel_Arrangement,Misc
+    public enum NoteCategory {
+        Prepare_Edit_Content, Venue_Arrangements, Travel_Arrangement, Misc
     }
 
 
@@ -85,13 +84,13 @@ public class Note
      * @return
      * @throws Exception
      */
-    public static List<Note> getAllGroupNotes(int id , LoggedInUser loggedInUser)
+    public static List<Note> getAllGroupNotes(int id, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,Note).equals("Read") ||
-                Permissions.isAuthorised(userRole,Note).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Read") ||
+                Permissions.isAuthorised(userRole, Note).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             ArrayList<Note> groupNotes = new ArrayList<Note>();
@@ -106,12 +105,13 @@ public class Note
                                     " g.createdby, g.updateon, g.updateby , u.username ,u.firstname,u.lastname," +
                                     " (uf.address).city city, (uf.address).state state," +
                                     " (uf.address).phone phone " +
-                                    " FROM "+schemaName + ".groupNotes g " +
+                                    " FROM (SELECT * FROM " + schemaName + ".groupNotes g " +
+                                    " WHERE groupid = ? AND g.createdby = ?)g " +
                                     " left join master.users u on u.id = g.updateby " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = g.updateby" +
-                                    " where groupid = ? AND g.createdby = ? ORDER BY g.createdon DESC");
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = g.updateby" +
+                                    " ORDER BY g.createdon DESC");
                     stmt.setInt(1, id);
-                    stmt.setInt(2,loggedInUser.id);
+                    stmt.setInt(2, loggedInUser.id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Note note = new Note();
@@ -125,7 +125,7 @@ public class Note
                         note.updateOn = result.getTimestamp(8);
                         note.updateBy = result.getInt(9);
                         note.userDetails = new ArrayList<>();
-                        note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
+                        note.userDetails.add(new UserDetail(result.getInt(9), result.getString(10), result.getString(11), result.getString(12), result.getString(13), result.getString(14), (String[]) result.getArray(15).getArray()));
 
                         groupNotes.add(note);
                     }
@@ -143,9 +143,7 @@ public class Note
             }
 
             return groupNotes;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -180,10 +178,9 @@ public class Note
                             .prepareStatement("SELECT g.id,groupid,(note).title title,(note).description description ," +
                                     " (note).category category, createdon ,createdby, updateon, updateby, u.username,u.firstname,u.lastname, " +
                                     " (uf.address).city city,(uf.address).state state,(uf.address).phone phone  " +
-                                    " FROM "+schemaName +".groupNotes g " +
+                                    " FROM (SELECT * FROM " + schemaName + ".groupNotes g where g.id = ?)g " +
                                     " left join master.users u on u.id = createdby " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = updateby " +
-                                    " where g.id = ? ");
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = updateby");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -198,7 +195,7 @@ public class Note
                         groupNote.updateOn = result.getTimestamp(8);
                         groupNote.updateBy = result.getInt(9);
                         groupNote.userDetails = new ArrayList<>();
-                        groupNote.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
+                        groupNote.userDetails.add(new UserDetail(result.getInt(9), result.getString(10), result.getString(11), result.getString(12), result.getString(13), result.getString(14), (String[]) result.getArray(15).getArray()));
 
                     }
                 } else
@@ -256,9 +253,10 @@ public class Note
                                 Statement.RETURN_GENERATED_KEYS);
 
                 stmt.setInt(1, node.get("groupId").asInt());
-                stmt.setString(2,node.get("title").asText());
-                stmt.setString(3,node.get("description").asText());
-                stmt.setString(4,categoryType.name());;
+                stmt.setString(2, node.get("title").asText());
+                stmt.setString(3, node.get("description").asText());
+                stmt.setString(4, categoryType.name());
+                ;
                 stmt.setTimestamp(5, new Timestamp((new Date()).getTime()));
                 stmt.setInt(6, loggedInUser.id);
                 stmt.setTimestamp(7, new Timestamp((new Date()).getTime()));
@@ -301,7 +299,7 @@ public class Note
      * @return
      * @throws Exception
      */
-    public static int updateGroupNote(JsonNode node,LoggedInUser loggedInUser) throws Exception {
+    public static int updateGroupNote(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         // TODO: check authorization of the user to Update data
 
         int userRole = loggedInUser.roles.get(0).roleId;
@@ -316,16 +314,17 @@ public class Note
             try {
                 if (con != null) {
 
-                    NoteCategory categoryType =NoteCategory.valueOf(node.get("category").asText());
+                    NoteCategory categoryType = NoteCategory.valueOf(node.get("category").asText());
                     stmt = con
                             .prepareStatement("UPDATE "
                                     + schemaName
-                                    +".groupNotes SET note = ROW(?,?,CAST(? AS master.noteCategory)),"
-                                    +"  updateon = ?, updateby = ?"
-                                    +" WHERE id = ?");
-                    stmt.setString(1,node.get("title").asText());
-                    stmt.setString(2,node.get("description").asText());
-                    stmt.setString(3,categoryType.name());;
+                                    + ".groupNotes SET note = ROW(?,?,CAST(? AS master.noteCategory)),"
+                                    + "  updateon = ?, updateby = ?"
+                                    + " WHERE id = ?");
+                    stmt.setString(1, node.get("title").asText());
+                    stmt.setString(2, node.get("description").asText());
+                    stmt.setString(3, categoryType.name());
+                    ;
                     stmt.setTimestamp(4, new Timestamp((new Date()).getTime()));
                     stmt.setInt(5, loggedInUser.id);
                     stmt.setInt(6, node.get("id").asInt());
@@ -395,6 +394,7 @@ public class Note
 
     //===============================================================================================
     // Method for Cycle Meeting Notes.
+
     /**
      * Method allows user to get child Note by id
      *
@@ -425,11 +425,10 @@ public class Note
                                     " (note).category category, c.createdon ," +
                                     " c.createdby, c.updateon, c.updateby , u.username , u.firstname, u.lastname, " +
                                     " (uf.address).city city, (uf.address).state state," +
-                                    " (uf.address).phone phone FROM " +
-                                    schemaName + ".cycleMeetingNotes c" +
+                                    " (uf.address).phone phone FROM (SELECT * FROM " + schemaName + ".cycleMeetingNotes c" +
+                                    " WHERE c.id = ?)c" +
                                     " left join master.users u on u.id = createdby " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = c.updateby " +
-                                    " where c.id = ? ");
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = c.updateby ");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -444,7 +443,7 @@ public class Note
                         childNote.updateOn = result.getTimestamp(7);
                         childNote.updateBy = result.getInt(8);
                         childNote.userDetails = new ArrayList<>();
-                        childNote.userDetails.add(new UserDetail(result.getInt(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13), (String[]) result.getArray(14).getArray()));
+                        childNote.userDetails.add(new UserDetail(result.getInt(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12), result.getString(13), (String[]) result.getArray(14).getArray()));
 
                     }
                 } else
@@ -498,12 +497,13 @@ public class Note
                                     " (note).category category, c1.createdon ," +
                                     " c1.createdby, c1.updateon, c1.updateby, u.username,u.firstname,u.lastname, " +
                                     " (uf.address).city city, (uf.address).state state,(uf.address).phone phone" +
-                                    "  FROM " +
-                                    schemaName + ".cycleMeetingNotes c1 left join master.users u on u.id = createdby " +
-                                    " left join "+schemaName+".userprofile uf ON uf.userid = c1.updateby " +
-                                    "where cycleMeetingId = ? AND c1.createdby = ? ORDER BY c1.createdon DESC ");
+                                    " FROM (SELECT * FROM " + schemaName + ".cycleMeetingNotes c1 " +
+                                    " WHERE cycleMeetingId = ? AND c1.createdby = ?)c1 " +
+                                    " left join master.users u on u.id = createdby " +
+                                    " left join " + schemaName + ".userprofile uf ON uf.userid = c1.updateby " +
+                                    " ORDER BY c1.createdon DESC");
                     stmt.setInt(1, cycleMeetingId);
-                    stmt.setInt(2,loggedInUser.id);
+                    stmt.setInt(2, loggedInUser.id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         childNote = new Note();
@@ -517,7 +517,7 @@ public class Note
                         childNote.updateOn = result.getTimestamp(7);
                         childNote.updateBy = result.getInt(8);
                         childNote.userDetails = new ArrayList<>();
-                        childNote.userDetails.add(new UserDetail(result.getInt(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13), (String[]) result.getArray(14).getArray()));
+                        childNote.userDetails.add(new UserDetail(result.getInt(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12), result.getString(13), (String[]) result.getArray(14).getArray()));
 
                         notes.add(childNote);
 
@@ -716,7 +716,7 @@ public class Note
     }
 
     /***
-     *  It gives all notes of Logged in User
+     * It gives all notes of Logged in User
      *
      * @param loggedInUser
      * @return
@@ -727,8 +727,8 @@ public class Note
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,Note).equals("Read") ||
-                Permissions.isAuthorised(userRole,Note).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Note).equals("Read") ||
+                Permissions.isAuthorised(userRole, Note).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             ArrayList<Note> groupNotes = new ArrayList<Note>();
@@ -743,12 +743,11 @@ public class Note
                                     " g.createdby, g.updateon, g.updateby , u.username ,u.firstname,u.lastname," +
                                     " (uf.address).city city, (uf.address).state state," +
                                     " (uf.address).phone phone " +
-                                    " FROM "+schemaName + ".groupNotes g " +
+                                    " FROM (SELECT * FROM " + schemaName + ".groupNotes g WHERE g.createdby = ?)g " +
                                     " left join master.users u on u.id = g.updateby " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = g.updateby " +
-                                    " WHERE g.createdby = ? " +
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = g.updateby " +
                                     " ORDER BY g.createdon DESC");
-                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(1, loggedInUser.id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Note note = new Note();
@@ -762,7 +761,7 @@ public class Note
                         note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         note.updateBy = result.getInt(9);
                         note.userDetails = new ArrayList<>();
-                        note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
+                        note.userDetails.add(new UserDetail(result.getInt(9), result.getString(10), result.getString(11), result.getString(12), result.getString(13), result.getString(14), (String[]) result.getArray(15).getArray()));
 
                         groupNotes.add(note);
                     }
@@ -772,12 +771,11 @@ public class Note
                                     " (note).category category, c1.createdon ," +
                                     " c1.createdby, c1.updateon, c1.updateby, u.username,u.firstname,u.lastname, " +
                                     " (uf.address).city city, (uf.address).state state,(uf.address).phone phone" +
-                                    "  FROM " +
-                                    schemaName + ".cycleMeetingNotes c1 left join master.users u on u.id = createdby " +
-                                    " left join "+schemaName+".userprofile uf ON uf.userid = c1.updateby " +
-                                    " WHERE c1.createdby = ?" +
+                                    "  FROM (SELECT * FROM " + schemaName + ".cycleMeetingNotes c1 WHERE c1.createdby = ?)c1 " +
+                                    " left join master.users u on u.id = createdby " +
+                                    " left join " + schemaName + ".userprofile uf ON uf.userid = c1.updateby " +
                                     " ORDER BY c1.createdon DESC ");
-                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(1, loggedInUser.id);
                     result = stmt.executeQuery();
                     while (result.next()) {
                         Note note = new Note();
@@ -791,10 +789,9 @@ public class Note
                         note.updateOn = new SimpleDateFormat("dd-MM-yyyy").parse(new SimpleDateFormat("dd-MM-yyyy").format(new java.sql.Date(result.getTimestamp(8).getTime())));
                         note.updateBy = result.getInt(9);
                         note.userDetails = new ArrayList<>();
-                        note.userDetails.add(new UserDetail(result.getInt(9),result.getString(10),result.getString(11),result.getString(12),result.getString(13),result.getString(14), (String[]) result.getArray(15).getArray()));
+                        note.userDetails.add(new UserDetail(result.getInt(9), result.getString(10), result.getString(11), result.getString(12), result.getString(13), result.getString(14), (String[]) result.getArray(15).getArray()));
 
                         groupNotes.add(note);
-
                     }
                 }
             } finally {
@@ -808,15 +805,10 @@ public class Note
                     if (!con.isClosed())
                         con.close();
             }
-
             return groupNotes;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
-
-
 }
 

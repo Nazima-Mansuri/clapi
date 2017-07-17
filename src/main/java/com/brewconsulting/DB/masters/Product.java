@@ -101,6 +101,7 @@ public class Product {
     }
 
     public static final int Product = 4;
+
     /***
      * Method allows user to get All Details of Products.
      *
@@ -133,12 +134,12 @@ public class Product {
                                         + " p.createBy, p.updateDate,p.updateBy, u.username,u.firstname,u.lastname, " +
                                         " (address).addLine1 addLine1," +
                                         " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city," +
-                                        " (address).state state,(address).phone phones ,d.name from "
-                                        + schemaName + ".products p " +
+                                        " (address).state state,(address).phone phones ,d.name from " +
+                                        " (select * from " + schemaName + ".products p where p.division = ?)p " +
                                         " left join master.users u on u.id = p.updateby " +
-                                        " left join " + schemaName+ ".userprofile uf on p.updateby = uf.userid " +
+                                        " left join " + schemaName + ".userprofile uf on p.updateby = uf.userid " +
                                         " left join " + schemaName + ".divisions d on  p.division = d.id " +
-                                        " where p.division=? ORDER BY p.createDate DESC ");
+                                        " ORDER BY p.createDate DESC ");
                         stmt.setInt(1, divid);
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -178,7 +179,7 @@ public class Product {
                                         " (address).state state,(address).phone phones ,d.name from "
                                         + schemaName + ".products p " +
                                         " left join master.users u on u.id = p.updateby " +
-                                        " left join " + schemaName+ ".userprofile uf on p.updateby = uf.userid " +
+                                        " left join " + schemaName + ".userprofile uf on p.updateby = uf.userid " +
                                         " left join " + schemaName + ".divisions d on  p.division = d.id " +
                                         " ORDER BY p.createDate DESC ");
 
@@ -259,11 +260,10 @@ public class Product {
                             .prepareStatement("select p.id, p.name,p.image, p.description,p.division,p.isActive, p.createDate,"
                                     + "p.createBy, p.updateDate,u.username,u.firstname,u.lastname,p.updateBy,(address).addLine1 addLine1," +
                                     " (address).addLine2 addLine2,(address).addLine3 addLine3,(address).city city,(address).state state," +
-                                    " (address).phone phones from "
-                                    + schemaName + ".products p " +
+                                    " (address).phone phones from " +
+                                    " (select * from " + schemaName + ".products p where p.id = ?)p " +
                                     " left join master.users u on u.id = p.updateby " +
-                                    " left join "+ schemaName + ".userprofile uf on p.updateby = uf.userid"
-                                    + " where id = ?");
+                                    " left join " + schemaName + ".userprofile uf on p.updateby = uf.userid");
                     stmt.setInt(1, id);
                     result = stmt.executeQuery();
                     if (result.next()) {
@@ -330,7 +330,7 @@ public class Product {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole ,Product).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Product).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -554,7 +554,6 @@ public class Product {
         } catch (Exception ioe) {
             ioe.printStackTrace();
         }
-
         return finalUrl;
     }
 

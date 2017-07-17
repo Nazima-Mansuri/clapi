@@ -64,14 +64,14 @@ public class SettingContent {
      * @return
      * @throws Exception
      */
-    public static List<SettingContent> getAllContent(int divId,LoggedInUser loggedInUser)
+    public static List<SettingContent> getAllContent(int divId, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,SettingContent).equals("Read") ||
-                Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
+        if (Permissions.isAuthorised(userRole, SettingContent).equals("Read") ||
+                Permissions.isAuthorised(userRole, SettingContent).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -81,18 +81,17 @@ public class SettingContent {
 
             try {
                 if (con != null) {
-                    if(divId != -1)
-                    {
+                    if (divId != -1) {
                         stmt = con
                                 .prepareStatement("SELECT c.id, contentname, contentdesc, c.divid, url, c.createby, createdon ," +
                                         "  u.username ,u.firstname,u.lastname,(uf.address).city city , " +
                                         " (uf.address).state state,(uf.address).phone phone, d.name" +
                                         " FROM " + schemaName + ".content c " +
                                         " left join master.users u on u.id = c.createby " +
-                                        " left join "+schemaName+".userprofile uf on c.createby = uf.userid " +
-                                        " left join "+schemaName+".divisions d on d.id = c.divid " +
+                                        " left join " + schemaName + ".userprofile uf on c.createby = uf.userid " +
+                                        " left join " + schemaName + ".divisions d on d.id = c.divid " +
                                         " where divid = ? ORDER BY createdon DESC");
-                        stmt.setInt(1,divId);
+                        stmt.setInt(1, divId);
                         result = stmt.executeQuery();
                         while (result.next()) {
                             SettingContent content = new SettingContent();
@@ -108,20 +107,18 @@ public class SettingContent {
                             content.createBy = result.getInt(6);
                             content.createdOn = result.getTimestamp(7);
                             content.userDetails = new ArrayList<>();
-                            content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
+                            content.userDetails.add(new UserDetail(result.getInt(6), result.getString(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12), (String[]) result.getArray(13).getArray()));
                             content.divName = result.getString(14);
                             contents.add(content);
                         }
-                    }
-                    else
-                    {
+                    } else {
                         stmt = con
                                 .prepareStatement("SELECT c.id, contentname, contentdesc, c.divid, url, c.createby, createdon ," +
                                         "  u.username ,u.firstname,u.lastname,(uf.address).city city , " +
                                         " (uf.address).state state,(uf.address).phone phone,d.name " +
                                         " FROM " + schemaName + ".content c left join master.users u on u.id = c.createby " +
-                                        " left join "+schemaName+".userprofile uf on c.createby = uf.userid " +
-                                        " left join "+schemaName+".divisions d on d.id = c.divid " +
+                                        " left join " + schemaName + ".userprofile uf on c.createby = uf.userid " +
+                                        " left join " + schemaName + ".divisions d on d.id = c.divid " +
                                         " ORDER BY createdon DESC");
                         result = stmt.executeQuery();
                         while (result.next()) {
@@ -139,7 +136,7 @@ public class SettingContent {
                             content.createBy = result.getInt(6);
                             content.createdOn = result.getTimestamp(7);
                             content.userDetails = new ArrayList<>();
-                            content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
+                            content.userDetails.add(new UserDetail(result.getInt(6), result.getString(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12), (String[]) result.getArray(13).getArray()));
                             content.divName = result.getString(14);
                             contents.add(content);
                         }
@@ -167,21 +164,21 @@ public class SettingContent {
     }
 
     /***
-     *  Method used to give contents by specific division as well null division
+     * Method used to give contents by specific division as well null division
      *
      * @param divId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<SettingContent> getDivisionSpecificContent(int divId,int agendaId,LoggedInUser loggedInUser)
+    public static List<SettingContent> getDivisionSpecificContent(int divId, int agendaId, boolean isGroup, LoggedInUser loggedInUser)
             throws Exception {
         // TODO: check authorization of the user to see this data
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,SettingContent).equals("Read") ||
-                Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
+        if (Permissions.isAuthorised(userRole, SettingContent).equals("Read") ||
+                Permissions.isAuthorised(userRole, SettingContent).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -189,21 +186,34 @@ public class SettingContent {
             PreparedStatement stmt = null;
             ResultSet result = null;
             try {
-
-                stmt = con
-                        .prepareStatement("SELECT c.id, contentname, contentdesc, c.divid, url, c.createby, c.createdon," +
-                                " u.username,u.firstname,u.lastname,(uf.address).city city,(uf.address).state state," +
-                                " (uf.address).phone phone, d.name "+
-                                " FROM " + schemaName + ".content c " +
-                                " left join master.users u on u.id = c.createby " +
-                                " left join "+schemaName+".userprofile uf on uf.userid = c.createby " +
-                                " left join "+schemaName+".divisions d on d.id = c.divid " +
-                                " where (divid = ? OR divid IS NULL) AND " +
-                                " NOT EXISTS (SELECT contentid from client1.groupsessioncontentinfo WHERE agendaid = ? AND c.id = ANY(contentid::int[]))" +
-                                " ORDER BY c.createdon DESC");
+                if (isGroup) {
+                    stmt = con
+                            .prepareStatement("SELECT c.id, contentname, contentdesc, c.divid, url, c.createby, c.createdon," +
+                                    " u.username,u.firstname,u.lastname,(uf.address).city city,(uf.address).state state," +
+                                    " (uf.address).phone phone, d.name " +
+                                    " FROM (SELECT * FROM " + schemaName + ".content c " +
+                                    " where (divid = ? OR divid IS NULL) AND " +
+                                    " NOT EXISTS (SELECT contentid from client1.groupsessioncontentinfo WHERE agendaid = ? AND c.id = ANY(contentid::int[])))c" +
+                                    " left join master.users u on u.id = c.createby " +
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = c.createby " +
+                                    " left join " + schemaName + ".divisions d on d.id = c.divid " +
+                                    " ORDER BY c.createdon DESC");
+                } else {
+                    stmt = con
+                            .prepareStatement("SELECT c.id, contentname, contentdesc, c.divid, url, c.createby, c.createdon," +
+                                    " u.username,u.firstname,u.lastname,(uf.address).city city,(uf.address).state state," +
+                                    " (uf.address).phone phone, d.name " +
+                                    " FROM (SELECT * FROM " + schemaName + ".content c " +
+                                    " where (divid = ? OR divid IS NULL) AND " +
+                                    " NOT EXISTS (SELECT contentid from client1.cyclemeetingsessioncontentinfo WHERE agendaid = ? AND c.id = ANY(contentid::int[])))c" +
+                                    " left join master.users u on u.id = c.createby " +
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = c.createby " +
+                                    " left join " + schemaName + ".divisions d on d.id = c.divid " +
+                                    " ORDER BY c.createdon DESC");
+                }
 
                 stmt.setInt(1, divId);
-                stmt.setInt(2,agendaId);
+                stmt.setInt(2, agendaId);
                 result = stmt.executeQuery();
                 while (result.next()) {
                     SettingContent content = new SettingContent();
@@ -215,12 +225,11 @@ public class SettingContent {
                     content.createBy = result.getInt(6);
                     content.createdOn = result.getTimestamp(7);
                     content.userDetails = new ArrayList<>();
-                    content.userDetails.add(new UserDetail(result.getInt(6),result.getString(8),result.getString(9),result.getString(10),result.getString(11),result.getString(12), (String[]) result.getArray(13).getArray()));
+                    content.userDetails.add(new UserDetail(result.getInt(6), result.getString(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12), (String[]) result.getArray(13).getArray()));
                     content.divName = result.getString(14);
                     contents.add(content);
                 }
-            }
-            finally {
+            } finally {
                 if (result != null)
                     if (!result.isClosed())
                         result.close();
@@ -232,12 +241,11 @@ public class SettingContent {
                         con.close();
             }
             return contents;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
+
     /**
      * Method allow user to add content from setting.
      *
@@ -256,7 +264,7 @@ public class SettingContent {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
+        if (Permissions.isAuthorised(userRole, SettingContent).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -281,10 +289,10 @@ public class SettingContent {
                 else
                     stmt.setString(2, null);
 
-                if(divId > 0)
+                if (divId > 0)
                     stmt.setInt(3, divId);
                 else
-                    stmt.setNull(3,0);
+                    stmt.setNull(3, 0);
                 stmt.setString(4, url);
                 System.out.println("FILE PATH : " + url);
                 stmt.setInt(5, loggedInUser.id);
@@ -322,7 +330,7 @@ public class SettingContent {
 
 
     /**
-     *  Method allow user to update content from setting.
+     * Method allow user to update content from setting.
      *
      * @param contentName
      * @param contentDesc
@@ -339,7 +347,7 @@ public class SettingContent {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,SettingContent).equals("Write") ) {
+        if (Permissions.isAuthorised(userRole, SettingContent).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -359,10 +367,10 @@ public class SettingContent {
                     else
                         stmt.setString(2, null);
 
-                    if(divId > 0)
+                    if (divId > 0)
                         stmt.setInt(3, divId);
                     else
-                        stmt.setNull(3,0);
+                        stmt.setNull(3, 0);
                     stmt.setString(4, url);
                     stmt.setInt(5, id);
 

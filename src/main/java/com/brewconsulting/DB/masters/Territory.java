@@ -8,11 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.ws.rs.NotAuthorizedException;
 
@@ -111,8 +107,8 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,Territory).equals("Read") ||
-                Permissions.isAuthorised(userRole,Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Read") ||
+                Permissions.isAuthorised(userRole, Territory).equals("Write")) {
             String schemaName = loggedInUser.schemaName;
 
             Connection con = DBConnectionProvider.getConn();
@@ -128,11 +124,9 @@ public class Territory {
                     stmt = con.prepareStatement(
                             "select t.id,name,(address).addLine1 addLine1, " + "(address).addLine2 addLine2,"
                                     + "(address).addLine3 addLine3,(address).city city,(address).state state,"
-                                    + "(address).phone phones,parentId,divId,u.userid,uf.username from " + schemaName
-                                    + ".territories t left join "
-                                    + schemaName + ".userterritorymap u " + "on t.id = u.terrid" +
-                                    " left join master.users uf on uf.id = u.userid "+
-                                    "  where divId = ?");
+                                    + "(address).phone phones,parentId,divId,u.userid,uf.username from " +
+                                    "(select * from " + schemaName + ".territories t where divid = ?)t" +
+                                    " left join " + schemaName + ".userterritorymap u on t.id = u.terrid");
                     stmt.setInt(1, divId);
 
                     result = stmt.executeQuery();
@@ -185,8 +179,7 @@ public class Territory {
                 if (territory.data.parentId == 0) {
                     territories.add(territory);
                     System.out.println("territory" + territory);
-                }
-                else if (lookup.containsKey(territory.data.parentId))
+                } else if (lookup.containsKey(territory.data.parentId))
                     lookup.get(territory.data.parentId).children.add(territory);
             }
             System.out.println("territory" + territories);
@@ -209,8 +202,8 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,Territory).equals("Read") ||
-                Permissions.isAuthorised(userRole,Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Read") ||
+                Permissions.isAuthorised(userRole, Territory).equals("Write")) {
 
             Territory territory = null;
             // TODO check authorization
@@ -285,8 +278,8 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,Territory).equals("Read") ||
-                Permissions.isAuthorised(userRole,Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Read") ||
+                Permissions.isAuthorised(userRole, Territory).equals("Write")) {
 
             Territory territory = null;
             // TODO check authorization
@@ -305,12 +298,12 @@ public class Territory {
                                     " name,(address).addLine1 addLine1, (address).addLine2 addLine2,"
                                     + "(address).addLine3 addLine3,(address).city city,(address).state state,"
                                     + "(address).phone phones,parentId,divId,u.userid,uf.username,uf.firstname,uf.lastname,"
-                                    + " t.createdate,t.createby,t.updatedate,t.updateby from " + schemaName
-                                    + ".territories t left join "
-                                    + schemaName + ".userterritorymap u " + "on t.id=u.terrid " +
-                                    "LEFT JOIN " + schemaName + ".userterritorymaphistory b ON t.id = b.terrid "+
-                                    " left join master.users uf on uf.id = u.userid "+
-                                    " WHERE divid = ?");
+                                    + " t.createdate,t.createby,t.updatedate,t.updateby from " +
+                                    " (select * from client1.territories t WHERE divid = ?)t" +
+                                    " left join " + schemaName + ".userterritorymap u " + "on t.id=u.terrid " +
+                                    " LEFT JOIN " + schemaName + ".userterritorymaphistory b ON t.id = b.terrid " +
+                                    " left join master.users uf on uf.id = u.userid" +
+                                    " ORDER BY t.updatedate DESC");
                     stmt.setInt(1, id);
 
                     result = stmt.executeQuery();
@@ -340,8 +333,8 @@ public class Territory {
                         territory.createBy = result.getInt(17);
                         territory.updatedate = result.getTimestamp(18);
                         territory.updateby = result.getInt(19);
-                        if(territory.firstname != null && territory.lastname != null)
-                            tw.text = territory.name +" - " + territory.firstname + " " + territory.lastname;
+                        if (territory.firstname != null && territory.lastname != null)
+                            tw.text = territory.name + " - " + territory.firstname + " " + territory.lastname;
                         else
                             tw.text = territory.name;
                         tw.data = territory;
@@ -372,6 +365,24 @@ public class Territory {
                     lookup.get(terr.data.parentId).children.add(terr);
             }
 
+            for (terrWrapper terr : lookup.values()) {
+                if (terr.children.size() > 0) {
+                    Collections.sort(terr.children, new Comparator<terrWrapper>() {
+                        @Override
+                        public int compare(terrWrapper t1, terrWrapper t2) {
+                            return (t1.data.name.toLowerCase().compareTo(t2.data.name.toLowerCase()));
+                        }
+                    });
+                }
+            }
+
+            Collections.sort(territories, new Comparator<terrWrapper>() {
+
+                @Override
+                public int compare(terrWrapper t1, terrWrapper t2) {
+                    return (t1.data.name.toLowerCase().compareTo(t2.data.name.toLowerCase()));
+                }
+            });
 
             return territories;
         } else {
@@ -393,7 +404,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -541,7 +552,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole , Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -579,8 +590,7 @@ public class Territory {
 
                 affectedRow = stmt.executeUpdate();
 
-                if(node.get("personId").asInt() >0)
-                {
+                if (node.get("personId").asInt() > 0) {
                     stmt = con.prepareStatement(
                             "SELECT userId from " + schemaName + ".userterritorymap WHERE userId = ?");
                     stmt.setInt(1, node.get("personId").asInt());
@@ -647,7 +657,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole,Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -694,7 +704,7 @@ public class Territory {
 
         int userRole = loggedInUser.roles.get(0).roleId;
 
-        if (Permissions.isAuthorised(userRole , Territory).equals("Write")) {
+        if (Permissions.isAuthorised(userRole, Territory).equals("Write")) {
 
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
@@ -712,7 +722,6 @@ public class Territory {
                     result = stmt.executeQuery();
                     if (result.next())
                         userId = result.getInt(1);
-                    System.out.println("UserId : " + userId);
 
                     // It delete entry of deassociate person from
                     // userTerritoryMap
@@ -722,7 +731,6 @@ public class Territory {
                     stmt.setInt(1, userId);
                     stmt.setInt(2, node.get("id").asInt());
                     affectedRow = stmt.executeUpdate();
-                    System.out.println("affectedRow : " + affectedRow);
 
                     // It update endDate of deassociate person in
                     // userTerritoryMapHistory table .

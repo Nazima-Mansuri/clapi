@@ -78,6 +78,41 @@ public class Pills {
     @GET
     @Produces("application/json")
     @Secured
+    @Path("alldeliveredpills/{feedDeliveryId}")
+    public Response getAllDeliveredPills(@PathParam("feedDeliveryId") int feedDeliveryId,
+                                         @Context ContainerRequestContext crc) {
+        Response resp = null;
+        try {
+            properties.load(inp);
+            PropertyConfigurator.configure(properties);
+
+            resp = Response.ok(
+                    mapper.writeValueAsString(Pill
+                            .getAllDeliveredPills(feedDeliveryId,(LoggedInUser) crc
+                                    .getProperty("userObject")))).build();
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"You are not authorized to get Pills \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
+            e.printStackTrace();
+        }
+        return resp;
+    }
+
+
+    /***
+     *
+     * @param crc
+     * @return
+     */
+    @GET
+    @Produces("application/json")
+    @Secured
     @Path("pillbyid/{pillId}")
     public Response getPillById(@PathParam("pillId") int pillId,@Context ContainerRequestContext crc) {
         Response resp = null;
@@ -305,7 +340,14 @@ public class Pills {
                     .entity("{\"Message\":" + "\"You are not authorized to Insert Pill. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        } catch (IOException e) {
+        }
+        catch (BadRequestException b) {
+            logger.error("BadRequestException ", b);
+            resp = Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"Message\":" + "\"Pill is already exist with same name. \"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }catch (IOException e) {
             logger.error("IOException ", e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();

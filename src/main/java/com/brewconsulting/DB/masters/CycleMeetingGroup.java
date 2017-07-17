@@ -131,7 +131,7 @@ public class CycleMeetingGroup {
                                         " where c1.division = ? AND (c1.leadorganiser = ? OR c2.organiser = ? OR c4.userid = ?) " +
                                         " GROUP BY c1.id,c2.id,c3.territoryid,c4.userid,c5.username,c5.firstname,c5.lastname,c6.address,c6.profileimage, " +
                                         " c7.username,c7.firstname,c7.lastname,c8.address" +
-                                        " ORDER BY c1.createdon DESC");
+                                        " ORDER BY c1.updateon DESC");
                         stmt.setInt(1, id);
                         stmt.setInt(2,loggedInUser.id);
                         stmt.setInt(3,loggedInUser.id);
@@ -278,7 +278,7 @@ public class CycleMeetingGroup {
                                             " left join " + schemaName + ".cyclemeetingterritories c6 on c2.id = c6.cyclemeetingid " +
                                             " where c1.division = ? GROUP BY c1.id,c3.username,c5.address,c5.profileimage,c2.id,c4.username,c7.address," +
                                             " c3.firstname,c3.lastname,c4.firstname,c4.lastname " +
-                                            " ORDER BY c1.createdon DESC ");
+                                            " ORDER BY c1.updateon DESC ");
                             stmt.setInt(1, id);
                             result = stmt.executeQuery();
 

@@ -6,22 +6,22 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeComparator;
 
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
+import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by lcom62_one on 2/2/2017.
  */
 public class Assesment {
 
-   @JsonView({UserViews.assesmentView.class,UserViews.scoreView.class})
+    @JsonView({UserViews.assesmentView.class, UserViews.scoreView.class})
     @JsonProperty("id")
     public int id;
 
@@ -29,16 +29,16 @@ public class Assesment {
     @JsonProperty("divId")
     public int divId;
 
-    @JsonView({UserViews.assesmentView.class,UserViews.quesSetView.class,UserViews.scoreView.class})
+    @JsonView({UserViews.assesmentView.class, UserViews.quesSetView.class, UserViews.scoreView.class})
     @JsonProperty("name")
     public String name;
 
-    @JsonView({UserViews.assesmentView.class,UserViews.scoreView.class})
+    @JsonView({UserViews.assesmentView.class, UserViews.scoreView.class})
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     @JsonProperty("startDate")
     public java.util.Date startDate;
 
-    @JsonView({UserViews.assesmentView.class,UserViews.scoreView.class})
+    @JsonView({UserViews.assesmentView.class, UserViews.scoreView.class})
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     @JsonProperty("endDate")
     public java.util.Date endDate;
@@ -64,35 +64,35 @@ public class Assesment {
     @JsonProperty("userDetails")
     public ArrayList<UserDetail> userDetails;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("Instruction")
     public String Instrction;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("EndNote")
     public String EndNote;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("Description")
     public String Description;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("showFeedBack")
     public boolean showFeedBack;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("randomDelivery")
     public boolean randomDelivery;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("AllowReview")
     public boolean AllowReview;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("Scoring")
     public HashMap Scoring;
 
-    @JsonView({UserViews.settingView.class,UserViews.quesSetView.class})
+    @JsonView({UserViews.settingView.class, UserViews.quesSetView.class})
     @JsonProperty("TimeLimitation")
     public HashMap TimeLimitation;
 
@@ -108,45 +108,44 @@ public class Assesment {
     @JsonProperty("score")
     public int score;
 
+    @JsonView(UserViews.assesmentView.class)
+    @JsonProperty("status")
+    public String status;
+
 
     public Assesment() {
     }
 
     /***
-     *  Get all Assesment details
+     * Get all Assesment details
      *
      * @param divId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Assesment> getAllAssesments(int divId, LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Assesment> getAllAssesments(int divId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
-                Permissions.isAuthorised(userRole,20).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 20).equals("Read") ||
+                Permissions.isAuthorised(userRole, 20).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
             List<Assesment> assesmentList = new ArrayList<>();
             String schemaName = loggedInUser.schemaName;
 
-            try
-            {
-                if(con != null)
-                {
+            try {
+                if (con != null) {
                     stmt = con.prepareStatement("SELECT o.id, startdate, enddate," +
                             " o.userid, o.divid, o.createdon, o.createdby,u.username,u.firstname,u.lastname," +
                             " (uf.address).city,(uf.address).state,(uf.address).phone,assesmentname " +
-                            " FROM "+schemaName+".onthegocontenttest o " +
+                            " FROM (SELECT * FROM " + schemaName + ".onthegocontenttest o WHERE divid = ? )o " +
                             " left join master.users u on u.id = o.createdby " +
-                            " LEFT JOIN "+ schemaName+".userprofile uf on uf.userid = o.createdby" +
-                            " WHERE divid = ? ORDER BY o.createdon DESC");
-                    stmt.setInt(1,divId);
+                            " LEFT JOIN " + schemaName + ".userprofile uf on uf.userid = o.createdby" +
+                            " ORDER BY o.createdon DESC");
+                    stmt.setInt(1, divId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         Assesment assesment = new Assesment();
                         assesment.id = resultSet.getInt(1);
                         assesment.startDate = resultSet.getTimestamp(2);
@@ -157,44 +156,54 @@ public class Assesment {
                         assesment.createdOn = resultSet.getTimestamp(6);
                         assesment.createBy = resultSet.getInt(7);
                         assesment.userDetails = new ArrayList<>();
-                        assesment.userDetails.add(new UserDetail(resultSet.getInt(7),resultSet.getString(8),resultSet.getString(9),resultSet.getString(10),resultSet.getString(11),resultSet.getString(12), (String[]) resultSet.getArray(13).getArray()));
+                        assesment.userDetails.add(new UserDetail(resultSet.getInt(7), resultSet.getString(8), resultSet.getString(9), resultSet.getString(10), resultSet.getString(11), resultSet.getString(12), (String[]) resultSet.getArray(13).getArray()));
                         assesment.name = resultSet.getString(14);
+
+                        java.util.Date startdate = assesment.startDate;
+                        java.util.Date enddate = assesment.endDate;
+                        java.util.Date temp = new java.util.Date();
+                        temp.setDate(startdate.getDate() - 1);
+
+                        boolean isAfter = DateTimeComparator.getDateOnlyInstance().compare(DateTime.now(), enddate) > 0;
+                        boolean isBefore = DateTimeComparator.getDateOnlyInstance().compare(startdate, DateTime.now()) > 0;
+                        if (isAfter) {
+                            assesment.status = "Past";
+                        } else if (isBefore) {
+                            assesment.status = "Future";
+                        } else {
+                            assesment.status = "Current";
+                        }
 
                         assesmentList.add(assesment);
                     }
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
 
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return assesmentList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
 
     /***
-     *  Method is used to add OnTheGoAssesment
+     * Method is used to add OnTheGoAssesment
      *
      * @param loggedInUser
      * @return
      */
-    public static int addOnTheGoAssesment(JsonNode node,LoggedInUser loggedInUser) throws Exception
-    {
+    public static int addOnTheGoAssesment(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, 20).equals("Write")) {
 
@@ -207,63 +216,65 @@ public class Assesment {
             try {
                 con.setAutoCommit(false);
 
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+                java.util.Date starDate = sdf.parse(node.get("startDate").asText() + ".111");
+                java.util.Date endDate = sdf.parse(node.get("endDate").asText() + ".111");
+
                 Integer[] territories = new Integer[node.withArray("territories").size()];
 
-                for (int i=0;i<node.withArray("territories").size();i++)
-                {
+                for (int i = 0; i < node.withArray("territories").size(); i++) {
                     territories[i] = node.withArray("territories").get(i).asInt();
                 }
 
-                Array terrArr = con.createArrayOf("int",territories);
+                Array terrArr = con.createArrayOf("int", territories);
 
                 Integer[] users = new Integer[node.withArray("territories").size()];
-                stmt = con.prepareStatement(" SELECT userid from "+schemaName+".userterritorymap " +
+                stmt = con.prepareStatement(" SELECT userid from " + schemaName + ".userterritorymap " +
                         " WHERE terrid = ? ");
-                for (int i=0;i<territories.length;i++)
-                {
-                    stmt.setInt(1,territories[i]);
+                for (int i = 0; i < territories.length; i++) {
+                    stmt.setInt(1, territories[i]);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next()){
+                    while (resultSet.next()) {
                         System.out.println(" In While ..");
                         users[i] = resultSet.getInt(1);
                         System.out.println("Id : " + resultSet.getInt(1));
                     }
                 }
 
-                Array userIdArr = con.createArrayOf("int",users);
+                Array userIdArr = con.createArrayOf("int", users);
                 System.out.println(" User Ids  : " + users.length);
 
                 Integer[] scorecorr = new Integer[0];
-                Array scoreCrArr = con.createArrayOf("int",scorecorr);
+                Array scoreCrArr = con.createArrayOf("int", scorecorr);
 
                 Double[] scoreInCorr = new Double[0];
-                Array scoreInCrArr = con.createArrayOf("FLOAt8",scoreInCorr);
+                Array scoreInCrArr = con.createArrayOf("FLOAt8", scoreInCorr);
 
-                stmt = con.prepareStatement(" INSERT  INTO " +schemaName+
+                stmt = con.prepareStatement(" INSERT  INTO " + schemaName +
                         ".onthegocontenttest( assesmentname, testinstruction, testendnote, " +
                         " startdate, enddate, scorecorrect, scoreincorrect, " +
                         "  duration,userid,territories, divid, createdon, createdby,timeperquestion," +
                         " applyscoring,showfeedback,allowreview,applyinterval) " +
-                        " VALUES(?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);
-                stmt.setString(1,node.get("name").asText());
-                stmt.setString(2,"");
-                stmt.setString(3,"");
+                        " VALUES(?,?,?,?,?,?,?,CAST(? AS INTERVAL),?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                stmt.setString(1, node.get("name").asText());
+                stmt.setString(2, "");
+                stmt.setString(3, "");
                 stmt.setTimestamp(4, Timestamp.valueOf(node.get("startDate").asText()));
                 stmt.setTimestamp(5, Timestamp.valueOf(node.get("endDate").asText()));
-                stmt.setArray(6,scoreCrArr);
-                stmt.setArray(7,scoreInCrArr);
+                stmt.setArray(6, scoreCrArr);
+                stmt.setArray(7, scoreInCrArr);
                 stmt.setObject(8, "00:00");
-                stmt.setArray(9,userIdArr);
-                stmt.setArray(10,terrArr);
-                stmt.setInt(11,node.get("divId").asInt());
+                stmt.setArray(9, userIdArr);
+                stmt.setArray(10, terrArr);
+                stmt.setInt(11, node.get("divId").asInt());
                 stmt.setTimestamp(12, new Timestamp((new java.util.Date()).getTime()));
                 stmt.setInt(13, loggedInUser.id);
-                stmt.setArray(14,scoreCrArr);
-                stmt.setBoolean(15,false);
-                stmt.setBoolean(16,false);
-                stmt.setBoolean(17,false);
-                stmt.setBoolean(18,false);
-
+                stmt.setArray(14, scoreCrArr);
+                stmt.setBoolean(15, false);
+                stmt.setBoolean(16, false);
+                stmt.setBoolean(17, false);
+                stmt.setBoolean(18, false);
 
                 result = stmt.executeUpdate();
                 if (result == 0)
@@ -295,7 +306,6 @@ public class Assesment {
     }
 
     /***
-     *
      * @param id
      * @param loggedInUser
      * @return
@@ -338,18 +348,16 @@ public class Assesment {
     }
 
     /***
-     *  Method is used to update Assesment Details.
+     * Method is used to update Assesment Details.
      *
      * @param node
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int updateAssesment(JsonNode node,LoggedInUser loggedInUser) throws Exception
-    {
+    public static int updateAssesment(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,20).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 20).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             int affectedRows = 0;
@@ -357,49 +365,44 @@ public class Assesment {
             ResultSet resultSet = null;
 
             try {
-                if(con != null)
-                {
+                if (con != null) {
                     Integer[] territories = new Integer[node.withArray("territories").size()];
 
-                    for (int i=0;i<node.withArray("territories").size();i++)
-                    {
+                    for (int i = 0; i < node.withArray("territories").size(); i++) {
                         territories[i] = node.withArray("territories").get(i).asInt();
                     }
 
-                    Array terrArr = con.createArrayOf("int",territories);
+                    Array terrArr = con.createArrayOf("int", territories);
 
                     Integer[] users = new Integer[node.withArray("territories").size()];
-                    stmt = con.prepareStatement(" SELECT userid from "+schemaName+".userterritorymap " +
+                    stmt = con.prepareStatement(" SELECT userid from " + schemaName + ".userterritorymap " +
                             " WHERE terrid = ? ");
-                    for (int i=0;i<territories.length;i++)
-                    {
-                        stmt.setInt(1,territories[i]);
+                    for (int i = 0; i < territories.length; i++) {
+                        stmt.setInt(1, territories[i]);
                         resultSet = stmt.executeQuery();
-                        while (resultSet.next()){
+                        while (resultSet.next()) {
                             users[i] = resultSet.getInt(1);
                             System.out.println("Id : " + resultSet.getInt(1));
                         }
                     }
 
-                    Array userIdArr = con.createArrayOf("int",users);
+                    Array userIdArr = con.createArrayOf("int", users);
                     System.out.println(" User Ids  : " + users.length);
 
-                    stmt = con.prepareStatement(" UPDATE "+schemaName+".onthegocontenttest " +
+                    stmt = con.prepareStatement(" UPDATE " + schemaName + ".onthegocontenttest " +
                             " SET assesmentname = ? , territories = ? , userid = ?,startdate = ?,enddate = ? " +
                             " WHERE id = ? ");
-                    stmt.setString(1,node.get("name").asText());
-                    stmt.setArray(2,terrArr);
-                    stmt.setArray(3,userIdArr);
+                    stmt.setString(1, node.get("name").asText());
+                    stmt.setArray(2, terrArr);
+                    stmt.setArray(3, userIdArr);
                     stmt.setTimestamp(4, Timestamp.valueOf(node.get("startDate").asText()));
                     stmt.setTimestamp(5, Timestamp.valueOf(node.get("endDate").asText()));
-                    stmt.setInt(6,node.get("id").asInt());
+                    stmt.setInt(6, node.get("id").asInt());
 
                     affectedRows = stmt.executeUpdate();
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
+            } finally {
 
                 if (stmt != null)
                     if (!stmt.isClosed())
@@ -409,9 +412,7 @@ public class Assesment {
                         con.close();
             }
             return affectedRows;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -424,24 +425,21 @@ public class Assesment {
      * @return
      * @throws Exception
      */
-    public static int updateSettings(JsonNode node,LoggedInUser loggedInUser) throws Exception
-    {
+    public static int updateSettings(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,20).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 20).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             int affectedRows = 0;
             String schemaName = loggedInUser.schemaName;
 
             try {
-                if(con != null)
-                {
+                if (con != null) {
                     Array correctScoreArray = null;
                     Array inCorrectScoreArray = null;
                     Array diffTimeArray = null;
 
-                    stmt = con.prepareStatement(" UPDATE "+schemaName+".onthegocontenttest " +
+                    stmt = con.prepareStatement(" UPDATE " + schemaName + ".onthegocontenttest " +
                             " SET  testinstruction=?, testendnote=?, testdescription = ?, " +
                             " applyscoring=?, scorecorrect=?, scoreincorrect=?, showfeedback=?, duration=CAST (? as INTERVAL )," +
                             " applytimeperquestion=?, allowreview=?, randomdelivery = ?,timeperquestion=? " +
@@ -519,21 +517,18 @@ public class Assesment {
                         stmt.setObject(8, "00:00");
 
 
-
                     stmt.setBoolean(10, node.get("AllowReview").asBoolean());
 
-                    stmt.setBoolean(11,node.get("randomDelivery").asBoolean());
+                    stmt.setBoolean(11, node.get("randomDelivery").asBoolean());
 
-                    stmt.setInt(13,node.get("id").asInt());
+                    stmt.setInt(13, node.get("id").asInt());
 
                     affectedRows = stmt.executeUpdate();
 
-                    AssesmentCollection.arrangeAssesmentQuestions(node.get("id").asInt(),loggedInUser);
-                }
-                else
+                    AssesmentCollection.arrangeAssesmentQuestions(node.get("id").asInt(), loggedInUser);
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
+            } finally {
 
                 if (stmt != null)
                     if (!stmt.isClosed())
@@ -543,9 +538,7 @@ public class Assesment {
                         con.close();
             }
             return affectedRows;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -558,8 +551,7 @@ public class Assesment {
      * @return
      * @throws Exception
      */
-    public static List<Assesment> getSettingDetails(int testId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Assesment> getSettingDetails(int testId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
         if (Permissions.isAuthorised(userRole, 20).equals("Read") ||
                 Permissions.isAuthorised(userRole, 20).equals("Write")) {
@@ -571,64 +563,64 @@ public class Assesment {
             List<Assesment> assesmentSettingList = new ArrayList<>();
             Assesment assesmentSetting;
             try {
-                    stmt = con.prepareStatement("SELECT testinstruction, testendnote,testdescription, applyscoring, " +
-                            " scorecorrect, scoreincorrect, showfeedback, duration, applytimeperquestion," +
-                            " allowreview,randomdelivery,applyinterval,timeperquestion " +
-                            " FROM " + schemaName + ".onthegocontenttest " +
-                            " WHERE  id = ? ");
-                    stmt.setInt(1, testId);
-                    resultSet = stmt.executeQuery();
+                stmt = con.prepareStatement("SELECT testinstruction, testendnote,testdescription, applyscoring, " +
+                        " scorecorrect, scoreincorrect, showfeedback, duration, applytimeperquestion," +
+                        " allowreview,randomdelivery,applyinterval,timeperquestion " +
+                        " FROM " + schemaName + ".onthegocontenttest " +
+                        " WHERE  id = ? ");
+                stmt.setInt(1, testId);
+                resultSet = stmt.executeQuery();
 
-                    while (resultSet.next()) {
-                        assesmentSetting = new Assesment();
-                        assesmentSetting.Instrction = resultSet.getString(1);
-                        assesmentSetting.EndNote = resultSet.getString(2);
-                        assesmentSetting.Description = resultSet.getString(3);
+                while (resultSet.next()) {
+                    assesmentSetting = new Assesment();
+                    assesmentSetting.Instrction = resultSet.getString(1);
+                    assesmentSetting.EndNote = resultSet.getString(2);
+                    assesmentSetting.Description = resultSet.getString(3);
 
-                        assesmentSetting.Scoring = new HashMap();
-                        assesmentSetting.Scoring.put("IsApplyScoring", resultSet.getBoolean(4));
+                    assesmentSetting.Scoring = new HashMap();
+                    assesmentSetting.Scoring.put("IsApplyScoring", resultSet.getBoolean(4));
 
-                        HashMap CorrectScore = new HashMap();
-                        Integer[] corrArray = (Integer[]) resultSet.getArray(5).getArray();
-                        if (corrArray.length > 0 && corrArray.length == 3) {
-                            CorrectScore.put("Low", corrArray[0]);
-                            CorrectScore.put("Medium", corrArray[1]);
-                            CorrectScore.put("High", corrArray[2]);
-                        }
-
-                        assesmentSetting.Scoring.put("CorrectScore", CorrectScore);
-
-                        HashMap IncorrectScore = new HashMap();
-                        Double[] inCorrArray = (Double[]) resultSet.getArray(6).getArray();
-                        if (inCorrArray.length > 0 && inCorrArray.length == 3) {
-                            IncorrectScore.put("Low", inCorrArray[0]);
-                            IncorrectScore.put("Medium", inCorrArray[1]);
-                            IncorrectScore.put("High", inCorrArray[2]);
-                        }
-
-                        assesmentSetting.Scoring.put("IncorrectScore", IncorrectScore);
-
-                        assesmentSetting.showFeedBack = resultSet.getBoolean(7);
-
-                        assesmentSetting.TimeLimitation = new HashMap();
-                        assesmentSetting.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(9));
-                        assesmentSetting.TimeLimitation.put("FixedTime", resultSet.getString(8));
-
-                        HashMap DifferentTime = new HashMap();
-                        Integer[] diffArr = (Integer[]) resultSet.getArray(13).getArray();
-                        if (diffArr.length > 0 && diffArr.length == 3) {
-                            DifferentTime.put("Low", diffArr[0]);
-                            DifferentTime.put("Medium", diffArr[1]);
-                            DifferentTime.put("High", diffArr[2]);
-                        }
-
-                        assesmentSetting.TimeLimitation.put("DifferentTime", DifferentTime);
-
-                        assesmentSetting.AllowReview = resultSet.getBoolean(10);
-                        assesmentSetting.randomDelivery = resultSet.getBoolean(11);
-
-                        assesmentSettingList.add(assesmentSetting);
+                    HashMap CorrectScore = new HashMap();
+                    Integer[] corrArray = (Integer[]) resultSet.getArray(5).getArray();
+                    if (corrArray.length > 0 && corrArray.length == 3) {
+                        CorrectScore.put("Low", corrArray[0]);
+                        CorrectScore.put("Medium", corrArray[1]);
+                        CorrectScore.put("High", corrArray[2]);
                     }
+
+                    assesmentSetting.Scoring.put("CorrectScore", CorrectScore);
+
+                    HashMap IncorrectScore = new HashMap();
+                    Double[] inCorrArray = (Double[]) resultSet.getArray(6).getArray();
+                    if (inCorrArray.length > 0 && inCorrArray.length == 3) {
+                        IncorrectScore.put("Low", inCorrArray[0]);
+                        IncorrectScore.put("Medium", inCorrArray[1]);
+                        IncorrectScore.put("High", inCorrArray[2]);
+                    }
+
+                    assesmentSetting.Scoring.put("IncorrectScore", IncorrectScore);
+
+                    assesmentSetting.showFeedBack = resultSet.getBoolean(7);
+
+                    assesmentSetting.TimeLimitation = new HashMap();
+                    assesmentSetting.TimeLimitation.put("IsApplyTimePerQuestion", resultSet.getBoolean(9));
+                    assesmentSetting.TimeLimitation.put("FixedTime", resultSet.getString(8));
+
+                    HashMap DifferentTime = new HashMap();
+                    Integer[] diffArr = (Integer[]) resultSet.getArray(13).getArray();
+                    if (diffArr.length > 0 && diffArr.length == 3) {
+                        DifferentTime.put("Low", diffArr[0]);
+                        DifferentTime.put("Medium", diffArr[1]);
+                        DifferentTime.put("High", diffArr[2]);
+                    }
+
+                    assesmentSetting.TimeLimitation.put("DifferentTime", DifferentTime);
+
+                    assesmentSetting.AllowReview = resultSet.getBoolean(10);
+                    assesmentSetting.randomDelivery = resultSet.getBoolean(11);
+
+                    assesmentSettingList.add(assesmentSetting);
+                }
 
             } finally {
                 if (resultSet != null)
@@ -649,17 +641,14 @@ public class Assesment {
 
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Assesment> getRunningAssesment(LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Assesment> getRunningAssesment(LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
-                Permissions.isAuthorised(userRole,20).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 20).equals("Read") ||
+                Permissions.isAuthorised(userRole, 20).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -667,31 +656,26 @@ public class Assesment {
             List<Assesment> assesmentList = new ArrayList<>();
             String schemaName = loggedInUser.schemaName;
 
-            try
-            {
-                if(con != null)
-                {
+            try {
+                if (con != null) {
                     stmt = con.prepareStatement("SELECT o.id,assesmentname, o.startdate, o.enddate," +
                             "  o.userid, o.divid, o.createdon, o.createdby " +
-                            " FROM "+schemaName+".onthegocontenttest o " +
+                            " FROM " + schemaName + ".onthegocontenttest o " +
                             " WHERE ? = ANY(userid :: int[]) " +
                             " AND (now() BETWEEN o.startdate AND o.enddate OR now() = o.startdate OR now() = o.enddate)");
 
-                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(1, loggedInUser.id);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
-                        stmt = con.prepareStatement(" SELECT Count(*) As Count FROM "+schemaName+".onthegoassessmentactualresult" +
+                    while (resultSet.next()) {
+                        stmt = con.prepareStatement(" SELECT Count(*) As Count FROM " + schemaName + ".onthegoassessmentactualresult" +
                                 " WHERE testid = ? AND userid = ? ");
-                        stmt.setInt(1,resultSet.getInt(1));
-                        stmt.setInt(2,loggedInUser.id);
+                        stmt.setInt(1, resultSet.getInt(1));
+                        stmt.setInt(2, loggedInUser.id);
                         countSet = stmt.executeQuery();
-                        while (countSet.next())
-                        {
+                        while (countSet.next()) {
                             Assesment assesment = new Assesment();
 
-                            if(countSet.getInt("Count")== 0)
-                            {
+                            if (countSet.getInt("Count") == 0) {
 
                                 assesment.id = resultSet.getInt(1);
                                 assesment.name = resultSet.getString(2);
@@ -703,43 +687,35 @@ public class Assesment {
 
                         }
                     }
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return assesmentList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
 
     /***
-     *
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Assesment> getExpiredAssesment(LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Assesment> getExpiredAssesment(LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
-                Permissions.isAuthorised(userRole,20).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 20).equals("Read") ||
+                Permissions.isAuthorised(userRole, 20).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -747,78 +723,64 @@ public class Assesment {
             List<Assesment> assesmentList = new ArrayList<>();
             String schemaName = loggedInUser.schemaName;
 
-            try
-            {
-                if(con != null)
-                {
+            try {
+                if (con != null) {
                     stmt = con.prepareStatement("SELECT o.id,assesmentname,o.startdate,o.enddate " +
-                            " FROM "+schemaName+".onthegocontenttest o " +
+                            " FROM " + schemaName + ".onthegocontenttest o " +
                             " WHERE ? = ANY(userid :: int[]) AND now() > enddate ");
 
-                    stmt.setInt(1,loggedInUser.id);
+                    stmt.setInt(1, loggedInUser.id);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         Assesment assesment = new Assesment();
                         assesment.id = resultSet.getInt(1);
                         assesment.name = resultSet.getString(2);
                         assesment.startDate = resultSet.getTimestamp(3);
                         assesment.endDate = resultSet.getTimestamp(4);
 
-                        stmt = con.prepareStatement(" SELECT Count(*) As Count FROM "+schemaName+".onthegoassessmentactualresult" +
+                        stmt = con.prepareStatement(" SELECT Count(*) As Count FROM " + schemaName + ".onthegoassessmentactualresult" +
                                 " WHERE testid = ? AND userid = ? ");
-                        stmt.setInt(1,resultSet.getInt(1));
-                        stmt.setInt(2,loggedInUser.id);
+                        stmt.setInt(1, resultSet.getInt(1));
+                        stmt.setInt(2, loggedInUser.id);
                         countSet = stmt.executeQuery();
-                        while (countSet.next())
-                        {
-                            if(countSet.getInt("Count") > 0)
-                            {
+                        while (countSet.next()) {
+                            if (countSet.getInt("Count") > 0) {
                                 assesment.isExpired = false;
-                            }
-                            else
-                            {
+                            } else {
                                 assesment.isExpired = true;
                             }
                         }
                         assesmentList.add(assesment);
                     }
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return assesmentList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Assesment> getPastExamScore(LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Assesment> getPastExamScore(LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,20).equals("Read") ||
-                Permissions.isAuthorised(userRole,20).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 20).equals("Read") ||
+                Permissions.isAuthorised(userRole, 20).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -826,18 +788,16 @@ public class Assesment {
             List<Assesment> assesmentList = new ArrayList<>();
             String schemaName = loggedInUser.schemaName;
 
-            try
-            {
-                if(con != null)
-                {
-                    stmt = con.prepareStatement(" SELECT sum(score),testid,assesmentname,startdate,enddate " +
-                            " FROM "+schemaName+".onthegoassessmentactualresult r " +
-                            " left join "+schemaName+".onthegocontenttest o on o.id = testid " +
-                            " WHERE isattemp = true AND r.userid = ? GROUP BY(testid,assesmentname,startdate,enddate)");
-                    stmt.setInt(1,loggedInUser.id);
+            try {
+                if (con != null) {
+                    stmt = con.prepareStatement(" SELECT sum(score),r.testid,assesmentname,startdate,enddate " +
+                            " FROM (select * from " + schemaName + ".onthegoassessmentactualresult r " +
+                            " WHERE isattemp = true AND r.userid = ?)r " +
+                            " left join " + schemaName + ".onthegocontenttest o on o.id = r.testid " +
+                            " GROUP BY r.testid,assesmentname,startdate,enddate");
+                    stmt.setInt(1, loggedInUser.id);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         Assesment assesment = new Assesment();
                         assesment.score = resultSet.getInt(1);
                         assesment.name = resultSet.getString(3);
@@ -871,35 +831,29 @@ public class Assesment {
                         }
                         assesmentList.add(assesment);
                     }*/
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
-                if(countSet != null)
-                    if(!countSet.isClosed())
+                if (countSet != null)
+                    if (!countSet.isClosed())
                         countSet.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return assesmentList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *
-     *
      * @param testId
      * @param loggedInUser
      * @return
@@ -946,7 +900,7 @@ public class Assesment {
                 assesment.TimeLimitation.put("FixedTime", resultSet.getString(8));
 
                 HashMap DifferentTime = new HashMap();
-                if(resultSet.getArray(6) != null) {
+                if (resultSet.getArray(6) != null) {
                     Integer[] diffArr = (Integer[]) resultSet.getArray(6).getArray();
                     if (diffArr.length > 0 && diffArr.length == 3) {
                         DifferentTime.put("Low", diffArr[0]);
@@ -973,8 +927,7 @@ public class Assesment {
             if (isRandom) {
                 Collections.shuffle(collectionList);
             }
-        }
-        finally {
+        } finally {
             if (con != null)
                 if (!con.isClosed())
                     con.close();
