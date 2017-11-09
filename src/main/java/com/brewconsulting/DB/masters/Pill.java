@@ -98,9 +98,9 @@ public class Pill {
     @JsonProperty("deliveryTime")
     public String deliveryTime;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+    //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     @JsonProperty("readTime")
-    public Date readTime;
+    public String readTime;
 
     @JsonProperty("userAnswerJson")
     public String userAnswerJson;
@@ -150,11 +150,13 @@ public class Pill {
                     while (result.next()) {
                         Pill pill = new Pill();
                         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                        sdf.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
                         String date = sdf.format(result.getTimestamp(3));
                         pill.feedDeliveryId = result.getInt(1);
                         pill.deliveryTime = date;
 
-                        pill.readTime = result.getTimestamp(4);
+                        if (result.getTimestamp(4) != null)
+                            pill.readTime = sdf.format(result.getTimestamp(4));
                         pill.userAnswerJson = result.getString(5);
 
                         stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
@@ -263,11 +265,13 @@ public class Pill {
                     while (result.next()) {
                         Pill pill = new Pill();
                         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                        sdf.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
                         String date = sdf.format(result.getTimestamp(3));
                         pill.feedDeliveryId = result.getInt(1);
                         pill.deliveryTime = date;
 
-                        pill.readTime = result.getTimestamp(4);
+                        if (result.getTimestamp(4) != null)
+                            pill.readTime = sdf.format(result.getTimestamp(4));
                         pill.userAnswerJson = result.getString(5);
 
                         stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
@@ -369,7 +373,6 @@ public class Pill {
 
             try {
                 if (con != null) {
-
                     stmt = con.prepareStatement(" SELECT id, divid, title, body, questiontype, questiontext, answeroptions, " +
                             " answertext, scorecorrect, scoreincorrect, products, keywords, createdate, createby " +
                             " FROM " + schemaName + ".pills p " +
@@ -434,10 +437,14 @@ public class Pill {
                         contentSet = stmt.executeQuery();
                         while (contentSet.next()) {
                             SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy kk:mm:ss");
+                            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
                             String date = sdf.format(contentSet.getTimestamp(1));
 
                             pill.deliveryTime = date;
-                            pill.readTime = contentSet.getTimestamp(2);
+
+                            if (result.getTimestamp(4) != null)
+                                pill.readTime = sdf.format(contentSet.getTimestamp(2));
+//                            pill.readTime = contentSet.getTimestamp(2);
                             pill.userAnswerJson = contentSet.getString(3);
                         }
 
@@ -1080,7 +1087,7 @@ public class Pill {
 
                 stmt = con.prepareStatement(" UPDATE " + schemaname + ".pills " +
                         " SET divid=?, title=?, body=?, questiontype= CAST(? AS master.questiontype), questiontext=?, answeroptions=?," +
-                        " answertext=?, scorecorrect=?, scoreincorrect=?, products=?, keywords=? " +
+                        " answertext=?, scorecorrect=?, scoreincorrect=?, products=?, keywords=?,createby =? " +
                         " WHERE id = ? ");
 
                 stmt.setInt(1, divid);
@@ -1116,7 +1123,9 @@ public class Pill {
 
                 stmt.setArray(11, keyArr);
 
-                stmt.setInt(12, id);
+                stmt.setInt(12, loggedInUser.id);
+
+                stmt.setInt(13, id);
 
                 result = stmt.executeUpdate();
 

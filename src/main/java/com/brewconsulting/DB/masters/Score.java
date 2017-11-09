@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
@@ -71,8 +72,8 @@ public class Score {
     public boolean isSessionStart;
 
     @JsonProperty("sessionStartTime")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:MM:ss")
-    public java.util.Date sessionStartTime;
+//    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:MM:ss")
+    public String sessionStartTime;
 
     @JsonView({UserViews.sessionView.class})
     @JsonProperty("isSessionEnd")
@@ -80,15 +81,13 @@ public class Score {
 
     @JsonProperty("sessionEndTime")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:MM:ss")
-    public Date sessionEndTime;
+    public String sessionEndTime;
 
     @JsonView({UserViews.sessionView.class})
     @JsonProperty("deliveryMode")
     public String deliveryMode;
 
     /***
-     *
-     *
      * @param node
      * @param loggedInUser
      * @return
@@ -140,25 +139,25 @@ public class Score {
                         System.out.println("Answer JSON : " + String.valueOf(node.withArray("answerSet").get(i).get("answerJson")));
                         stmt.setString(5, String.valueOf(node.withArray("answerSet").get(i).get("answerJson")));
 
-                        if(isReviewQuestion) {
+                        if (isReviewQuestion) {
                             stmt.setDouble(6, 0);
                             stmt.setBoolean(9, true);
 
-                            if(String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).isEmpty() ||
+                            if (String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).isEmpty() ||
                                     String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals(null) ||
-                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals("")){
-                                stmt.setBoolean(8,false);
-                            }else{
-                                stmt.setBoolean(8,true);
+                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals("")) {
+                                stmt.setBoolean(8, false);
+                            } else {
+                                stmt.setBoolean(8, true);
                             }
-                        } else{
+                        } else {
                             stmt.setBoolean(9, false);
-                            if(String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).isEmpty() ||
+                            if (String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).isEmpty() ||
                                     String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals(null) ||
-                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals("")){
+                                    String.valueOf(node.withArray("answerSet").get(i).get("answerJson")).equals("")) {
                                 stmt.setDouble(6, 0);
-                                stmt.setBoolean(8,false);
-                            }else {
+                                stmt.setBoolean(8, false);
+                            } else {
                                 if (isApplyScoring) {
                                     if (resultSet.getString(4).equals(String.valueOf(node.withArray("answerSet").get(i).get("answerJson")))) {
                                         if (correctScore.length > 0) {
@@ -210,9 +209,8 @@ public class Score {
             throw new NotAuthorizedException("");
         }
     }
+
     /***
-     *
-     *
      * @param node
      * @param loggedInUser
      * @return
@@ -257,42 +255,40 @@ public class Score {
                         actualAnswer = resultSet.getString(4);
                         isReviewQuestion = resultSet.getBoolean(5);
 
-                        stmt = con.prepareStatement(" SELECT count(*) AS Count FROM "+schemaname+".cyclemeetingassessmentresult" +
+                        stmt = con.prepareStatement(" SELECT count(*) AS Count FROM " + schemaname + ".cyclemeetingassessmentresult" +
                                 " WHERE agendaid = ? AND userid = ? AND questionid = ? ");
-                        stmt.setInt(1,node.get("agendaId").asInt());
-                        stmt.setInt(2,node.get("userId").asInt());
-                        stmt.setInt(3,node.get("questionId").asInt());
+                        stmt.setInt(1, node.get("agendaId").asInt());
+                        stmt.setInt(2, node.get("userId").asInt());
+                        stmt.setInt(3, node.get("questionId").asInt());
                         updateResultSet = stmt.executeQuery();
-                        while (updateResultSet.next())
-                        {
-                            if(updateResultSet.getInt("Count") > 0)
-                            {
-                                stmt = con.prepareStatement(" UPDATE "+schemaname+".cyclemeetingassessmentresult " +
+                        while (updateResultSet.next()) {
+                            if (updateResultSet.getInt("Count") > 0) {
+                                stmt = con.prepareStatement(" UPDATE " + schemaname + ".cyclemeetingassessmentresult " +
                                         " SET answerjson = ?, questionjson = ?, useranswerjson = ?, score = ?,isattemp = ? ,isreview = ?" +
                                         " WHERE agendaid = ? AND userid = ? AND questionid = ?");
                                 stmt.setString(1, actualAnswer);
-                                stmt.setString(2,resultSet.getString(3));
-                                stmt.setString(3,String.valueOf(node.get("answerJson")));
+                                stmt.setString(2, resultSet.getString(3));
+                                stmt.setString(3, String.valueOf(node.get("answerJson")));
 
-                                if(isReviewQuestion) {
+                                if (isReviewQuestion) {
                                     stmt.setDouble(4, 0);
                                     stmt.setBoolean(6, true);
 
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
-                                        stmt.setBoolean(5,false);
-                                    }else{
-                                        stmt.setBoolean(5,true);
+                                            String.valueOf(node.get("answerJson")).equals("")) {
+                                        stmt.setBoolean(5, false);
+                                    } else {
+                                        stmt.setBoolean(5, true);
                                     }
-                                } else{
+                                } else {
                                     stmt.setBoolean(6, false);
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("")) {
                                         stmt.setDouble(4, 0);
-                                        stmt.setBoolean(5,false);
-                                    }else {
+                                        stmt.setBoolean(5, false);
+                                    } else {
                                         if (isApplyScoring) {
                                             if (actualAnswer.equals(String.valueOf(node.get("answerJson")))) {
                                                 if (correctScore.length > 0) {
@@ -327,12 +323,10 @@ public class Score {
                                     }
                                 }
 
-                                stmt.setInt(7,node.get("agendaId").asInt());
-                                stmt.setInt(8,node.get("userId").asInt());
-                                stmt.setInt(9,node.get("questionId").asInt());
-                            }
-                            else
-                            {
+                                stmt.setInt(7, node.get("agendaId").asInt());
+                                stmt.setInt(8, node.get("userId").asInt());
+                                stmt.setInt(9, node.get("questionId").asInt());
+                            } else {
                                 stmt = con.prepareStatement(" INSERT INTO " + schemaname
                                         + ".cyclemeetingassessmentresult(questionid, userid, answerjson, questionjson, useranswerjson, score,agendaid,isattemp,isreview)" +
                                         " VALUES(?, ?, ?, ?, ?, ?,?,?,?) ", Statement.RETURN_GENERATED_KEYS);
@@ -344,25 +338,25 @@ public class Score {
                                 System.out.println("Answer JSON : " + String.valueOf(node.get("answerJson")));
                                 stmt.setString(5, String.valueOf(node.get("answerJson")));
 
-                                if((actualAnswer.isEmpty() || actualAnswer.equals(null) || actualAnswer.equals(""))) {
+                                if ((actualAnswer.isEmpty() || actualAnswer.equals(null) || actualAnswer.equals(""))) {
                                     stmt.setDouble(6, 0);
                                     stmt.setBoolean(9, true);
 
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
-                                        stmt.setBoolean(8,false);
-                                    }else{
-                                        stmt.setBoolean(8,true);
+                                            String.valueOf(node.get("answerJson")).equals("")) {
+                                        stmt.setBoolean(8, false);
+                                    } else {
+                                        stmt.setBoolean(8, true);
                                     }
-                                } else{
+                                } else {
                                     stmt.setBoolean(9, false);
-                                    if(String.valueOf(node.get("answerJson")).isEmpty() ||
+                                    if (String.valueOf(node.get("answerJson")).isEmpty() ||
                                             String.valueOf(node.get("answerJson")).equals(null) ||
-                                            String.valueOf(node.get("answerJson")).equals("")){
+                                            String.valueOf(node.get("answerJson")).equals("")) {
                                         stmt.setDouble(6, 0);
-                                        stmt.setBoolean(8,false);
-                                    }else {
+                                        stmt.setBoolean(8, false);
+                                    } else {
                                         if (isApplyScoring) {
                                             if (resultSet.getString(4).equals(String.valueOf(node.get("answerJson")))) {
                                                 if (correctScore.length > 0) {
@@ -394,8 +388,8 @@ public class Score {
                                                 stmt.setBoolean(8, true);
                                             }
                                         }
-                                        stmt.setDouble(6,score);
-                                        stmt.setBoolean(8,true);
+                                        stmt.setDouble(6, score);
+                                        stmt.setBoolean(8, true);
                                     }
                                 }
 
@@ -430,7 +424,7 @@ public class Score {
     }
 
     /***
-     *  This method is used to Get User's Total Score.
+     * This method is used to Get User's Total Score.
      *
      * @param agendaId
      * @param loggedInUser
@@ -439,9 +433,8 @@ public class Score {
      */
     public static List<Score> getUsersWiseResult(int agendaId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             String schemaname = loggedInUser.schemaName;
@@ -449,11 +442,11 @@ public class Score {
             List<Score> scoreList = new ArrayList<>();
 
             try {
-                if(con != null) {
+                if (con != null) {
                     stmt = con.prepareStatement(
                             " SELECT count(case when score>0 and isattemp = true and isreview = false then 1 else null end) as CorrectAnswer," +
-                                    " count(case when score=0 and isattemp = true and isreview = false and answerjson != useranswerjson then 1 else null end) as IncorrectAnswer,"+
-                                    "count(case when isattemp = false then 1 else null end) as notAttempt,"+
+                                    " count(case when score=0 and isattemp = true and isreview = false and answerjson != useranswerjson then 1 else null end) as IncorrectAnswer," +
+                                    "count(case when isattemp = false then 1 else null end) as notAttempt," +
                                     " sum(score) as TotalScore, userid,username,firstname,lastname" +
                                     " FROM " + schemaname + ".cyclemeetingassessmentresult " +
                                     " left join master.users u on u.id = userid " +
@@ -469,45 +462,40 @@ public class Score {
                         score.score = resultSet.getDouble(4);
                         score.userId = resultSet.getInt(5);
                         score.username = resultSet.getString(6);
-                        score.fullname = resultSet.getString(7) + " "+ resultSet.getString(8);
+                        score.fullname = resultSet.getString(7) + " " + resultSet.getString(8);
                         scoreList.add(score);
                     }
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *  This method is used to Get User's Total Score.
+     * This method is used to Get User's Total Score.
      *
      * @param agendaId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Score> getQuestionWiseResult(int agendaId,LoggedInUser loggedInUser) throws Exception {
+    public static List<Score> getQuestionWiseResult(int agendaId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             String schemaname = loggedInUser.schemaName;
@@ -515,11 +503,11 @@ public class Score {
             List<Score> scoreList = new ArrayList<>();
 
             try {
-                if(con != null) {
+                if (con != null) {
                     stmt = con.prepareStatement(
                             " SELECT count(case when score>0 and isattemp = true and isreview = false then 1 else null end) as CorrectAnswer," +
-                                    " count(case when score=0 and isattemp = true and isreview = false and answerjson != useranswerjson then 1 else null end) as IncorrectAnswer,"+
-                                    " count(case when isattemp = false then 1 else null end) as notAttempt,"+
+                                    " count(case when score=0 and isattemp = true and isreview = false and answerjson != useranswerjson then 1 else null end) as IncorrectAnswer," +
+                                    " count(case when isattemp = false then 1 else null end) as notAttempt," +
                                     " questionid,questionjson,answerjson" +
                                     " FROM " + schemaname + ".cyclemeetingassessmentresult " +
                                     " WHERE agendaid = ? GROUP BY(questionid)");
@@ -532,47 +520,41 @@ public class Score {
                         score.inCorrectAnswer = resultSet.getInt(2);
                         score.notAttempt = resultSet.getInt(3);
                         score.questionId = resultSet.getInt(4);
-                        score.questionJson= resultSet.getString(5);
+                        score.questionJson = resultSet.getString(5);
                         score.answerJson = resultSet.getString(6);
                         scoreList.add(score);
                     }
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *  Method is used to get Specific Question wise user's Score.
+     * Method is used to get Specific Question wise user's Score.
      *
      * @param userId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Score> getUsersQuestionWiseScore(int userId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Score> getUsersQuestionWiseScore(int userId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write") )
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             ArrayList<Score> scoreList = new ArrayList<>();
             PreparedStatement stmt = null;
@@ -580,18 +562,16 @@ public class Score {
             String schemaname = loggedInUser.schemaName;
 
             try {
-                if(con != null)
-                {
+                if (con != null) {
                     stmt = con.prepareStatement(" SELECT questionid,r.questionjson,score,userid,username " +
-                            " FROM "+schemaname+".cyclemeetingassessmentresult r" +
-                            " left join "+schemaname+".question q on q.id = questionid" +
+                            " FROM " + schemaname + ".cyclemeetingassessmentresult r" +
+                            " left join " + schemaname + ".question q on q.id = questionid" +
                             " left join master.users u on u.id = userid" +
                             " WHERE userid = ? ");
-                    stmt.setInt(1,userId);
+                    stmt.setInt(1, userId);
                     resultSet = stmt.executeQuery();
 
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         Score score = new Score();
                         score.questionId = resultSet.getInt(1);
                         score.questionJson = resultSet.getString(2);
@@ -600,41 +580,34 @@ public class Score {
                         score.username = resultSet.getString(5);
                         scoreList.add(score);
                     }
-                }
-                else
+                } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Score> getUserWiseParticularScore(int userId, int agendaId , String mode,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Score> getUserWiseParticularScore(int userId, int agendaId, String mode, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -642,24 +615,23 @@ public class Score {
             String schemaname = loggedInUser.schemaName;
             String condition = "";
             try {
-                if(mode == "correct"){
+                if (mode == "correct") {
                     condition = "AND score > 0 AND isattemp = true AND isReview=false";
-                }else if(mode == "incorrect"){
+                } else if (mode == "incorrect") {
                     condition = "AND isattemp = true AND answerjson != useranswerjson AND isReview=false";
-                }else if(mode == "notattempt"){
+                } else if (mode == "notattempt") {
                     condition = "AND isattemp = false";
                 }
 
                 stmt = con.prepareStatement(" SELECT questionid,r.questionjson,r.answerjson,score " +
-                        " FROM "+schemaname+".cyclemeetingassessmentresult r" +
+                        " FROM " + schemaname + ".cyclemeetingassessmentresult r" +
                         " WHERE userid = ? AND agendaid = ? " + condition);
-                stmt.setInt(1,userId);
-                stmt.setInt(2,agendaId);
+                stmt.setInt(1, userId);
+                stmt.setInt(2, agendaId);
 
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     Score score = new Score();
                     score.questionId = resultSet.getInt(1);
                     score.questionJson = resultSet.getString(2);
@@ -667,38 +639,32 @@ public class Score {
                     score.score = resultSet.getDouble(4);
                     scoreList.add(score);
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Score> getQuestionWiseUserStatus(int questionId, int agendaId , String mode,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Score> getQuestionWiseUserStatus(int questionId, int agendaId, String mode, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -706,64 +672,57 @@ public class Score {
             String schemaname = loggedInUser.schemaName;
             String condition = "";
             try {
-                if(mode.equals("correct")){
+                if (mode.equals("correct")) {
                     condition = "AND score > 0 AND isattemp = true AND isReview=false";
-                }else if(mode.equals("incorrect")){
+                } else if (mode.equals("incorrect")) {
                     condition = "AND isattemp = true AND answerjson != useranswerjson AND isReview=false";
-                }else if(mode.equals("notattempt")){
+                } else if (mode.equals("notattempt")) {
                     condition = "AND isattemp = false";
                 }
 
                 stmt = con.prepareStatement(" SELECT r.userid,score,u.username,u.firstname,u.lastname " +
-                        " FROM "+schemaname+".cyclemeetingassessmentresult r " +
+                        " FROM " + schemaname + ".cyclemeetingassessmentresult r " +
                         " left join master.users u on u.id = r.userid " +
                         " WHERE questionid = ? AND agendaid = ? " + condition);
-                stmt.setInt(1,questionId);
-                stmt.setInt(2,agendaId);
+                stmt.setInt(1, questionId);
+                stmt.setInt(2, agendaId);
 
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     Score score = new Score();
                     score.questionId = resultSet.getInt(1);
                     score.score = resultSet.getDouble(2);
                     score.username = resultSet.getString(3);
-                    score.fullname = resultSet.getString(4)+ " " + resultSet.getString(5);
+                    score.fullname = resultSet.getString(4) + " " + resultSet.getString(5);
                     scoreList.add(score);
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Score> getUserTotalScore(int userId,int agendaId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Score> getUserTotalScore(int userId, int agendaId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -772,56 +731,49 @@ public class Score {
 
             try {
                 stmt = con.prepareStatement(" SELECT r.userid,r.score,u.username,u.firstname,u.lastname, r.questionjson" +
-                        " FROM "+schemaname+".cyclemeetingassessmentresult r " +
+                        " FROM " + schemaname + ".cyclemeetingassessmentresult r " +
                         " left join master.users u on u.id = r.userid " +
                         " WHERE isattemp = true AND userid = ? AND agendaid = ? ");
-                stmt.setInt(1,userId);
-                stmt.setInt(2,agendaId);
+                stmt.setInt(1, userId);
+                stmt.setInt(2, agendaId);
 
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     Score score = new Score();
-                    score.userId= resultSet.getInt(1);
+                    score.userId = resultSet.getInt(1);
                     score.score = resultSet.getDouble(2);
                     score.username = resultSet.getString(3);
-                    score.fullname = resultSet.getString(4)+ " " + resultSet.getString(5);
-                    score.questionJson =resultSet.getString(6);
+                    score.fullname = resultSet.getString(4) + " " + resultSet.getString(5);
+                    score.questionJson = resultSet.getString(6);
                     scoreList.add(score);
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<Score> getUsersAllExamsScore(LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Score> getUsersAllExamsScore(LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -830,44 +782,40 @@ public class Score {
 
             try {
                 stmt = con.prepareStatement(" SELECT r.userid,r.score,cc.collectionname,a.sessionname" +
-                        " FROM "+schemaname+".cyclemeetingassessmentresult r " +
+                        " FROM " + schemaname + ".cyclemeetingassessmentresult r " +
                         " left join master.users u on u.id = r.userid " +
-                        " left join "+schemaname+".cyclemeetingsessioncontenttestquestioncollection cc on cc.agendaid = r.agendaid " +
-                        " left join "+schemaname+".cyclemeetingagenda a on a.id = r.agendaid " +
+                        " left join " + schemaname + ".cyclemeetingsessioncontenttestquestioncollection cc on cc.agendaid = r.agendaid " +
+                        " left join " + schemaname + ".cyclemeetingagenda a on a.id = r.agendaid " +
                         " WHERE isattemp = true AND userid = ? GROUP BY r.agendaid,userid,r.score,cc.collectionname,a.sessionname ");
-                stmt.setInt(1,loggedInUser.id);
+                stmt.setInt(1, loggedInUser.id);
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     Score score = new Score();
-                    score.userId= resultSet.getInt(1);
+                    score.userId = resultSet.getInt(1);
                     score.score = resultSet.getDouble(2);
                     score.collectionName = resultSet.getString(4);
                     scoreList.add(score);
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return scoreList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *  This method is used to get Session Details that session is start or end.
+     * This method is used to get Session Details that session is start or end.
      *
      * @param meetingId
      * @param sessionId
@@ -875,68 +823,74 @@ public class Score {
      * @return
      * @throws Exception
      */
-    public static List<Score> getSessionDetails(int meetingId,int sessionId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Score> getSessionDetails(int meetingId, int sessionId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             List<Score> sessionList = new ArrayList<>();
             String schemaname = loggedInUser.schemaName;
             ResultSet resultSet = null;
-            String deliveryMode ;
+            String deliveryMode;
 
-            try
-            {
+            try {
                 stmt = con.prepareStatement(" SELECT id,sessionstarttime,sessionendtime " +
-                        " FROM "+schemaname+".cyclemeetingactualtimes WHERE cyclemeetingid = ? AND sessionid = ? ");
-                stmt.setInt(1,meetingId);
-                stmt.setInt(2,sessionId);
+                        " FROM " + schemaname + ".cyclemeetingactualtimes WHERE cyclemeetingid = ? AND sessionid = ? ");
+                stmt.setInt(1, meetingId);
+                stmt.setInt(2, sessionId);
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     Score score = new Score();
                     score.id = resultSet.getInt(1);
-                    score.sessionStartTime = resultSet.getTimestamp(2);
-                    if(!resultSet.getTimestamp(2).equals(null))
+
+                    DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                    formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata")); // Or whatever IST is supposed to be
+
+                    score.sessionStartTime = formatter.format(resultSet.getTimestamp(2));
+                    System.out.println("Result : " + resultSet.getTimestamp(2) + " : Start Time : " + score.sessionStartTime);
+
+//                            resultSet.getTimestamp(2);
+                    if (!resultSet.getTimestamp(2).equals(null))
                         score.isSessionStart = true;
                     else
                         score.isSessionStart = false;
 
-                    score.sessionEndTime = resultSet.getTimestamp(3);
-
+                    score.sessionEndTime = formatter.format(resultSet.getTimestamp(3));
+                    System.out.println("Result : " + resultSet.getTimestamp(3) + " : End Time : " + score.sessionEndTime);
+//                            resultSet.getTimestamp(3);
                     SimpleDateFormat sd = new SimpleDateFormat("yyyy-MM-dd");
                     String date = sd.format(resultSet.getTimestamp(3));
 
-                    if(date.equals("1970-01-01"))
+                    if (date.equals("1970-01-01"))
                         score.isSessionEnd = false;
                     else
                         score.isSessionEnd = true;
 
-                    stmt = con.prepareStatement(" SELECT deliverymode FROM "+schemaname+".cyclemeetingsessioncontenttest" +
+                    stmt = con.prepareStatement(" SELECT deliverymode FROM " + schemaname + ".cyclemeetingsessioncontenttest" +
                             " WHERE agendaid = ? ");
-                    stmt.setInt(1,sessionId);
+                    stmt.setInt(1, sessionId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         score.deliveryMode = resultSet.getString(1);
                     }
                     sessionList.add(score);
                 }
-            }
-            finally {
-
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
+                        con.close();
+                if (stmt != null)
+                    if (!stmt.isClosed())
+                        stmt.close();
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
+                        resultSet.close();
             }
             return sessionList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
-    
-    
 }

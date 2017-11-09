@@ -464,8 +464,8 @@ public class FeedSchedule {
                     con.commit();
                     try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-                        URL url = new URL("http://52.73.14.171:3010/api/tasks");
-//                        URL url = new URL("http://192.168.200.11:3010/api/tasks");
+                        URL url = new URL("http://34.231.6.39:3000/api/tasks");
+//                        URL url = new URL("http://192.168.200.62:3000/api/tasks");
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setDoOutput(true);
                         conn.setRequestMethod("POST");
@@ -621,7 +621,7 @@ public class FeedSchedule {
                 affectedRow = stmt.executeUpdate();
                 try {
                     /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-                    URL url = new URL("http://52.73.14.171:3010/api/tasks");
+                    URL url = new URL("http://34.231.6.39:3000/api/tasks");
 //                  URL url = new URL("http://192.168.200.11:3010/api/tasks");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setDoOutput(true);
@@ -741,8 +741,8 @@ public class FeedSchedule {
                 if (length > 0) {
                     try {
                             /*https://www.mkyong.com/webservices/jax-rs/restfull-java-client-with-java-net-url/*/
-                        URL url = new URL("http://52.73.14.171:3010/api/removetasks");
-//                        URL url = new URL("http://192.168.200.11:3010/api/removetasks");
+                        URL url = new URL("http://34.231.6.39:3000/api/removetasks");
+//                        URL url = new URL("http://192.168.200.62:3000/api/removetasks");
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setDoOutput(true);
                         conn.setRequestMethod("POST");

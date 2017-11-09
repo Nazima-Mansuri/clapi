@@ -34,12 +34,12 @@ public class Assesment {
     public String name;
 
     @JsonView({UserViews.assesmentView.class, UserViews.scoreView.class})
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     @JsonProperty("startDate")
     public java.util.Date startDate;
 
     @JsonView({UserViews.assesmentView.class, UserViews.scoreView.class})
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     @JsonProperty("endDate")
     public java.util.Date endDate;
 
@@ -215,12 +215,6 @@ public class Assesment {
 
             try {
                 con.setAutoCommit(false);
-
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-
-                java.util.Date starDate = sdf.parse(node.get("startDate").asText() + ".111");
-                java.util.Date endDate = sdf.parse(node.get("endDate").asText() + ".111");
-
                 Integer[] territories = new Integer[node.withArray("territories").size()];
 
                 for (int i = 0; i < node.withArray("territories").size(); i++) {
@@ -658,11 +652,19 @@ public class Assesment {
 
             try {
                 if (con != null) {
+                   /* stmt = con.prepareStatement("SELECT o.id,assesmentname, o.startdate, o.enddate," +
+                            "  o.userid, o.divid, o.createdon, o.createdby " +
+                            " FROM " + schemaName + ".onthegocontenttest o " +
+                            " WHERE ? = ANY(userid :: int[]) " +
+                            " AND (now() BETWEEN o.startdate AND o.enddate OR now() = o.startdate OR now() = o.enddate)");*/
+
                     stmt = con.prepareStatement("SELECT o.id,assesmentname, o.startdate, o.enddate," +
                             "  o.userid, o.divid, o.createdon, o.createdby " +
                             " FROM " + schemaName + ".onthegocontenttest o " +
                             " WHERE ? = ANY(userid :: int[]) " +
-                            " AND (now() BETWEEN o.startdate AND o.enddate OR now() = o.startdate OR now() = o.enddate)");
+                            " AND (now() AT TIME ZONE 'Asia/Calcutta' BETWEEN o.startdate AND o.enddate " +
+                            " OR now() AT TIME ZONE 'Asia/Calcutta' = o.startdate " +
+                            " OR now() AT TIME ZONE 'Asia/Calcutta' = o.enddate)");
 
                     stmt.setInt(1, loggedInUser.id);
                     resultSet = stmt.executeQuery();
@@ -727,7 +729,7 @@ public class Assesment {
                 if (con != null) {
                     stmt = con.prepareStatement("SELECT o.id,assesmentname,o.startdate,o.enddate " +
                             " FROM " + schemaName + ".onthegocontenttest o " +
-                            " WHERE ? = ANY(userid :: int[]) AND now() > enddate ");
+                            " WHERE ? = ANY(userid :: int[]) AND now() AT TIME ZONE 'Asia/Calcutta' > enddate ");
 
                     stmt.setInt(1, loggedInUser.id);
                     resultSet = stmt.executeQuery();

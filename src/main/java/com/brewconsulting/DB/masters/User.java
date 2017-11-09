@@ -17,10 +17,8 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.json.simple.JSONObject;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
+import javax.mail.*;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.naming.InitialContext;
@@ -349,47 +347,46 @@ public class User {
 
             boolean data = Mem.getData(loggedInUser.id + "#DEACTIVATED");
 
-                if (resultSet.next()) {
-                    isActive = resultSet.getBoolean(1);
+            if (resultSet.next()) {
+                isActive = resultSet.getBoolean(1);
 
-                    if (isActive) {
-                        stmt = con.prepareStatement(
-                                "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username "
-                                        + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
-                                        + " where a.isActive  and a.clientId = b.id and "
-                                        + " a.id = c.userId and c.roleId = d.id and a.id = ?");
+                if (isActive) {
+                    stmt = con.prepareStatement(
+                            "select a.id, a.clientId, a.firstName, a.lastName, schemaName, d.id roleid, d.name rolename, a.username "
+                                    + " from master.users a, master.clients b, master.userRoleMap c, master.roles d "
+                                    + " where a.isActive  and a.clientId = b.id and "
+                                    + " a.id = c.userId and c.roleId = d.id and a.id = ?");
 
-                        stmt.setInt(1, loggedInUser.id);
+                    stmt.setInt(1, loggedInUser.id);
 
-                        final ResultSet masterUsers = stmt.executeQuery();
-                        while (masterUsers.next()) {
-                            if (user == null) { // execute for the first iteration
-                                if(loggedInUser.roles.get(0).roleId != masterUsers.getInt(6) &&
-                                        !loggedInUser.roles.get(0).roleName.equals(masterUsers.getString(7)))
-                                {
-                                    throw new NotAuthorizedException("");
-                                }
-
-                                user = new User();
-                                user.id = masterUsers.getInt(1);
-                                user.clientId = masterUsers.getInt(2);
-                                user.firstName = masterUsers.getString(3);
-                                user.lastName = masterUsers.getString(4);
-                                user.schemaName = masterUsers.getString(5);
-                                user.username = masterUsers.getString(8);
-                                user.roles = new ArrayList<Role>();
-                                user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
-                                continue;
+                    final ResultSet masterUsers = stmt.executeQuery();
+                    while (masterUsers.next()) {
+                        if (user == null) { // execute for the first iteration
+                            if (loggedInUser.roles.get(0).roleId != masterUsers.getInt(6) &&
+                                    !loggedInUser.roles.get(0).roleName.equals(masterUsers.getString(7))) {
+                                throw new NotAuthorizedException("");
                             }
 
-                            if (user.roles != null) {
-                                user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
-                            }
+                            user = new User();
+                            user.id = masterUsers.getInt(1);
+                            user.clientId = masterUsers.getInt(2);
+                            user.firstName = masterUsers.getString(3);
+                            user.lastName = masterUsers.getString(4);
+                            user.schemaName = masterUsers.getString(5);
+                            user.username = masterUsers.getString(8);
+                            user.roles = new ArrayList<Role>();
+                            user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                            continue;
                         }
-                    } else {
-                        return null;
+
+                        if (user.roles != null) {
+                            user.roles.add(new Role(masterUsers.getInt(6), masterUsers.getString(7)));
+                        }
                     }
+                } else {
+                    return null;
                 }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -413,7 +410,7 @@ public class User {
      * @throws SQLException
      * @throws NamingException
      */
-    public static User authenticate(String username, String password,String deviceToken,String deviceOS)
+    public static User authenticate(String username, String password, String deviceToken, String deviceOS)
             throws ClassNotFoundException, SQLException, NamingException {
         User user = null;
         Connection con = DBConnectionProvider.getConn();
@@ -456,7 +453,7 @@ public class User {
                 }
             }
 
-            if((!deviceToken.isEmpty() && !deviceOS.isEmpty())) {
+            if ((!deviceToken.isEmpty() && !deviceOS.isEmpty())) {
                 stmt = con.prepareStatement(" UPDATE master.users SET devicetoken = ? , deviceos = ? " +
                         " WHERE id = ? AND username = ? AND password = ? ");
                 stmt.setString(1, deviceToken);
@@ -890,11 +887,12 @@ public class User {
                         stmt.executeUpdate();
                     }
 
+//                    sendMail(username, "testrolla@gmail.com", "Rolla@test", firstname, lastname, password);
                     generateAndSendEmail(username, "testrolla@gmail.com", "Rolla@test", firstname, lastname, password);
                     con.commit();
                     return userid;
                 } else {
-                    throw new BadRequestException("email id is already exists");
+                    throw new BadRequestException("Email Id already exists");
                 }
             } catch (Exception ex) {
                 if (con != null)
@@ -1053,13 +1051,12 @@ public class User {
                     user.profileImage = result.getString("profileimage");
                     user.divisionName = new ArrayList<>();
 
-                    stmt = con.prepareStatement(" SELECT u.divid,d.name FROM "+loggedInUser.schemaName+".userdivmap u " +
-                            " left join "+loggedInUser.schemaName+".divisions d on d.id = u.divid" +
+                    stmt = con.prepareStatement(" SELECT u.divid,d.name FROM " + loggedInUser.schemaName + ".userdivmap u " +
+                            " left join " + loggedInUser.schemaName + ".divisions d on d.id = u.divid" +
                             " WHERE userid = ? ");
-                    stmt.setInt(1,result.getInt("id"));
+                    stmt.setInt(1, result.getInt("id"));
                     divSet = stmt.executeQuery();
-                    while (divSet.next())
-                    {
+                    while (divSet.next()) {
                         user.divisionName.add(divSet.getString(2));
                     }
 
@@ -1275,19 +1272,17 @@ public class User {
     }
 
     /***
-     *  Method is used to get all ROOT level user details.
+     * Method is used to get all ROOT level user details.
      *
      * @param divId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<User> getAllRootLevelUser(int divId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<User> getAllRootLevelUser(int divId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,User).equals("Read") ||
-                Permissions.isAuthorised(userRole,User).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, User).equals("Read") ||
+                Permissions.isAuthorised(userRole, User).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             List<User> userList = new ArrayList<>();
@@ -1296,14 +1291,12 @@ public class User {
             int roleId = 0;
             String roleName = "";
 
-            try
-            {
+            try {
                 stmt = con.prepareStatement("SELECT id, name FROM master.roles WHERE name = ? ");
-                stmt.setString(1,"ROOT");
+                stmt.setString(1, "ROOT");
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     roleId = resultSet.getInt(1);
                     roleName = resultSet.getString(2);
                 }
@@ -1316,20 +1309,19 @@ public class User {
                         " c.divid divId , b.empNumber, d.name divname,b.createDate cdate, b.createBy cby , " +
                         " b.updateDate  udate,  b.updateBy uby, b.profileimage profileimage " +
                         " from master.users a " +
-                        " left join "+schemaname+".userprofile b on a.id = b.userid " +
-                        " left join "+schemaname+".userdivmap c on a.id = c.userid " +
-                        " left join "+schemaname+".divisions d on d.id = c.divid " +
+                        " left join " + schemaname + ".userprofile b on a.id = b.userid " +
+                        " left join " + schemaname + ".userdivmap c on a.id = c.userid " +
+                        " left join " + schemaname + ".divisions d on d.id = c.divid " +
                         " left join master.userrolemap e on e.userid = a.id " +
                         " left join master.roles f on f.id = e.roleid " +
                         " left join master.clients h on h.id = a.clientId " +
                         " WHERE c.divid = ? AND a.isactive AND f.id = ? AND f.name = ? order by b.updateDate DESC ");
-                stmt.setInt(1,divId);
-                stmt.setInt(2,roleId);
-                stmt.setString(3,roleName);
+                stmt.setInt(1, divId);
+                stmt.setInt(2, roleId);
+                stmt.setString(3, roleName);
 
                 resultSet = stmt.executeQuery();
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     User user = new User();
                     user.id = resultSet.getInt("id");
                     user.clientId = resultSet.getInt("clientid");
@@ -1358,22 +1350,19 @@ public class User {
                     user.profileImage = resultSet.getString("profileimage");
                     userList.add(user);
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return userList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
@@ -1787,14 +1776,13 @@ public class User {
     }
 
     /***
-     *  Method is used to get device details of User.
+     * Method is used to get device details of User.
      *
      * @param userId
      * @return
      * @throws Exception
      */
-    public static String getDeviceDetails(int userId) throws Exception
-    {
+    public static String getDeviceDetails(int userId) throws Exception {
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt = null;
         List<String> deviceList = new ArrayList<>();
@@ -1803,23 +1791,21 @@ public class User {
 
         try {
             stmt = con.prepareStatement(" SELECT devicetoken,deviceos,firstname,lastname FROM master.users WHERE id = ? ");
-            stmt.setInt(1,userId);
+            stmt.setInt(1, userId);
             result = stmt.executeQuery();
-            while (result.next())
-            {
-               device = result.getString(1)+","+result.getString(2)
-                       +","+result.getString(3)+","+result.getString(4);
+            while (result.next()) {
+                device = result.getString(1) + "," + result.getString(2)
+                        + "," + result.getString(3) + "," + result.getString(4);
             }
-        }
-        finally {
-            if(con != null)
-                if(!con.isClosed())
+        } finally {
+            if (con != null)
+                if (!con.isClosed())
                     con.close();
-            if(stmt != null)
-                if(!stmt.isClosed())
+            if (stmt != null)
+                if (!stmt.isClosed())
                     stmt.close();
-            if(result != null)
-                if(!result.isClosed())
+            if (result != null)
+                if (!result.isClosed())
                     result.close();
 
         }
@@ -1827,18 +1813,16 @@ public class User {
     }
 
     /***
-     *  Method is used to remove devicetoken and deviceos of used when used get logs out from application.
+     * Method is used to remove devicetoken and deviceos of used when used get logs out from application.
      *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int removeDeviceDetails(LoggedInUser loggedInUser) throws Exception
-    {
+    public static int removeDeviceDetails(LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,User).equals("Read") ||
-                Permissions.isAuthorised(userRole,User).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, User).equals("Read") ||
+                Permissions.isAuthorised(userRole, User).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             int affectedRows = 0;
@@ -1846,40 +1830,35 @@ public class User {
             try {
                 stmt = con.prepareStatement(" UPDATE master.users SET devicetoken = ? , deviceos = ? " +
                         " WHERE id = ?");
-                stmt.setString(1,"");
-                stmt.setString(2,null);
-                stmt.setInt(3,loggedInUser.id);
+                stmt.setString(1, "");
+                stmt.setString(2, null);
+                stmt.setInt(3, loggedInUser.id);
                 affectedRows = stmt.executeUpdate();
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return affectedRows;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *  Method is used to update Device Token and Device OS details in database.
+     * Method is used to update Device Token and Device OS details in database.
      *
      * @param node
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static int updateDeviceDetails(JsonNode node,LoggedInUser loggedInUser) throws Exception
-    {
+    public static int updateDeviceDetails(JsonNode node, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,User).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, User).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             int affectedRows = 0;
@@ -1887,26 +1866,24 @@ public class User {
             try {
                 stmt = con.prepareStatement(" UPDATE master.users SET devicetoken = ? , deviceos = ? " +
                         " WHERE id = ?");
-                stmt.setString(1,node.get("deviceToken").asText());
-                stmt.setString(2,node.get("deviceOS").asText());
-                stmt.setInt(3,loggedInUser.id);
+                stmt.setString(1, node.get("deviceToken").asText());
+                stmt.setString(2, node.get("deviceOS").asText());
+                stmt.setInt(3, loggedInUser.id);
                 affectedRows = stmt.executeUpdate();
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
             }
             return affectedRows;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
+
     /***
      * Method used to send Mail to User
      *
@@ -1934,6 +1911,13 @@ public class User {
         mailServerProperties.put("mail.smtp.starttls.enable", "true");
         System.out.println("Mail Server Properties have been setup successfully..");
 
+        Session session = Session.getInstance(mailServerProperties,
+                new javax.mail.Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(from, fromPassword);
+                    }
+                });
+
         // Step2
 //        System.out.println("\n\n 2nd ===> get Mail Session..");
         getMailSession = Session.getDefaultInstance(mailServerProperties, null);
@@ -1952,7 +1936,11 @@ public class User {
 
         transport.connect("smtp.gmail.com", from, fromPassword);
         if (transport.isConnected()) {
-            transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
+            try {
+                transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
+            } catch (MessagingException e) {
+                e.printStackTrace();
+            }
             transport.close();
             return true;
         } else {
@@ -1992,37 +1980,100 @@ public class User {
         return finalUrl;
     }
 
+    public static void sendMail(String username, String from, String fromPassword, String firstname, String lastname, String newPassword) throws Exception {
+
+//         final String FROM = "testrolla@gmail.com";   // Replace with your "From" address. This address must be verified.
+//         final String TO = "RECIPIENT@EXAMPLE.COM";  // Replace with a "To" address. If your account is still in the
+        // sandbox, this address must be verified.
+
+        final String BODY = "<h3> Hi " + firstname + " " + lastname + ", </h3>" + " <h4> New Rolla account is registered with " + username + " </h4>" + "<h4> Please Use this password for first time login </h4>" + "<h3> Password : " + newPassword + " </h3>";
+        final String SUBJECT = "Rolla Password..";
+
+        // Supply your SMTP credentials below. Note that your SMTP credentials are different from your AWS credentials.
+        final String SMTP_USERNAME = "AKIAIKDGY5ML2NZ4RD6A";  // Replace with your SMTP username.
+        final String SMTP_PASSWORD = "ArNrLJ6VL4RVqPXPw4JggSQt6QJ10LzdnidYPH8qFgYl";  // Replace with your SMTP password.
+
+        // Amazon SES SMTP host name. This example uses the US West (Oregon) Region.
+        final String HOST = "email-smtp.us-east-1.amazonaws.com";
+
+        // The port you will connect to on the Amazon SES SMTP endpoint. We are choosing port 25 because we will use
+        // STARTTLS to encrypt the connection.
+        final int PORT = 25;
+
+        // Create a Properties object to contain connection configuration information.
+        Properties props = System.getProperties();
+        props.put("mail.transport.protocol", "smtps");
+        props.put("mail.smtp.port", PORT);
+
+        // Set properties indicating that we want to use STARTTLS to encrypt the connection.
+        // The SMTP session will begin on an unencrypted connection, and then the client
+        // will issue a STARTTLS command to upgrade to an encrypted connection.
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+
+        // Create a Session object to represent a mail session with the specified properties.
+        Session session = Session.getDefaultInstance(props);
+
+        // Create a message with the specified information.
+        MimeMessage msg = new MimeMessage(session);
+        msg.setFrom(new InternetAddress(from));
+        msg.setRecipient(Message.RecipientType.TO, new InternetAddress(username));
+        msg.setSubject(SUBJECT);
+        msg.setContent(BODY, "text/plain");
+
+        // Create a transport.
+        Transport transport = session.getTransport();
+
+        // Send the message.
+        try {
+            System.out.println("Attempting to send an email through the Amazon SES SMTP interface...");
+
+            // Connect to Amazon SES using the SMTP username and password you specified above.
+            transport.connect(HOST, SMTP_USERNAME, SMTP_PASSWORD);
+
+            // Send the email.
+            transport.sendMessage(msg, msg.getAllRecipients());
+            System.out.println("Email sent!");
+        } catch (Exception ex) {
+            System.out.println("The email was not sent.");
+            System.out.println("Error message: " + ex.getMessage());
+        } finally {
+            // Close and terminate the connection.
+            transport.close();
+        }
+    }
 
 // userDeviceIdKey is the device id you will query from your database
 
-        public static void pushFCMNotification(JsonNode node) throws Exception{
+    public static void pushFCMNotification(JsonNode node) throws Exception {
 
-            String authKey = node.get("apiKey").asText(); // You FCM AUTH key
-            String FMCurl = "https://fcm.googleapis.com/fcm/send";
+        String authKey = node.get("apiKey").asText(); // You FCM AUTH key
+        String FMCurl = "https://fcm.googleapis.com/fcm/send";
 
-            URL url = new URL(FMCurl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        URL url = new URL(FMCurl);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-            conn.setUseCaches(false);
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
+        conn.setUseCaches(false);
+        conn.setDoInput(true);
+        conn.setDoOutput(true);
 
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Authorization","key="+authKey);
-            conn.setRequestProperty("Content-Type","application/json");
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Authorization", "key=" + authKey);
+        conn.setRequestProperty("Content-Type", "application/json");
 
-            JSONObject json = new JSONObject();
-            json.put("to",node.get("DeviceId").asText().trim());
-            JSONObject info = new JSONObject();
-            info.put("title", "Notificatoin Title"); // Notification title
-            info.put("body", "Hello Test notification"); // Notification body
-            json.put("notification", info);
+        JSONObject json = new JSONObject();
+        json.put("to", node.get("DeviceId").asText().trim());
+        JSONObject info = new JSONObject();
+        info.put("title", "Notificatoin Title"); // Notification title
+        info.put("body", "Hello Test notification"); // Notification body
+        json.put("notification", info);
 
-            OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream());
-            wr.write(json.toString());
-            wr.flush();
-            conn.getInputStream();
-        }
+        OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream());
+        wr.write(json.toString());
+        wr.flush();
+        conn.getInputStream();
+    }
 }
 
 

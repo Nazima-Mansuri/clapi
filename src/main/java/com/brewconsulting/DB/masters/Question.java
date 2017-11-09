@@ -602,7 +602,7 @@ public class Question {
                             " FROM " + schemaName + ".question q " +
                             " left join master.users u on u.id = q.updateby " +
                             " left join " + schemaName + ".userprofile uf on uf.userid = q.updateby " +
-                            " WHERE q.division = ? ";
+                            " WHERE q.division = ? AND q.isactive ";
 
                     if (node.has("FromDate") && node.has("ToDate")) {
                         if (node.get("FromDate").asText() != "" || node.get("ToDate").asText() != "") {
@@ -984,7 +984,13 @@ public class Question {
 
                     stmt.setString(1, resultSet.getString(1));
                     stmt.setBoolean(2, resultSet.getBoolean(2));
-                    stmt.setInt(3, resultSet.getInt(3));
+
+                    if (resultSet.getInt(3) > 0)
+                        stmt.setInt(3, resultSet.getInt(3));
+                    else
+                        stmt.setNull(3, 0);
+
+//                    stmt.setInt(3, resultSet.getInt(3));
                     stmt.setString(4, quesType.name());
                     stmt.setString(5, level.name());
                     stmt.setArray(6, resultSet.getArray(6));

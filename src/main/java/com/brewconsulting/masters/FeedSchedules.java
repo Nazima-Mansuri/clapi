@@ -46,7 +46,7 @@ public class FeedSchedules {
     @Produces("application/json")
     @Secured
     @Path("{feedId}")
-    public Response getAllFeedSchedule(@PathParam("feedId") int feedId,@Context ContainerRequestContext crc) {
+    public Response getAllFeedSchedule(@PathParam("feedId") int feedId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -54,7 +54,7 @@ public class FeedSchedules {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.feedScheduleView.class).writeValueAsString(FeedSchedule
-                            .getAllFeedSchedule(feedId,(LoggedInUser) crc
+                            .getAllFeedSchedule(feedId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
@@ -91,7 +91,7 @@ public class FeedSchedules {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.deliveredFeedsView.class).writeValueAsString(FeedSchedule
-                            .getDeliveredData(feedScheduleId,status,(LoggedInUser) crc
+                            .getDeliveredData(feedScheduleId, status, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
@@ -108,7 +108,6 @@ public class FeedSchedules {
     }
 
 
-
     /***
      *
      *
@@ -119,7 +118,7 @@ public class FeedSchedules {
     @Produces("application/json")
     @Secured
     @Path("deliveredPills/{divId}")
-    public Response getDeliveredPills(@PathParam("divId") int divId,@Context ContainerRequestContext crc) {
+    public Response getDeliveredPills(@PathParam("divId") int divId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -127,7 +126,7 @@ public class FeedSchedules {
 
             resp = Response.ok(
                     mapper.writerWithView(UserViews.feedDeliveryView.class).writeValueAsString(FeedSchedule
-                            .recentlyDeliveredPills(divId,(LoggedInUser) crc
+                            .recentlyDeliveredPills(divId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
@@ -154,7 +153,7 @@ public class FeedSchedules {
     @Secured
     @Consumes("application/json")
     public Response createFeedSchedule(InputStream input,
-                                @Context ContainerRequestContext crc) {
+                                       @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -165,36 +164,32 @@ public class FeedSchedules {
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"id\":" + feedScheduleId + "}").build();
         } catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException",na);
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to create Feed Schedule\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (BadRequestException b) {
-            logger.error("BadRequestException",b);
-            resp = Response.status(Response.Status.FORBIDDEN)
+        } catch (BadRequestException b) {
+            logger.error("BadRequestException", b);
+            resp = Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"Message\":" + "\"No pills are available for feed.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (SQLException s)
-        {
-            logger.error("SQLException",s);
+        } catch (SQLException s) {
+            logger.error("SQLException", s);
             resp = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"Message\":" + "\"" + s.getMessage()  +"\"}")
+                    .entity("{\"Message\":" + "\"" + s.getMessage() + "\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (IOException e) {
-            logger.error("IOException",e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
             if (resp == null) {
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
-            logger.error("Exception " , e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -212,7 +207,7 @@ public class FeedSchedules {
     @Secured
     @Consumes("application/json")
     public Response updateFeedSchedule(InputStream input,
-                               @Context ContainerRequestContext crc) {
+                                       @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -222,22 +217,21 @@ public class FeedSchedules {
             int affectedRows = FeedSchedule.updateFeedSchedule(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
-        }catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Feed Schedule.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (IOException e) {
-            logger.error("IOException" ,e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
             if (resp == null)
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
-            logger.error("Exception" ,e);
+            logger.error("Exception", e);
             // TODO Auto-generated catch block
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -256,7 +250,7 @@ public class FeedSchedules {
     @Consumes("application/json")
     @Path("pillanswertime")
     public Response updatePillAnswerTime(InputStream input,
-                                       @Context ContainerRequestContext crc) {
+                                         @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -266,22 +260,21 @@ public class FeedSchedules {
             int affectedRows = FeedSchedule.updatePillReadTime(node,
                     (LoggedInUser) crc.getProperty("userObject"));
             resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
-        }catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update Pill Answer time.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (IOException e) {
-            logger.error("IOException" ,e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
             if (resp == null)
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
-            logger.error("Exception" ,e);
+            logger.error("Exception", e);
             // TODO Auto-generated catch block
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -298,7 +291,7 @@ public class FeedSchedules {
     @Secured
     @Path("{id}")
     public Response deleteFeedSchedule(@PathParam("id") Integer id,
-                               @Context ContainerRequestContext crc) {
+                                       @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -313,24 +306,23 @@ public class FeedSchedules {
                 // 204(NO_CONTENT).
                 resp = Response.status(204).entity("{\"Message\":\" + \"\"Feed Schedule is not deleted.\"}").build();
 
-        }catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to Delete Feed Schedule.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (PSQLException ex) {
-            logger.error("PSQLException " , ex);
+        } catch (PSQLException ex) {
+            logger.error("PSQLException ", ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
-            logger.error("Exception" ,e);
+            logger.error("Exception", e);
             if (resp == null)
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;

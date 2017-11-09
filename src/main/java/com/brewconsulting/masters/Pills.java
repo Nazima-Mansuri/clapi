@@ -39,7 +39,6 @@ public class Pills {
     InputStream inp = getClass().getClassLoader().getResourceAsStream("log4j.properties");
 
     /***
-     *
      * @param crc
      * @return
      */
@@ -71,7 +70,6 @@ public class Pills {
     }
 
     /***
-     *
      * @param crc
      * @return
      */
@@ -88,7 +86,7 @@ public class Pills {
 
             resp = Response.ok(
                     mapper.writeValueAsString(Pill
-                            .getAllDeliveredPills(feedDeliveryId,(LoggedInUser) crc
+                            .getAllDeliveredPills(feedDeliveryId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
@@ -106,7 +104,6 @@ public class Pills {
 
 
     /***
-     *
      * @param crc
      * @return
      */
@@ -114,7 +111,7 @@ public class Pills {
     @Produces("application/json")
     @Secured
     @Path("pillbyid/{pillId}")
-    public Response getPillById(@PathParam("pillId") int pillId,@Context ContainerRequestContext crc) {
+    public Response getPillById(@PathParam("pillId") int pillId, @Context ContainerRequestContext crc) {
         Response resp = null;
         try {
             properties.load(inp);
@@ -122,7 +119,7 @@ public class Pills {
 
             resp = Response.ok(
                     mapper.writeValueAsString(Pill
-                            .getPillById(pillId,(LoggedInUser) crc
+                            .getPillById(pillId, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
         } catch (NotAuthorizedException na) {
             logger.error("NotAuthorizedException", na);
@@ -140,7 +137,6 @@ public class Pills {
 
 
     /***
-     *
      * @param crc
      * @return
      */
@@ -173,7 +169,6 @@ public class Pills {
     }
 
     /***
-     *
      * @param crc
      * @return
      */
@@ -206,7 +201,6 @@ public class Pills {
     }
 
     /***
-     *
      * @param feedId
      * @param crc
      * @return
@@ -240,8 +234,6 @@ public class Pills {
     }
 
     /***
-     *
-     *
      * @param pillimages
      * @param divid
      * @param title
@@ -306,7 +298,7 @@ public class Pills {
                                     + fileFormDataContentDisposition.getFileName();
                             // This method is used to store image in AWS bucket.
                             uploadFilePath = Question.writeToFile(pillimages.get(i).getValueAs(InputStream.class), fileName);
-                            resizeURL = "https://s3.amazonaws.com/com.brewconsulting.client1/resized/resized-Question/"+fileName;
+                            resizeURL = "https://s3.amazonaws.com/com.brewconsulting.client1/resized/resized-Question/" + fileName;
                             System.out.println("FILE PATH : " + uploadFilePath);
                             filePath.add(uploadFilePath);
                             resizedList.add(resizeURL);
@@ -340,14 +332,13 @@ public class Pills {
                     .entity("{\"Message\":" + "\"You are not authorized to Insert Pill. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }
-        catch (BadRequestException b) {
+        } catch (BadRequestException b) {
             logger.error("BadRequestException ", b);
-            resp = Response.status(Response.Status.FORBIDDEN)
+            resp = Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"Message\":" + "\"Pill is already exist with same name. \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
-        }catch (IOException e) {
+        } catch (IOException e) {
             logger.error("IOException ", e);
             if (resp == null) {
                 resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
@@ -363,7 +354,6 @@ public class Pills {
     }
 
     /***
-     *
      * @param pillimages
      * @param divid
      * @param title
@@ -402,7 +392,7 @@ public class Pills {
         Response resp = null;
         String fileName = null;
         String uploadFilePath = "";
-        String resizeURL= "";
+        String resizeURL = "";
         String fileType = "";
         List<String> filePath = new ArrayList<>();
         List<String> fileTypes = new ArrayList<>();
@@ -430,7 +420,7 @@ public class Pills {
                                         + fileFormDataContentDisposition.getFileName();
                                 // This method is used to store image in AWS bucket.
                                 uploadFilePath = Question.writeToFile(pillimages.get(i).getValueAs(InputStream.class), fileName);
-                                resizeURL = "https://s3.amazonaws.com/com.brewconsulting.client1/resized/resized-Question/"+fileName;
+                                resizeURL = "https://s3.amazonaws.com/com.brewconsulting.client1/resized/resized-Question/" + fileName;
 
                                 filePath.add(uploadFilePath);
                                 resizeList.add(resizeURL);
@@ -446,7 +436,7 @@ public class Pills {
 
             int affectedRows = Pill.updatePills(divid, title, body, questionType,
                     questiontext, answeroptions, answertext, scorecorrect, scoreincorrect, products, keywords,
-                    filePath, fileTypes,resizeList, isUpdate, id, (LoggedInUser) crc.getProperty("userObject"));
+                    filePath, fileTypes, resizeList, isUpdate, id, (LoggedInUser) crc.getProperty("userObject"));
 
             resp = Response.ok("{\"affectedRows\":" + affectedRows + "}").build();
 
@@ -472,7 +462,6 @@ public class Pills {
     }
 
     /***
-     *
      * @param input
      * @param crc
      * @return
@@ -509,7 +498,6 @@ public class Pills {
     }
 
     /***
-     *
      * @param id
      * @param crc
      * @return

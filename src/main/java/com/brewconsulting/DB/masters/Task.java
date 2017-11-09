@@ -1211,7 +1211,12 @@ public class Task {
                                 Statement.RETURN_GENERATED_KEYS);
 
                 stmt.setString(1, categoryType.name());
-                stmt.setString(2, node.get("description").asText());
+
+                if (!node.get("description").asText().equalsIgnoreCase("null") && node.get("description") != null)
+                    stmt.setString(2, node.get("description").asText());
+                else
+                    stmt.setString(2, null);
+
                 stmt.setString(3, statusType.name());
                 stmt.setTimestamp(4, new Timestamp((stringToDate(node.get("dueDate").asText())).getTime()));
                 stmt.setArray(5, remind);

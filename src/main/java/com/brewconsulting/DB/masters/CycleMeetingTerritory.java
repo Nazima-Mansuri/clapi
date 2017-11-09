@@ -13,6 +13,8 @@ import com.notnoop.apns.ApnsService;
 
 import javax.ws.rs.NotAuthorizedException;
 import java.sql.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
 
@@ -64,7 +66,8 @@ public class CycleMeetingTerritory {
     @JsonProperty("userId")
     public int userId;
 
-    public static final int CycleMeetingTerritory=8;
+    public static final int CycleMeetingTerritory = 8;
+
     /***
      * Method used to give all cyclemeeting and territory details.
      *
@@ -110,11 +113,11 @@ public class CycleMeetingTerritory {
                         meetingTerritory.territoryId = result.getInt(3);
                         meetingTerritory.terrName = result.getString(4);
                         meetingTerritory.username = result.getString(5);
-                        if(result.getString(6) != null && result.getString(7) != null)
+                        if (result.getString(6) != null && result.getString(7) != null)
                             meetingTerritory.fullname = result.getString(6) + " " + result.getString(7);
-                        else if(result.getString(6) != null && result.getString(7) == null)
+                        else if (result.getString(6) != null && result.getString(7) == null)
                             meetingTerritory.fullname = result.getString(6) + " ";
-                        else if(result.getString(6) == null && result.getString(7) != null)
+                        else if (result.getString(6) == null && result.getString(7) != null)
                             meetingTerritory.fullname = result.getString(7);
                         else
                             meetingTerritory.fullname = "";
@@ -152,18 +155,15 @@ public class CycleMeetingTerritory {
     }
 
     /***
-     *
      * @param feedScheduleId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<CycleMeetingTerritory> getAllUserDetailsOfFeedSchedule(int feedScheduleId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<CycleMeetingTerritory> getAllUserDetailsOfFeedSchedule(int feedScheduleId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Read") ||
-                Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -177,12 +177,11 @@ public class CycleMeetingTerritory {
                                     " (uf.address).addline2,(uf.address).addline3,(uf.address).city," +
                                     " (uf.address).state,(uf.address).phone,uf.profileimage" +
                                     " from master.users u " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = u.id" +
-                                    " WHERE id = ANY((SELECT userid from "+schemaName+".feedschedule WHERE id = ?) :: int[]) ");
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = u.id" +
+                                    " WHERE id = ANY((SELECT userid from " + schemaName + ".feedschedule WHERE id = ?) :: int[]) ");
                     stmt.setInt(1, feedScheduleId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         CycleMeetingTerritory userDetail = new CycleMeetingTerritory();
                         userDetail.userId = resultSet.getInt(1);
                         userDetail.username = resultSet.getString(2);
@@ -198,8 +197,7 @@ public class CycleMeetingTerritory {
                     }
                 } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
+            } finally {
                 if (resultSet != null)
                     if (!resultSet.isClosed())
                         resultSet.close();
@@ -211,26 +209,21 @@ public class CycleMeetingTerritory {
                         con.close();
             }
             return userDetailList;
-        }
-        else {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *
-     *
-     * @param feedScheduleId
+     * @param pillId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<CycleMeetingTerritory> getAllUserDetailsOfFeedDelivery(int pillId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<CycleMeetingTerritory> getAllUserDetailsOfFeedDelivery(int pillId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Read") ||
-                Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -241,11 +234,10 @@ public class CycleMeetingTerritory {
             try {
                 if (con != null) {
 
-                    stmt = con.prepareStatement(" SELECT userid FROM "+schemaName+".feeddelivery WHERE pillid = ? GROUP BY userid ");
-                    stmt.setInt(1,pillId);
+                    stmt = con.prepareStatement(" SELECT userid FROM " + schemaName + ".feeddelivery WHERE pillid = ? GROUP BY userid ");
+                    stmt.setInt(1, pillId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         pillIdList.add(resultSet.getInt(1));
                     }
 
@@ -254,14 +246,12 @@ public class CycleMeetingTerritory {
                                     " (uf.address).addline2,(uf.address).addline3,(uf.address).city," +
                                     " (uf.address).state,(uf.address).phone,uf.profileimage" +
                                     " from master.users u " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = u.id" +
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = u.id" +
                                     " WHERE id = ? ");
-                    for(int i =0;i< pillIdList.size();i++)
-                    {
+                    for (int i = 0; i < pillIdList.size(); i++) {
                         stmt.setInt(1, pillIdList.get(i));
                         resultSet = stmt.executeQuery();
-                        while (resultSet.next())
-                        {
+                        while (resultSet.next()) {
                             CycleMeetingTerritory userDetail = new CycleMeetingTerritory();
                             userDetail.userId = resultSet.getInt(1);
                             userDetail.username = resultSet.getString(2);
@@ -279,8 +269,7 @@ public class CycleMeetingTerritory {
 
                 } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
+            } finally {
                 if (resultSet != null)
                     if (!resultSet.isClosed())
                         resultSet.close();
@@ -292,26 +281,23 @@ public class CycleMeetingTerritory {
                         con.close();
             }
             return userDetailList;
-        }
-        else {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
     /***
-     *  Method is used to get All Assesments user's details.
+     * Method is used to get All Assesments user's details.
      *
      * @param assesmentId
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<CycleMeetingTerritory> getAllUserDetailsOfAssesment(int assesmentId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<CycleMeetingTerritory> getAllUserDetailsOfAssesment(int assesmentId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Read") ||
-                Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
@@ -325,12 +311,11 @@ public class CycleMeetingTerritory {
                                     " (uf.address).addline2,(uf.address).addline3,(uf.address).city," +
                                     " (uf.address).state,(uf.address).phone,uf.profileimage" +
                                     " from master.users u " +
-                                    " left join "+schemaName+".userprofile uf on uf.userid = u.id" +
-                                    " WHERE id = ANY((SELECT userid from "+schemaName+".onthegocontenttest WHERE id = ?) :: int[]) ");
+                                    " left join " + schemaName + ".userprofile uf on uf.userid = u.id" +
+                                    " WHERE id = ANY((SELECT userid from " + schemaName + ".onthegocontenttest WHERE id = ?) :: int[]) ");
                     stmt.setInt(1, assesmentId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         CycleMeetingTerritory userDetail = new CycleMeetingTerritory();
                         userDetail.userId = resultSet.getInt(1);
                         userDetail.username = resultSet.getString(2);
@@ -347,8 +332,7 @@ public class CycleMeetingTerritory {
 
                 } else
                     throw new Exception("DB connection is null");
-            }
-            finally {
+            } finally {
                 if (resultSet != null)
                     if (!resultSet.isClosed())
                         resultSet.close();
@@ -360,17 +344,16 @@ public class CycleMeetingTerritory {
                         con.close();
             }
             return userDetailList;
-        }
-        else {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
 
     /***
-     *  Insert Cyclemeeting Territory in database
-     *  if Cyclemeeting id already exist then delete that records first
-     *  after insert new Cyclemeeting Territory record.
+     * Insert Cyclemeeting Territory in database
+     * if Cyclemeeting id already exist then delete that records first
+     * after insert new Cyclemeeting Territory record.
      *
      * @param node
      * @param loggedInUser
@@ -442,7 +425,7 @@ public class CycleMeetingTerritory {
     }
 
     /***
-     *  Method used to add Attendance
+     * Method used to add Attendance
      *
      * @param node
      * @param loggedInUser
@@ -469,57 +452,48 @@ public class CycleMeetingTerritory {
                 con.setAutoCommit(false);
 
                 Integer[] userIds = new Integer[node.withArray("userId").size()];
-                for (int i =0 ; i<node.withArray("userId").size();i++)
-                {
+                for (int i = 0; i < node.withArray("userId").size(); i++) {
                     userIds[i] = node.withArray("userId").get(i).asInt();
                     System.out.println("User ID : " + node.withArray("userId").get(i).asInt());
                 }
 
-                Array userArr = con.createArrayOf("int",userIds);
+                Array userArr = con.createArrayOf("int", userIds);
 
-                stmt = con.prepareStatement(" SELECT id,userid FROM "+schemaName+".cyclemeetingattendance " +
+                stmt = con.prepareStatement(" SELECT id,userid FROM " + schemaName + ".cyclemeetingattendance " +
                         " WHERE cyclemeetingid = ? ");
                 stmt.setInt(1, node.get("cycleMeetingId").asInt());
                 resultSet = stmt.executeQuery();
-                if(resultSet.next())
-                {
-                    if(node.get("mode").asText().equalsIgnoreCase("App"))
-                    {
-                        for (int i=0;i<userIds.length;i++)
-                        {
+                if (resultSet.next()) {
+                    if (node.get("mode").asText().equalsIgnoreCase("App")) {
+                        for (int i = 0; i < userIds.length; i++) {
                             Integer[] existArr = (Integer[]) resultSet.getArray(2).getArray();
-                            Array newArr = con.createArrayOf("int",existArr);
+                            Array newArr = con.createArrayOf("int", existArr);
 
-                            stmt = con.prepareStatement(" SELECT count(*) AS Count FROM "+schemaName+".cyclemeetingattendance" +
+                            stmt = con.prepareStatement(" SELECT count(*) AS Count FROM " + schemaName + ".cyclemeetingattendance" +
                                     " WHERE ? = ANY(? :: int[]) ");
-                            stmt.setInt(1,userIds[i]);
+                            stmt.setInt(1, userIds[i]);
                             stmt.setArray(2, newArr);
                             updateSet = stmt.executeQuery();
-                            if(updateSet.next())
-                            {
-                                if(updateSet.getInt("Count") == 0)
-                                {
-                                    stmt = con.prepareStatement(" UPDATE "+schemaName
-                                            +".cyclemeetingattendance SET userid = array_append(userid, ? ) WHERE id = ? ");
-                                    stmt.setInt(1,userIds[i]);
-                                    stmt.setInt(2,resultSet.getInt(1));
+                            if (updateSet.next()) {
+                                if (updateSet.getInt("Count") == 0) {
+                                    stmt = con.prepareStatement(" UPDATE " + schemaName
+                                            + ".cyclemeetingattendance SET userid = array_append(userid, ? ) WHERE id = ? ");
+                                    stmt.setInt(1, userIds[i]);
+                                    stmt.setInt(2, resultSet.getInt(1));
                                     attendanceId = stmt.executeUpdate();
                                 }
                             }
                         }
                     }
 
-                    if(node.get("mode").asText().equalsIgnoreCase("Web"))
-                    {
-                        stmt = con.prepareStatement(" UPDATE "+schemaName+".cyclemeetingattendance" +
+                    if (node.get("mode").asText().equalsIgnoreCase("Web")) {
+                        stmt = con.prepareStatement(" UPDATE " + schemaName + ".cyclemeetingattendance" +
                                 " SET userid = ? WHERE id = ? ");
-                        stmt.setArray(1,userArr);
-                        stmt.setInt(2,resultSet.getInt(1));
+                        stmt.setArray(1, userArr);
+                        stmt.setInt(2, resultSet.getInt(1));
                         stmt.executeUpdate();
                     }
-                }
-                else
-                {
+                } else {
                     stmt = con
                             .prepareStatement(
                                     "INSERT INTO "
@@ -529,7 +503,7 @@ public class CycleMeetingTerritory {
 
                     stmt.setInt(1, node.get("cycleMeetingId").asInt());
                     stmt.setArray(2, userArr);
-                    stmt.setTimestamp(3,new Timestamp((new Date()).getTime()));
+                    stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
                     affectedRows = stmt.executeUpdate();
 
                     if (affectedRows == 0)
@@ -562,7 +536,7 @@ public class CycleMeetingTerritory {
     }
 
     /***
-     *  Method used to add Session Start Time.
+     * Method used to add Session Start Time.
      *
      * @param node
      * @param loggedInUser
@@ -585,7 +559,6 @@ public class CycleMeetingTerritory {
 
             try {
                 con.setAutoCommit(false);
-
                 stmt = con
                         .prepareStatement(
                                 "INSERT INTO "
@@ -595,7 +568,7 @@ public class CycleMeetingTerritory {
 
                 stmt.setInt(1, node.get("cycleMeetingId").asInt());
                 stmt.setInt(2, node.get("sessionId").asInt());
-                stmt.setTimestamp(3,new Timestamp((new Date()).getTime()));
+                stmt.setTimestamp(3, new Timestamp((new Date()).getTime()));
                 affectedRows = stmt.executeUpdate();
 
                 if (affectedRows == 0)
@@ -603,15 +576,21 @@ public class CycleMeetingTerritory {
 
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 int sessionId;
-                Date sessionStartTime;
+                String sessionStartTime;
                 if (generatedKeys.next()) {
                     // It gives last inserted Id in divisionId
                     sessionId = generatedKeys.getInt(1);
-                    sessionStartTime = generatedKeys.getTimestamp(4);
+//                    generatedKeys.getTimestamp(4);
+
+                    System.out.println("Generated Keys: " + generatedKeys.getTimestamp(4));
+                    DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                    formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata")); // Or whatever IST is supposed to be
+                    sessionStartTime = formatter.format(generatedKeys.getTimestamp(4));
+
+                    System.out.println("Session start Time : " + sessionStartTime);
                     sessionList.add(String.valueOf(sessionId));
-                    sessionList.add(String.valueOf(sessionStartTime));
-                }
-                else
+                    sessionList.add(sessionStartTime);
+                } else
                     throw new SQLException("No ID obtained");
 
                 con.commit();
@@ -632,7 +611,7 @@ public class CycleMeetingTerritory {
     }
 
     /***
-     *  Method used to Update Session End TIme
+     * Method used to Update Session End TIme
      *
      * @param node
      * @param loggedInUser
@@ -663,7 +642,7 @@ public class CycleMeetingTerritory {
 
                 stmt.setTimestamp(1, new Timestamp((new Date()).getTime()));
                 stmt.setInt(2, node.get("id").asInt());
-                stmt.setInt(3,node.get("sessionId").asInt());
+                stmt.setInt(3, node.get("sessionId").asInt());
                 affectedRows = stmt.executeUpdate();
 
                 con.commit();
@@ -684,96 +663,82 @@ public class CycleMeetingTerritory {
     }
 
     /***
-     *  Method is used to send Push Notification to that users which are present for the exam.
-     *
+     * Method is used to send Push Notification to that users which are present for the exam.
      *
      * @param loggedInUser
      * @return
      * @throws Exception
      */
-    public static List<String> sendNotification(int meetingId, LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<String> sendNotification(int meetingId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,15).equals("Read") ||
-                Permissions.isAuthorised(userRole,15).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, 15).equals("Read") ||
+                Permissions.isAuthorised(userRole, 15).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             ResultSet resultSet = null;
             String schemaname = loggedInUser.schemaName;
-            String deviceDetails ;
-            List<String> allDetails=new ArrayList<>();
+            String deviceDetails;
+            List<String> allDetails = new ArrayList<>();
             Integer[] idArr = new Integer[2];
 
-            try
-            {
-                if(con != null)
-                {
-                    stmt = con.prepareStatement(" SELECT userid FROM "+schemaname+".cyclemeetingattendance" +
+            try {
+                if (con != null) {
+                    stmt = con.prepareStatement(" SELECT userid FROM " + schemaname + ".cyclemeetingattendance" +
                             " WHERE cyclemeetingid = ? GROUP BY userid ");
-                    stmt.setInt(1,meetingId);
+                    stmt.setInt(1, meetingId);
                     resultSet = stmt.executeQuery();
-                    while (resultSet.next())
-                    {
+                    while (resultSet.next()) {
                         idArr = (Integer[]) resultSet.getArray(1).getArray();
                         System.out.println("Array Length : " + idArr.length);
 
-                        for(int i=0;i<idArr.length;i++)
-                        {
-                            System.out.println("ID : "+idArr[i]);
+                        for (int i = 0; i < idArr.length; i++) {
+                            System.out.println("ID : " + idArr[i]);
                             deviceDetails = User.getDeviceDetails(idArr[i]);
                             allDetails.add(deviceDetails);
                             System.out.println("Size: " + allDetails.size());
                         }
                     }
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return allDetails;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }
 
-    public static int getAgendaIdFromMeetingId(int meetingId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static int getAgendaIdFromMeetingId(int meetingId, LoggedInUser loggedInUser) throws Exception {
         Connection con = DBConnectionProvider.getConn();
         PreparedStatement stmt = null;
         ResultSet resultSet = null;
         int agendaId = 0;
         String schemaName = loggedInUser.schemaName;
 
-        try
-        {
-            stmt = con.prepareStatement("SELECT id FROM "+schemaName+".cyclemeetingagenda WHERE cyclemeetingid = ? ");
-            stmt.setInt(1,meetingId);
+        try {
+            stmt = con.prepareStatement("SELECT id FROM " + schemaName + ".cyclemeetingagenda WHERE cyclemeetingid = ? ");
+            stmt.setInt(1, meetingId);
             resultSet = stmt.executeQuery();
-            while (resultSet.next())
-            {
+            while (resultSet.next()) {
                 agendaId = resultSet.getInt(1);
             }
-        }
-        finally {
-            if(con != null)
-                if(!con.isClosed())
+        } finally {
+            if (con != null)
+                if (!con.isClosed())
                     con.close();
-            if(stmt != null)
-                if(!stmt.isClosed())
+            if (stmt != null)
+                if (!stmt.isClosed())
                     stmt.close();
-            if(resultSet != null)
-                if(!resultSet.isClosed())
+            if (resultSet != null)
+                if (!resultSet.isClosed())
                     resultSet.close();
         }
         return agendaId;
@@ -787,12 +752,10 @@ public class CycleMeetingTerritory {
      * @return
      * @throws Exception
      */
-    public static List<Integer> getAllAttendee(int meetingId,LoggedInUser loggedInUser) throws Exception
-    {
+    public static List<Integer> getAllAttendee(int meetingId, LoggedInUser loggedInUser) throws Exception {
         int userRole = loggedInUser.roles.get(0).roleId;
-        if(Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Read") ||
-                Permissions.isAuthorised(userRole,CycleMeetingTerritory).equals("Write"))
-        {
+        if (Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Read") ||
+                Permissions.isAuthorised(userRole, CycleMeetingTerritory).equals("Write")) {
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
             String schemaname = loggedInUser.schemaName;
@@ -800,36 +763,31 @@ public class CycleMeetingTerritory {
             ResultSet resultSet = null;
 
             try {
-                stmt = con.prepareStatement(" SELECT userid FROM "+schemaname+".cyclemeetingattendance " +
+                stmt = con.prepareStatement(" SELECT userid FROM " + schemaname + ".cyclemeetingattendance " +
                         " WHERE cyclemeetingid = ? ");
-                stmt.setInt(1,meetingId);
+                stmt.setInt(1, meetingId);
                 resultSet = stmt.executeQuery();
 
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     Integer[] arr;
                     arr = (Integer[]) resultSet.getArray(1).getArray();
-                    for (int i=0;i<arr.length;i++)
-                    {
+                    for (int i = 0; i < arr.length; i++) {
                         attendeeList.add(arr[i]);
                     }
                 }
-            }
-            finally {
-                if(con != null)
-                    if(!con.isClosed())
+            } finally {
+                if (con != null)
+                    if (!con.isClosed())
                         con.close();
-                if(stmt != null)
-                    if(!stmt.isClosed())
+                if (stmt != null)
+                    if (!stmt.isClosed())
                         stmt.close();
-                if(resultSet != null)
-                    if(!resultSet.isClosed())
+                if (resultSet != null)
+                    if (!resultSet.isClosed())
                         resultSet.close();
             }
             return attendeeList;
-        }
-        else
-        {
+        } else {
             throw new NotAuthorizedException("");
         }
     }

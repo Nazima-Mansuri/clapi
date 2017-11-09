@@ -1,5 +1,6 @@
 package com.brewconsulting.masters;
 
+import com.amazonaws.services.apigateway.model.ConflictException;
 import com.brewconsulting.DB.masters.LoggedInUser;
 import com.brewconsulting.DB.masters.Product;
 import com.brewconsulting.exceptions.NoDataFound;
@@ -38,7 +39,7 @@ public class Products {
     @Produces("application/json")
     @Secured
     @Path("/productsbydiv/{divid}")
-    public Response getAllproducts(@PathParam("divid") Integer divid ,@Context ContainerRequestContext crc) {
+    public Response getAllproducts(@PathParam("divid") Integer divid, @Context ContainerRequestContext crc) {
         Response resp = null;
 
         try {
@@ -47,17 +48,17 @@ public class Products {
 
             resp = Response.ok(
                     mapper.writeValueAsString(Product
-                            .getAllProducts(divid,(LoggedInUser) crc
+                            .getAllProducts(divid, (LoggedInUser) crc
                                     .getProperty("userObject")))).build();
-        }   catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get products \"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
 
@@ -92,15 +93,15 @@ public class Products {
             } else
                 resp = Response.ok(mapper.writeValueAsString(product)).build();
 
-        }   catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to get product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;
@@ -142,13 +143,12 @@ public class Products {
 
 
             if (fileFormDataContentDisposition != null) {
-                if(fileFormDataContentDisposition.getFileName() != null) {
+                if (fileFormDataContentDisposition.getFileName() != null) {
                     fileName = System.currentTimeMillis() + "_"
                             + fileFormDataContentDisposition.getFileName();
                     // This method is used to store image in AWS bucket.
                     uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-                }
-                else {
+                } else {
                     uploadFilePath = "";
                 }
             } else {
@@ -167,20 +167,20 @@ public class Products {
                         .entity(new NoDataFound("Unable to Insert Product")
                                 .getJsonString()).build();
 
-        }   catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to add product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
-            logger.error("IOException ",e);
+            logger.error("IOException ", e);
             if (resp == null) {
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
                 e.printStackTrace();
             }
         } catch (Exception e) {
-            logger.error("Exception ",e);
+            logger.error("Exception ", e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -221,27 +221,21 @@ public class Products {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
-            if(isUpdated)
-            {
+            if (isUpdated) {
                 if (fileFormDataContentDisposition != null) {
-                    if(fileFormDataContentDisposition.getFileName() != null)
-                    {
+                    if (fileFormDataContentDisposition.getFileName() != null) {
                         fileName = System.currentTimeMillis() + "_"
                                 + fileFormDataContentDisposition.getFileName();
                         // This method is used to store image in AWS bucket.
                         uploadFilePath = Product.writeToFile(fileInputStream, fileName);
-                    }
-                    else {
+                    } else {
 //                        uploadFilePath = "https://s3.amazonaws.com/com.brewconsulting.client1/Product/1475134095978_no_image.png";
                         uploadFilePath = "";
                     }
-                }
-                else {
+                } else {
                     uploadFilePath = "";
                 }
-            }
-            else
-            {
+            } else {
                 uploadFilePath = url;
             }
 
@@ -252,19 +246,19 @@ public class Products {
                 resp = Response.ok().build();
             else
                 resp = Response.status(204).build();
-        }   catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to update product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (IOException e) {
-            logger.error("IOException ",e);
+            logger.error("IOException ", e);
             if (resp == null)
-                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+                resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         } catch (Exception e) {
-            logger.error(" Exception ",e);
+            logger.error(" Exception ", e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -298,21 +292,28 @@ public class Products {
                 // 204(NO_CONTENT).
                 resp = Response.status(204).build();
 
-        }   catch (NotAuthorizedException na) {
-            logger.error("NotAuthorizedException ",na);
+        } catch (NotAuthorizedException na) {
+            logger.error("NotAuthorizedException ", na);
             resp = Response.status(Response.Status.FORBIDDEN)
                     .entity("{\"Message\":" + "\"You are not authorized to delete product\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (PSQLException ex) {
-            logger.error(" PSQLException ",ex);
+            logger.error(" PSQLException ", ex);
+            resp = Response
+                    .status(Response.Status.CONFLICT)
+                    .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
+                    .type(MediaType.APPLICATION_JSON).build();
+            ex.printStackTrace();
+        } catch (ConflictException ex) {
+            logger.error(" ConflictException ", ex);
             resp = Response
                     .status(Response.Status.CONFLICT)
                     .entity("{\"Message\":" + "\"This id is already Use in another table as foreign key\"}")
                     .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         } catch (Exception e) {
-            logger.error(" Exception ",e);
+            logger.error(" Exception ", e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

@@ -456,7 +456,7 @@ public class CycleMeetingTerritories {
                 }
                 else
                 {
-                   resp = Response.accepted().
+                   resp = Response.ok().
                             entity("{\"Message\":" + "\"" + firstName + " "+ lastName + "\"}")
                             .type(MediaType.APPLICATION_JSON).build();
                    list.add(resp.getEntity().toString());

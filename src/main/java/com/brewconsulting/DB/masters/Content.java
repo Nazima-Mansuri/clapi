@@ -1361,7 +1361,7 @@ public class Content {
                     stmt = con
                             .prepareStatement("UPDATE "
                                     + schemaName
-                                    + ".cyclemeetingsessioncontentinfo SET contentid = array_remove(contentid, ? )"
+                                    + ".cyclemeetingsessioncontentinfo SET contentid = array_remove(contentid, ?)"
                                     + " WHERE id = ?");
                     stmt.setInt(1, node.get("contentId").asInt());
                     stmt.setInt(2, node.get("itemId").asInt());

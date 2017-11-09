@@ -18,6 +18,7 @@ import javax.ws.rs.NotAuthorizedException;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.apigateway.model.ConflictException;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.amazonaws.auth.PropertiesCredentials;
@@ -491,15 +492,33 @@ public class Product {
             String schemaName = loggedInUser.schemaName;
             Connection con = DBConnectionProvider.getConn();
             PreparedStatement stmt = null;
+            ResultSet resultSet = null;
             int result = 0;
 
             try {
                 if (con != null) {
-                    stmt = con.prepareStatement("DELETE FROM " + schemaName
-                            + ".products WHERE id = ?");
+
+                    stmt = con.prepareStatement("Select SUM(cnt) " +
+                            " FROM (Select count(*) cnt from   " + schemaName + ".question where ? = ANY(products :: int[]) " +
+                            " union all " +
+                            " Select count(*) cnt from   " + schemaName + ".pills where ? = ANY(products :: int[])) " +
+                            " AS TotalCount");
 
                     stmt.setInt(1, id);
-                    result = stmt.executeUpdate();
+                    stmt.setInt(2, id);
+                    resultSet = stmt.executeQuery();
+
+                    while (resultSet.next()) {
+                        if (resultSet.getInt(1) == 0) {
+                            stmt = con.prepareStatement("DELETE FROM " + schemaName
+                                    + ".products WHERE id = ?");
+
+                            stmt.setInt(1, id);
+                            result = stmt.executeUpdate();
+                        } else {
+                            throw new ConflictException("This id is already Use in another table as foreign key");
+                        }
+                    }
                 } else
                     throw new Exception("DB connection is null");
             } finally {

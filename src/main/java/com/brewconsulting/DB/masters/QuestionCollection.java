@@ -1110,7 +1110,7 @@ public class QuestionCollection {
                     stmt.setInt(1, agendaId);
                     resultSet = stmt.executeQuery();
 
-                      while (resultSet.next()) {
+                    while (resultSet.next()) {
                         questionCollection = new QuestionCollection();
                         questionCollection.id = resultSet.getInt(1);
                         questionCollection.agendaId = resultSet.getInt(2);
@@ -1209,21 +1209,26 @@ public class QuestionCollection {
                         questionCollection.Scoring.put("IsApplyScoring", resultSet.getBoolean(12));
 
                         HashMap CorrectScore = new HashMap();
-                        Integer[] corrArray = (Integer[]) resultSet.getArray(13).getArray();
-                        if (corrArray.length > 0 && corrArray.length == 3) {
-                            CorrectScore.put("Low", corrArray[0]);
-                            CorrectScore.put("Medium", corrArray[1]);
-                            CorrectScore.put("High", corrArray[2]);
+
+                        if (resultSet.getArray(13) != null) {
+                            Integer[] corrArray = (Integer[]) resultSet.getArray(13).getArray();
+                            if (corrArray.length > 0 && corrArray.length == 3) {
+                                CorrectScore.put("Low", corrArray[0]);
+                                CorrectScore.put("Medium", corrArray[1]);
+                                CorrectScore.put("High", corrArray[2]);
+                            }
                         }
 
                         questionCollection.Scoring.put("CorrectScore", CorrectScore);
 
                         HashMap IncorrectScore = new HashMap();
-                        Double[] inCorrArray = (Double[]) resultSet.getArray(14).getArray();
-                        if (inCorrArray.length > 0 && inCorrArray.length == 3) {
-                            IncorrectScore.put("Low", inCorrArray[0]);
-                            IncorrectScore.put("Medium", inCorrArray[1]);
-                            IncorrectScore.put("High", inCorrArray[2]);
+                        if (resultSet.getArray(14) != null) {
+                            Double[] inCorrArray = (Double[]) resultSet.getArray(14).getArray();
+                            if (inCorrArray.length > 0 && inCorrArray.length == 3) {
+                                IncorrectScore.put("Low", inCorrArray[0]);
+                                IncorrectScore.put("Medium", inCorrArray[1]);
+                                IncorrectScore.put("High", inCorrArray[2]);
+                            }
                         }
 
                         questionCollection.Scoring.put("IncorrectScore", IncorrectScore);
@@ -1235,14 +1240,17 @@ public class QuestionCollection {
                         questionCollection.showFeedBack = resultSet.getBoolean(15);
 
                         HashMap DifferentTime = new HashMap();
-                        Integer[] diffArr = (Integer[]) resultSet.getArray(17).getArray();
-                        if (diffArr.length > 0 && diffArr.length == 3) {
-                            DifferentTime.put("Low", diffArr[0]);
-                            DifferentTime.put("Medium", diffArr[1]);
-                            DifferentTime.put("High", diffArr[2]);
+                        if (resultSet.getArray(17) != null) {
+                            Integer[] diffArr = (Integer[]) resultSet.getArray(17).getArray();
+                            if (diffArr.length > 0 && diffArr.length == 3) {
+                                DifferentTime.put("Low", diffArr[0]);
+                                DifferentTime.put("Medium", diffArr[1]);
+                                DifferentTime.put("High", diffArr[2]);
+                            }
                         }
 
                         questionCollection.TimeLimitation.put("DifferentTime", DifferentTime);
+
                         questionCollection.AllowReview = resultSet.getBoolean(19);
                         questionCollection.title = resultSet.getString(20);
                         questionCollection.description = resultSet.getString(21);

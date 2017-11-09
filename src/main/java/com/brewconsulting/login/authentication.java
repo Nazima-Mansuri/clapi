@@ -69,10 +69,9 @@ public class authentication {
                 throw new Exception("Password not specified");
             }
 
-            User user = User.authenticate(username, sb.toString(),deviceToken,deviceOS);
+            User user = User.authenticate(username, sb.toString(), deviceToken, deviceOS);
 
             if (user == null) {
-
                 resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" Authentication Failed \"}")
                         .type(MediaType.APPLICATION_JSON).build();
                 throw new Exception("User authentication failed.");
@@ -135,18 +134,18 @@ public class authentication {
             bldr.claim("tokenType", "REFRESH");
             node.put("refreshToken", bldr.compact());
 
-            node.put("isFirstLogin",user.isFirstLogin);
-            node.put("userId",user.id);
-            node.put("roleId",user.roles.get(0).roleId);
-            node.put("roleName",user.roles.get(0).roleName);
-            node.put("fullName",user.firstName + " " + user.lastName);
-            node.put("profileImage",user.profileImage);
+            node.put("isFirstLogin", user.isFirstLogin);
+            node.put("userId", user.id);
+            node.put("roleId", user.roles.get(0).roleId);
+            node.put("roleName", user.roles.get(0).roleName);
+            node.put("fullName", user.firstName + " " + user.lastName);
+            node.put("profileImage", user.profileImage);
 
             resp = Response.ok("" + node.toString() + "").type(MediaType.APPLICATION_JSON).build();
         } catch (Exception ex) {
-            logger.error("Exception " ,ex);
+            logger.error("Exception ", ex);
             if (resp == null)
-                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage()  +"\"}")
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\"" + ex.getMessage() + "\"}")
                         .type(MediaType.APPLICATION_JSON).build();
             ex.printStackTrace();
         }
@@ -181,86 +180,78 @@ public class authentication {
 
         String refreshToken = credentials.getRefreshToken();
 
-            if(refreshToken == null || refreshToken == "")
-            {
-                context.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
-            }
-            else
-            {
-                try {
-                    boolean isExist = Mem.getToken("refreshToken",refreshToken);
+        if (refreshToken == null || refreshToken == "") {
+            context.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
+        } else {
+            try {
+                boolean isExist = Mem.getToken("refreshToken", refreshToken);
 //                    boolean isExist = false;
-                    if(!isExist) {
-                        Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
-                        JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
-                        String tokenType = (String) clms.getBody().get("tokenType");
-                        context.setProperty("userObject", mapper.treeToValue(jsonNode, LoggedInUser.class));
+                if (!isExist) {
+                    Jws<Claims> clms = Jwts.parser().setSigningKey(salt).parseClaimsJws(refreshToken);
+                    JsonNode jsonNode = mapper.readTree((String) clms.getBody().get("user"));
+                    String tokenType = (String) clms.getBody().get("tokenType");
+                    context.setProperty("userObject", mapper.treeToValue(jsonNode, LoggedInUser.class));
 
-                        User user = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
+                    User user = User.getNewAccessToken((LoggedInUser) context.getProperty("userObject"));
 
-                        javax.naming.Context env = null;
-                        env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
-                        int accessTimeout = 0;
-                        if (salt == null) {
-                            resp = Response.serverError().entity("{\"Message\":" + "\" Salt value missing \"}").build();
-                            throw new Exception("SALT value missing");
-                        }
-
-
-                        if (credentials.getIsPublic()) {
-
-                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
-
-                        } else {
-                            accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
-
-                        }
-
-                        if (accessTimeout < 1)
-                            throw new Exception("Access token timeout not specified.");
-
-                        if (user != null) {
-                            // access token that expires in short time.
-                            JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
-                                    .setSubject(user.username).setId(UUID.randomUUID().toString())
-                                    .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
-                                    .signWith(SignatureAlgorithm.HS256, salt);
-
-                            bldr.claim("user", mapper.writerWithView(UserViews.authView.class).writeValueAsString(user));
-                            bldr.claim("tokenType", "ACCESS");
-
-                            node.put("accessToken", bldr.compact());
-
-                            Mem.deleteData(user.id + "#DEACTIVATED");
-                            Mem.deleteData(user.username + "#ROLECHANGED");
-                            resp = Response.ok(node.toString()).build();
-
-                        } else {
-                            resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" You are not authorized,Please Login again.\"}")
-                                    .type(MediaType.APPLICATION_JSON).build();
-                            throw new NotAuthorizedException("You are not authorized,Please Login again.");
-
-                        }
+                    javax.naming.Context env = null;
+                    env = (javax.naming.Context) new InitialContext().lookup("java:comp/env");
+                    int accessTimeout = 0;
+                    if (salt == null) {
+                        resp = Response.serverError().entity("{\"Message\":" + "\" Salt value missing \"}").build();
+                        throw new Exception("SALT value missing");
                     }
-                    else
-                    {
-                        resp = Response.status(498).entity("{\"Message\":" + "\" Invalid Token , Please Login Again!\"}").build();
+
+
+                    if (credentials.getIsPublic()) {
+
+                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_PUBLIC_TIMEOUT");
+
+                    } else {
+                        accessTimeout = (int) env.lookup("ACCESS_TOKEN_WORK_TIMEOUT");
+
                     }
+
+                    if (accessTimeout < 1)
+                        throw new Exception("Access token timeout not specified.");
+
+                    if (user != null) {
+                        // access token that expires in short time.
+                        JwtBuilder bldr = Jwts.builder().setIssuedAt(new Date()).setIssuer("brewconsulting.com")
+                                .setSubject(user.username).setId(UUID.randomUUID().toString())
+                                .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(accessTimeout)))
+                                .signWith(SignatureAlgorithm.HS256, salt);
+
+                        bldr.claim("user", mapper.writerWithView(UserViews.authView.class).writeValueAsString(user));
+                        bldr.claim("tokenType", "ACCESS");
+
+                        node.put("accessToken", bldr.compact());
+
+                        Mem.deleteData(user.id + "#DEACTIVATED");
+                        Mem.deleteData(user.username + "#ROLECHANGED");
+                        resp = Response.ok(node.toString()).build();
+
+                    } else {
+                        resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" You are not authorized,Please Login again.\"}")
+                                .type(MediaType.APPLICATION_JSON).build();
+                        throw new NotAuthorizedException("You are not authorized,Please Login again.");
+
+                    }
+                } else {
+                    resp = Response.status(498).entity("{\"Message\":" + "\" Invalid Token , Please Login Again!\"}").build();
                 }
-                catch (NotAuthorizedException na)
-                {
-                    logger.error("NotAuthorizedException ",na);
-                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ na.toString() +" \" }")
-                            .type(MediaType.APPLICATION_JSON).build();
-                }
-                catch (Exception ex) {
-                    logger.error("Exception ",ex);
-                    context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
-                    servletContext.log("Invalid token", ex);
-                    resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" "+ ex.toString() +" \" }")
-                            .type(MediaType.APPLICATION_JSON).build();
-                }
+            } catch (NotAuthorizedException na) {
+                logger.error("NotAuthorizedException ", na);
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" " + na.toString() + " \" }")
+                        .type(MediaType.APPLICATION_JSON).build();
+            } catch (Exception ex) {
+                logger.error("Exception ", ex);
+                context.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build());
+                servletContext.log("Invalid token", ex);
+                resp = Response.status(Response.Status.UNAUTHORIZED).entity("{\"Message\":" + "\" " + ex.toString() + " \" }")
+                        .type(MediaType.APPLICATION_JSON).build();
             }
+        }
         return resp;
     }
 
@@ -274,8 +265,7 @@ public class authentication {
     @POST
     @Path("/forgotpassword")
     @Produces("application/json")
-    public Response forgotPassword(Credentials credentials, @Context ServletContext context)
-    {
+    public Response forgotPassword(Credentials credentials, @Context ServletContext context) {
         Response resp = null;
 
         String from = context.getInitParameter("from");
@@ -285,23 +275,19 @@ public class authentication {
             properties.load(inp);
             PropertyConfigurator.configure(properties);
 
-            boolean isTrue = ForgotPassword.generateAndSendEmail(credentials.getUsername(),from,password);
+//            boolean isTrue = ForgotPassword.generateAndSendEmail(credentials.getUsername(), from, password);
+            boolean isTrue = ForgotPassword.generateAndSendEmail(credentials.getUsername(), from, password);
             System.out.println("isTrue " + isTrue);
-            if(isTrue)
-            {
+            if (isTrue) {
                 resp = Response.ok().entity("{\"Message\":" + "\" Password send by Email Succesfully.\"}")
-                    .type(MediaType.APPLICATION_JSON).build();
-            }
-            else
-            {
+                        .type(MediaType.APPLICATION_JSON).build();
+            } else {
                 resp = Response.serverError().entity("{\"Message\":" + "\" Something went wrong\"}")
                         .type(MediaType.APPLICATION_JSON).build();
             }
-        }
-        catch (Exception e)
-        {
-            logger.error("Exception ",e);
-            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage()  +"\"}").build();
+        } catch (Exception e) {
+            logger.error("Exception ", e);
+            resp = Response.serverError().entity("{\"Message\":" + "\"" + e.getMessage() + "\"}").build();
             e.printStackTrace();
         }
         return resp;
